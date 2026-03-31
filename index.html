@@ -715,7 +715,17 @@ function renderCalendar() {
   `;
 }
 
+let _renderTimer = null;
+function debounceRender() {
+  clearTimeout(_renderTimer);
+  _renderTimer = setTimeout(render, 150);
+}
+
 function render() {
+  const searchEl = document.getElementById("searchInput");
+  const hadFocus = searchEl && document.activeElement === searchEl;
+  const cursorPos = hadFocus ? searchEl.selectionStart : 0;
+
   const app = document.getElementById("app");
   let content = '';
   
@@ -727,7 +737,7 @@ function render() {
       ${state.view==='plants'?`
         <div class="search-bar">
           <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="search" placeholder="Search plants..." value="${state.search}" oninput="state.search=this.value;render()">
+          <input type="search" id="searchInput" placeholder="Search plants..." value="${state.search}" oninput="state.search=this.value;debounceRender()">
         </div>
       `:''}
     </div>
@@ -755,6 +765,11 @@ function render() {
   if (state.detailId) content += renderDetail();
   
   app.innerHTML = content;
+
+  if (hadFocus) {
+    const el = document.getElementById("searchInput");
+    if (el) { el.focus(); el.setSelectionRange(cursorPos, cursorPos); }
+  }
 }
 
 // Initialize
