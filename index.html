@@ -664,10 +664,10 @@ function renderCalendar() {
   myPlants.forEach(p => {
     const care = p.care||{};
     const task = care[String(m)];
-    if (task) tasks.push({plant:p.name, task:task, id:p.id});
+    if (task) tasks.push({plant:p.name, task:task, id:p.id, key:`care_${p.id}_${m}`});
     // Also show fertilizer months
     if ((p.fertMonth||[]).includes(m)) {
-      tasks.push({plant:p.name, task:`Fertilize: ${p.fertilizer||'as needed'}`, id:p.id});
+      tasks.push({plant:p.name, task:`Fertilize: ${p.fertilizer||'as needed'}`, id:p.id, key:`fert_${p.id}_${m}`});
     }
   });
 
@@ -693,12 +693,16 @@ function renderCalendar() {
       </div>
       <div class="cal-month">
         <h3>📋 Care Tasks (${tasks.length})</h3>
-        ${tasks.map(t=>`
-          <div class="cal-task">
-            <span class="cal-plant">${t.plant}</span>
-            <span class="cal-action">${t.task}</span>
-          </div>
-        `).join("")}
+        ${tasks.map(t=>{
+          const done = state.tasks[t.key];
+          return `<div class="cal-task" style="display:flex;align-items:center;gap:10px;${done?'opacity:.5':''}">
+            <div class="task-check ${done?'done':''}" onclick="event.stopPropagation();toggleTask('${t.key}')" style="width:22px;height:22px;border-radius:6px;flex-shrink:0;cursor:pointer">${done?'✓':''}</div>
+            <div style="flex:1;${done?'text-decoration:line-through':''}">
+              <span class="cal-plant">${t.plant}</span>
+              <span class="cal-action">${t.task}</span>
+            </div>
+          </div>`;
+        }).join("")}
         ${tasks.length===0?'<div class="empty-state">No tasks this month</div>':''}
       </div>
     </div>
@@ -711,8 +715,9 @@ function renderTasks() {
     `<div class="chip ${m===i+1?'active':''}" onclick="state.currentMonth=${i+1};render()">${MONTHS[i]}</div>`
   ).join("");
   
+  const myPlants = PLANTS.filter(p => isPlanted(p.id));
   const tasks = [];
-  PLANTS.forEach(p => {
+  myPlants.forEach(p => {
     const care = p.care||{};
     const task = care[String(m)];
     if (task) tasks.push({plant:p.name, task:task, id:p.id, key:`${p.id}-${m}-care`});
@@ -720,9 +725,13 @@ function renderTasks() {
       tasks.push({plant:p.name, task:`Fertilize: ${p.fertilizer||''}`, id:p.id, key:`${p.id}-${m}-fert`});
     }
   });
-  
+
+  if (!myPlants.length) return `
+    <div class="filters">${monthPicker}</div>
+    <div class="task-view"><div class="empty-state" style="padding:40px 20px;text-align:center;color:var(--text-mid)">Mark plants as "Planted in my garden" to see tasks here.</div></div>`;
+
   const done = tasks.filter(t=>state.tasks[t.key]).length;
-  
+
   return `
     <div class="filters">${monthPicker}</div>
     <div class="task-view">
