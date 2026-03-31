@@ -508,7 +508,7 @@ function renderCompanionBloom(mainPlant) {
       } else {
         bg = on ? `background:linear-gradient(135deg,${cc.dark},${cc.light})` : 'background:rgba(255,255,255,.05)';
       }
-      return `<div style="width:64px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;${bg};${on?'color:#fff':'color:var(--text-light)'}">${MONTHS[i+2]}</div>`;
+      return `<div style="width:80px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;${bg};${on?'color:#fff':'color:var(--text-light)'}">${MONTHS[i+2]}</div>`;
     }).join('');
     return { label: `${label}${suffix}`, cells };
   }
