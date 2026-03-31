@@ -510,18 +510,20 @@ function renderCompanionBloom(mainPlant) {
       }
       return `<div style="width:64px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;${bg};${on?'color:#fff':'color:var(--text-light)'}">${MONTHS[i+2]}</div>`;
     }).join('');
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <div style="flex-shrink:0;font-size:10px;line-height:1.2;white-space:nowrap">${label}${suffix}</div>
-      <div style="display:flex;gap:2px">${cells}</div>
-    </div>`;
+    return { label: `${label}${suffix}`, cells };
   }
 
-  let html = '';
-  above.forEach(c => html += bloomRow(c.name, c.blooms, false, c.isFoliageOnly));
-  html += bloomRow(mainPlant.name + ' (this plant)', mainBlooms, true, false);
-  below.forEach(c => html += bloomRow(c.name, c.blooms, false, c.isFoliageOnly));
+  const rows = [];
+  above.forEach(c => rows.push(bloomRow(c.name, c.blooms, false, c.isFoliageOnly)));
+  rows.push(bloomRow(mainPlant.name + ' (this plant)', mainBlooms, true, false));
+  below.forEach(c => rows.push(bloomRow(c.name, c.blooms, false, c.isFoliageOnly)));
 
-  return `<div style="margin-top:8px">${html}</div>`;
+  const tableRows = rows.map(r => `<tr>
+    <td style="font-size:10px;line-height:1.2;white-space:nowrap;padding:2px 8px 2px 0;vertical-align:middle">${r.label}</td>
+    <td style="vertical-align:middle"><div style="display:flex;gap:2px">${r.cells}</div></td>
+  </tr>`).join('');
+
+  return `<div style="margin-top:8px;overflow-x:auto"><table style="border-collapse:collapse">${tableRows}</table></div>`;
 }
 
 function renderCompanionHeight(mainPlant) {
