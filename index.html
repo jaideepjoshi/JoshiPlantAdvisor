@@ -478,36 +478,48 @@ function renderCompanionBloom(mainPlant) {
   const colorMap = getCompanionColorMap(mainPlant);
   const mainBlooms = new Set(mainPlant.bloomMonths || []);
 
+  // Foliage season months for non-blooming plants (Apr-Oct in zone 6)
+  const FOLIAGE_MONTHS = new Set([4,5,6,7,8,9,10]);
+
   const compData = companions.map(name => {
     const found = findPlantByName(name);
-    return { name, plant: found, blooms: new Set(found ? (found.bloomMonths || []) : []) };
-  }).filter(c => c.blooms.size > 0);
+    const blooms = new Set(found ? (found.bloomMonths || []) : []);
+    const isFoliageOnly = blooms.size === 0;
+    return { name, plant: found, blooms, isFoliageOnly };
+  });
 
   const above = compData.slice(0, Math.ceil(compData.length / 2));
   const below = compData.slice(Math.ceil(compData.length / 2));
 
-  function bloomRow(name, blooms, isMain) {
+  function bloomRow(name, blooms, isMain, isFoliageOnly) {
     const cc = colorMap[name];
     const label = isMain
       ? `<strong style="color:#4ade80">${name}</strong>`
       : (function(){ const f=findPlantByName(name); return f ? `<a href="#" onclick="event.preventDefault();state.detailId=${f.id};render();window.scrollTo(0,0)" style="color:${cc.light};font-weight:600;text-decoration:none">${name}</a>` : `<span style="color:${cc.light}">${name}</span>`; })();
+    const suffix = isFoliageOnly ? ` <span style="font-size:9px;color:var(--text-light);font-weight:400">(foliage)</span>` : '';
+    const activeMonths = isFoliageOnly ? FOLIAGE_MONTHS : blooms;
     const cells = Array.from({length:8}, (_, i) => {
-      const m = i + 3, on = blooms.has(m);
-      const bg = isMain
-        ? (on ? 'background:linear-gradient(135deg,#22c55e,#4ade80)' : 'background:rgba(255,255,255,.05)')
-        : (on ? `background:linear-gradient(135deg,${cc.dark},${cc.light})` : 'background:rgba(255,255,255,.05)');
+      const m = i + 3, on = activeMonths.has(m);
+      let bg;
+      if (isMain) {
+        bg = on ? 'background:linear-gradient(135deg,#22c55e,#4ade80)' : 'background:rgba(255,255,255,.05)';
+      } else if (isFoliageOnly) {
+        bg = on ? `background:repeating-linear-gradient(135deg,${cc.dark},${cc.dark} 3px,${cc.bg} 3px,${cc.bg} 6px)` : 'background:rgba(255,255,255,.05)';
+      } else {
+        bg = on ? `background:linear-gradient(135deg,${cc.dark},${cc.light})` : 'background:rgba(255,255,255,.05)';
+      }
       return `<div style="flex:1;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;${bg};${on?'color:#fff':'color:var(--text-light)'}">${MONTHS[i+2]}</div>`;
     }).join('');
     return `<div style="margin-bottom:6px">
-      <div style="font-size:12px;margin-bottom:3px;line-height:1.3">${label}</div>
+      <div style="font-size:12px;margin-bottom:3px;line-height:1.3">${label}${suffix}</div>
       <div style="display:flex;gap:2px">${cells}</div>
     </div>`;
   }
 
   let html = '';
-  above.forEach(c => html += bloomRow(c.name, c.blooms, false));
-  html += bloomRow(mainPlant.name + ' (this plant)', mainBlooms, true);
-  below.forEach(c => html += bloomRow(c.name, c.blooms, false));
+  above.forEach(c => html += bloomRow(c.name, c.blooms, false, c.isFoliageOnly));
+  html += bloomRow(mainPlant.name + ' (this plant)', mainBlooms, true, false);
+  below.forEach(c => html += bloomRow(c.name, c.blooms, false, c.isFoliageOnly));
 
   return `<div style="margin-top:8px">${html}</div>`;
 }
@@ -657,23 +669,25 @@ function renderDetail() {
 
   // Companions (big section, open)
   if (p.companions&&p.companions.length) {
+    const cardColorMap = getCompanionColorMap(p);
     const compCards = p.companions.map(c=>{
+      const cc = cardColorMap[c] || COMP_COLORS[0];
       const found = findPlantByName(c);
-      if (!found) return `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:12px;color:var(--text-mid)">${c}</div>`;
+      if (!found) return `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid ${cc.light};font-size:12px;color:${cc.light}">${c}</div>`;
       const imgUrl = state.photos[String(found.id)] || localStorage.getItem('pimg_' + found.id);
       const thumb = imgUrl
         ? `<img src="${imgUrl}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0">`
-        : `<div style="width:40px;height:40px;border-radius:8px;background:rgba(74,222,128,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">🌱</div>`;
-      return `<a href="#" onclick="event.preventDefault();state.prevPlantId=${p.id};state.detailId=${found.id};render();window.scrollTo(0,0)" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--border);text-decoration:none;color:var(--text);transition:border-color .2s,background .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(74,222,128,.3)';this.style.background='rgba(74,222,128,.05)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='rgba(255,255,255,.04)'">
+        : `<div style="width:40px;height:40px;border-radius:8px;background:${cc.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">🌱</div>`;
+      return `<a href="#" onclick="event.preventDefault();state.prevPlantId=${p.id};state.detailId=${found.id};render();window.scrollTo(0,0)" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:12px;background:rgba(255,255,255,.04);border:1.5px solid ${cc.dark};text-decoration:none;color:var(--text);transition:background .2s;cursor:pointer" onmouseover="this.style.background='${cc.bg}'" onmouseout="this.style.background='rgba(255,255,255,.04)'">
         ${thumb}
         <div style="min-width:0">
-          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${found.name}</div>
+          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${cc.light}">${found.name}</div>
           <div style="font-size:10px;color:var(--text-light);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${found.botanical||''}</div>
         </div>
       </a>`;
     }).join("");
     const compContent = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${compCards}</div>
-      <div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px">Bloom Timeline</div>
+      <div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px">Bloom &amp; Foliage Timeline</div>
       ${renderCompanionBloom(p)}
       ${renderCompanionHeight(p) ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:18px 0 6px">Height Comparison</div>${renderCompanionHeight(p)}` : ''}`;
     sections.push(S(IC.companion, 'rgba(96,165,250,.1)', '#93c5fd', '#60a5fa', 'Companions', compContent, true));
