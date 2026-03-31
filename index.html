@@ -10,10 +10,10 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--green:#1a4731;--green-mid:#2d6a4f;--green-light:#40916c;--green-accent:#95d5b2;--green-bg:#f0fdf4;--gold:#b8860b;--gold-light:#daa520;--cream:#fdfaf5;--text:#1a1a2e;--text-mid:#3d3d5c;--text-light:#6b7280;--bg:#f5f3ef;--card:#fff;--border:#e8e4dd;--radius:14px;--shadow:0 2px 12px rgba(0,0,0,.08);--shadow-lg:0 8px 30px rgba(0,0,0,.12)}
+:root{--green:#0b3d2c;--green-mid:#14532d;--green-light:#22804a;--green-accent:#4ade80;--green-bg:#071a12;--gold:#d4a017;--gold-light:#f5c842;--cream:#1a1f1c;--text:#e8ece9;--text-mid:#b0bab3;--text-light:#7a8a80;--bg:#0c1410;--card:#141f19;--border:#1e3028;--radius:14px;--shadow:0 2px 12px rgba(0,0,0,.3);--shadow-lg:0 8px 30px rgba(0,0,0,.4)}
 body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;min-height:100vh;padding-bottom:84px;-webkit-font-smoothing:antialiased}
-.header{background:linear-gradient(160deg,#0d1f17 0%,#1a4731 40%,#2d6a4f 100%);color:#fff;padding:20px 20px 16px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.2)}
-.header h1{font-family:'Playfair Display',Georgia,serif;font-size:24px;font-weight:700;margin-bottom:4px;letter-spacing:-.3px}
+.header{background:linear-gradient(160deg,#061208 0%,#0b3d2c 40%,#145236 100%);color:#fff;padding:20px 20px 16px;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,.5);border-bottom:1px solid rgba(212,160,23,.2)}
+.header h1{font-family:'Playfair Display',Georgia,serif;font-size:24px;font-weight:700;margin-bottom:4px;letter-spacing:-.3px;background:linear-gradient(135deg,#f5c842,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .header p{font-size:12px;opacity:.65;letter-spacing:.8px;text-transform:uppercase;font-weight:500}
 .search-bar{margin:12px 0 0;position:relative}
 .search-bar input{width:100%;padding:12px 14px 12px 40px;border:1px solid rgba(255,255,255,.15);border-radius:10px;font-size:15px;background:rgba(255,255,255,.1);color:#fff;outline:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:border-color .2s,background .2s;font-family:'Inter',system-ui,sans-serif}
@@ -21,31 +21,31 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .search-bar input::placeholder{color:rgba(255,255,255,.5)}
 .search-bar svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:rgba(255,255,255,.5);fill:none}
 .filters{padding:10px 16px;overflow-x:auto;white-space:nowrap;display:flex;gap:8px;background:var(--cream);border-bottom:1px solid var(--border)}
-.chip{display:inline-block;padding:7px 16px;border-radius:24px;font-size:12px;font-weight:600;background:#fff;color:var(--text-light);cursor:pointer;border:1px solid var(--border);transition:all .25s ease;letter-spacing:.2px}
-.chip:hover{border-color:#b8b4ad}
-.chip.active{background:var(--green);color:#fff;border-color:var(--green);box-shadow:0 2px 8px rgba(26,71,49,.25)}
+.chip{display:inline-block;padding:7px 16px;border-radius:24px;font-size:12px;font-weight:600;background:rgba(255,255,255,.06);color:var(--text-light);cursor:pointer;border:1px solid var(--border);transition:all .25s ease;letter-spacing:.2px}
+.chip:hover{border-color:rgba(74,222,128,.3);color:var(--green-accent)}
+.chip.active{background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border-color:#22804a;box-shadow:0 2px 12px rgba(74,222,128,.2)}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding:16px}
 @media(min-width:640px){.grid{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1024px){.grid{grid-template-columns:repeat(4,1fr);max-width:1100px;margin:0 auto}}
-.card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;border:1px solid rgba(0,0,0,.04)}
-.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,border-color .2s;border:1px solid var(--border)}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:rgba(74,222,128,.25)}
 .card:active{transform:scale(.97)}
-.card img{width:100%;height:160px;object-fit:cover;background:#e8e4dd}
-.card .placeholder{width:100%;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:32px;background:linear-gradient(135deg,#f0fdf4,#dbeafe)}
+.card img{width:100%;height:160px;object-fit:cover;background:#0a1f14}
+.card .placeholder{width:100%;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:32px;background:linear-gradient(135deg,#0a1f14,#0f2b1d)}
 .card-body{padding:10px 12px 12px}
 .card-body h3{font-family:'Playfair Display',Georgia,serif;font-size:14px;font-weight:600;line-height:1.35;margin-bottom:2px;color:var(--text)}
 .card-body .meta{font-size:11px;color:var(--text-light);font-style:italic}
 .badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
 .badge{font-size:10px;padding:3px 8px;border-radius:12px;font-weight:600;letter-spacing:.2px}
-.badge-sun{background:linear-gradient(135deg,#fef9c3,#fef3c7);color:#854d0e;border:1px solid #fde68a}
-.badge-shade{background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1e40af;border:1px solid #bfdbfe}
-.badge-deer{background:linear-gradient(135deg,#f0fdf4,#dcfce7);color:#166534;border:1px solid #bbf7d0}
-.badge-bloom{background:linear-gradient(135deg,#fdf2f8,#fce7f3);color:#9d174d;border:1px solid #fbcfe8}
-.detail{position:fixed;inset:0;background:var(--bg);z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
+.badge-sun{background:rgba(212,160,23,.15);color:#f5c842;border:1px solid rgba(212,160,23,.3)}
+.badge-shade{background:rgba(96,165,250,.12);color:#93c5fd;border:1px solid rgba(96,165,250,.25)}
+.badge-deer{background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)}
+.badge-bloom{background:rgba(244,114,182,.12);color:#f472b6;border:1px solid rgba(244,114,182,.25)}
+.detail{position:fixed;inset:0;background:#0c1410;z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
 .detail.open{display:block;animation:slideUp .35s cubic-bezier(.16,1,.3,1)}
 @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes fadeInUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
-.detail-hero{position:relative;width:100%;background:linear-gradient(135deg,#0d1f17,#1a4731,#2d6a4f);padding:18px;display:flex;flex-direction:row;align-items:center;gap:18px;overflow:hidden}
+.detail-hero{position:relative;width:100%;background:linear-gradient(135deg,#061208,#0b3d2c,#145236);padding:18px;display:flex;flex-direction:row;align-items:center;gap:18px;overflow:hidden;border-bottom:1px solid rgba(212,160,23,.15)}
 .detail-hero img{width:160px;height:160px;object-fit:cover;display:block;border-radius:14px;flex-shrink:0;border:2px solid rgba(255,255,255,.2);box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .detail-hero .hero-placeholder{width:160px;height:160px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.1)}
 .detail-hero .hero-overlay{position:relative;display:flex;flex-direction:column;justify-content:center;padding:0;flex:1;min-width:0}
@@ -58,7 +58,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .hero-stat{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.2px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .hero-stat svg{width:14px;height:14px;flex-shrink:0}
 .detail-body{padding:14px;display:flex;flex-direction:column;gap:12px}
-.ds{background:var(--card);border-radius:16px;box-shadow:0 1px 6px rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.04);overflow:hidden;animation:fadeInUp .4s ease both}
+.ds{background:var(--card);border-radius:16px;box-shadow:0 1px 8px rgba(0,0,0,.2);border:1px solid var(--border);overflow:hidden;animation:fadeInUp .4s ease both}
 .ds:nth-child(2){animation-delay:.05s}.ds:nth-child(3){animation-delay:.1s}.ds:nth-child(4){animation-delay:.15s}.ds:nth-child(5){animation-delay:.2s}.ds:nth-child(6){animation-delay:.25s}
 .ds-head{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:background .15s}
 .ds-head:hover{background:rgba(0,0,0,.015)}
@@ -84,34 +84,34 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bloom-cell{flex:1;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;letter-spacing:.3px;transition:transform .15s}
 .bloom-on{background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;box-shadow:0 2px 6px rgba(236,72,153,.3)}
 .bloom-off{background:#f1f0ec;color:#a8a29e}
-.care-month{padding:11px 14px;margin-bottom:6px;border-radius:10px;background:linear-gradient(135deg,#fafaf8,var(--cream));font-size:13px;display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);line-height:1.55}
-.care-month .mo{font-weight:700;color:var(--green);min-width:34px;font-size:12px;letter-spacing:.5px}
+.care-month{padding:11px 14px;margin-bottom:6px;border-radius:10px;background:rgba(255,255,255,.04);font-size:13px;display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);line-height:1.55}
+.care-month .mo{font-weight:700;color:var(--gold-light);min-width:34px;font-size:12px;letter-spacing:.5px}
 .tag-list{display:flex;flex-wrap:wrap;gap:6px}
 .tag-pill{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.1px;transition:transform .12s}
 .tag-pill:active{transform:scale(.95)}
-.cultivar-item{padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#fafaf8,var(--cream));border:1px solid var(--border);font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:6px}
+.cultivar-item{padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:13px;color:var(--text-mid);line-height:1.5;margin-bottom:6px}
 .calendar-view{padding:16px}
-.cal-month{background:#fff;border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04)}
-.cal-month h3{font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:600;color:var(--green);margin-bottom:12px}
-.cal-task{padding:8px 0;border-bottom:1px solid #f1f0ec;font-size:13px;display:flex;gap:10px}
+.cal-month{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.cal-month h3{font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:600;color:var(--gold-light);margin-bottom:12px}
+.cal-task{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:10px}
 .cal-task:last-child{border:none}
 .cal-plant{font-weight:600;color:var(--text);min-width:110px}
 .cal-action{color:var(--text-light);flex:1;line-height:1.4}
 .task-view{padding:16px}
-.task-card{background:#fff;border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.task-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow);border:1px solid var(--border)}
 .task-card h4{font-size:14px;font-weight:600;margin-bottom:4px}
 .task-card p{font-size:12px;color:var(--text-light)}
-.task-check{width:24px;height:24px;border:2px solid #d1cdc7;border-radius:7px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s ease}
-.task-check:hover{border-color:var(--green-light)}
-.task-check.done{background:linear-gradient(135deg,#2d6a4f,#40916c);border-color:transparent;color:#fff;box-shadow:0 2px 6px rgba(45,106,79,.3)}
-.task-row{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #f1f0ec}
+.task-check{width:24px;height:24px;border:2px solid #2e4a3a;border-radius:7px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s ease}
+.task-check:hover{border-color:var(--green-accent)}
+.task-check.done{background:linear-gradient(135deg,#14532d,#166534);border-color:#22804a;color:#4ade80;box-shadow:0 2px 8px rgba(74,222,128,.2)}
+.task-row{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
 .empty-state{text-align:center;padding:60px 24px;color:var(--text-light);font-size:15px;font-style:italic}
-.video-link{display:inline-flex;align-items:center;gap:8px;color:#dc2626;font-weight:600;font-size:13px;text-decoration:none;padding:10px 18px;background:linear-gradient(135deg,#fef2f2,#fee2e2);border-radius:10px;margin-top:8px;border:1px solid #fecaca;transition:transform .15s}
+.video-link{display:inline-flex;align-items:center;gap:8px;color:#f87171;font-weight:600;font-size:13px;text-decoration:none;padding:10px 18px;background:rgba(239,68,68,.1);border-radius:10px;margin-top:8px;border:1px solid rgba(239,68,68,.25);transition:transform .15s}
 .video-link:hover{transform:translateY(-1px)}
-.planted-badge{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#dcfce7,#bbf7d0);color:#166534;padding:6px 14px;border-radius:14px;font-size:12px;font-weight:700;border:1px solid #86efac}
-.nav-bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.06);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
-.nav-item{flex:1;padding:10px 4px 8px;text-align:center;cursor:pointer;color:#a8a29e;transition:color .2s}
-.nav-item.active{color:var(--green)}
+.planted-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(74,222,128,.12);color:#4ade80;padding:6px 14px;border-radius:14px;font-size:12px;font-weight:700;border:1px solid rgba(74,222,128,.25)}
+.nav-bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(12,20,16,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(212,160,23,.15);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;padding:10px 4px 8px;text-align:center;cursor:pointer;color:#4a5a50;transition:color .2s}
+.nav-item.active{color:var(--gold-light)}
 .nav-item svg{width:24px;height:24px;margin:0 auto 3px;display:block}
 .nav-item span{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
 .count-badge{background:var(--green);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:4px}
@@ -273,7 +273,7 @@ function renderPlants() {
             ${sunBadge(p)}
             ${p.bloomMonths&&p.bloomMonths.length?'<span class="badge badge-bloom">'+p.bloomMonths.map(m=>MONTHS[m-1]).join("-")+'</span>':''}
             ${p.deerResistant?'<span class="badge badge-deer">🦌</span>':''}
-            ${isPlanted(p.id)?'<span class="badge" style="background:#dcfce7;color:#166534">✓ Mine</span>':''}
+            ${isPlanted(p.id)?'<span class="badge" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25)">✓ Mine</span>':''}
           </div>
         </div>
       </div>
@@ -453,11 +453,11 @@ function renderDetail() {
   // HERO stats
   const bloomRange = (p.bloomMonths||[]).length ? MONTHS[(p.bloomMonths[0]||1)-1]+' - '+MONTHS[(p.bloomMonths[p.bloomMonths.length-1]||12)-1] : '';
   const heroStats = [
-    p.sun ? `<div class="hero-stat" style="background:rgba(254,243,199,.85);color:#854d0e"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>${p.sun}</div>` : '',
-    p.height ? `<div class="hero-stat" style="background:rgba(220,252,231,.85);color:#166534"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V4M5 11l7-7 7 7"/></svg>${p.height}</div>` : '',
-    bloomRange ? `<div class="hero-stat" style="background:rgba(252,231,243,.85);color:#9d174d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 0 0-2.7 9.2A5 5 0 0 0 5 16a5 5 0 0 0 4.3 5A5 5 0 0 0 12 22a5 5 0 0 0 2.7-1A5 5 0 0 0 19 16a5 5 0 0 0-4.3-4.8A5 5 0 0 0 12 2z"/></svg>${bloomRange}</div>` : '',
-    p.deerResistant ? `<div class="hero-stat" style="background:rgba(187,247,208,.85);color:#166534"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>Deer Safe</div>` : '',
-    p.nativeOhio ? `<div class="hero-stat" style="background:rgba(191,219,254,.85);color:#1e40af"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>Native OH</div>` : ''
+    p.sun ? `<div class="hero-stat" style="background:rgba(212,160,23,.12);color:#f5c842;border:1px solid rgba(212,160,23,.25)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>${p.sun}</div>` : '',
+    p.height ? `<div class="hero-stat" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V4M5 11l7-7 7 7"/></svg>${p.height}</div>` : '',
+    bloomRange ? `<div class="hero-stat" style="background:rgba(244,114,182,.1);color:#f472b6;border:1px solid rgba(244,114,182,.2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 0 0-2.7 9.2A5 5 0 0 0 5 16a5 5 0 0 0 4.3 5A5 5 0 0 0 12 22a5 5 0 0 0 2.7-1A5 5 0 0 0 19 16a5 5 0 0 0-4.3-4.8A5 5 0 0 0 12 2z"/></svg>${bloomRange}</div>` : '',
+    p.deerResistant ? `<div class="hero-stat" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>Deer Safe</div>` : '',
+    p.nativeOhio ? `<div class="hero-stat" style="background:rgba(96,165,250,.1);color:#93c5fd;border:1px solid rgba(96,165,250,.2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>Native OH</div>` : ''
   ].filter(Boolean).join('');
 
   // GARDEN section (always open, not collapsible)
@@ -473,9 +473,9 @@ function renderDetail() {
       </div>
       ${g.planted?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
         <div><label style="font-size:11px;color:var(--green-mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;font-weight:600">Name / Cultivar</label>
-        <input type="text" value="${(g.name||'').replace(/"/g,'&quot;')}" placeholder="e.g. Magnus, PowWow Wild Berry" oninput="updateGardenField(${p.id},'name',this.value)" style="width:100%;padding:10px 12px;border:1px solid #86efac;border-radius:10px;font-size:14px;background:#fff;outline:none;font-family:'Inter',system-ui,sans-serif"></div>
+        <input type="text" value="${(g.name||'').replace(/"/g,'&quot;')}" placeholder="e.g. Magnus, PowWow Wild Berry" oninput="updateGardenField(${p.id},'name',this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif"></div>
         <div><label style="font-size:11px;color:var(--green-mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;font-weight:600">Where</label>
-        <input type="text" value="${(g.where||'').replace(/"/g,'&quot;')}" placeholder="e.g. Front bed, Side garden" oninput="updateGardenField(${p.id},'where',this.value)" style="width:100%;padding:10px 12px;border:1px solid #86efac;border-radius:10px;font-size:14px;background:#fff;outline:none;font-family:'Inter',system-ui,sans-serif"></div>
+        <input type="text" value="${(g.where||'').replace(/"/g,'&quot;')}" placeholder="e.g. Front bed, Side garden" oninput="updateGardenField(${p.id},'where',this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif"></div>
       </div>`:''}
     </div>
   </div>`;
@@ -484,10 +484,10 @@ function renderDetail() {
   const sections = [];
 
   // About — always open
-  sections.push(S(IC.about, 'linear-gradient(135deg,#ecfdf5,#d1fae5)', '#065f46', '#2d6a4f', 'About', `<p>${p.description||""}</p>`, true));
+  sections.push(S(IC.about, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'About', `<p>${p.description||""}</p>`, true));
 
   // Plant Info — always open
-  sections.push(S(IC.info, 'linear-gradient(135deg,#f0fdf4,#dcfce7)', '#166534', '#40916c', 'Plant Info', `
+  sections.push(S(IC.info, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'Plant Info', `
     <div class="info-grid">
       <div class="info-item"><div class="label">Botanical</div><div class="value">${p.botanical||"—"}</div></div>
       <div class="info-item"><div class="label">Type</div><div class="value">${p.type||"—"}</div></div>
@@ -504,16 +504,16 @@ function renderDetail() {
     </div>`, true));
 
   // Bloom Calendar — open
-  sections.push(S(IC.bloom, 'linear-gradient(135deg,#fdf2f8,#fce7f3)', '#9d174d', '#ec4899', 'Bloom Calendar', `<div class="bloom-bar">${bloomBar}</div>`, true));
+  sections.push(S(IC.bloom, 'rgba(244,114,182,.1)', '#f472b6', '#ec4899', 'Bloom Calendar', `<div class="bloom-bar">${bloomBar}</div>`, true));
 
   // Attracts
-  if (p.attracts&&p.attracts.length) sections.push(S(IC.attract, 'linear-gradient(135deg,#fef3c7,#fde68a)', '#92400e', '#f59e0b', 'Attracts', `<div class="tag-list">${p.attracts.map(a=>`<span class="tag-pill" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);color:#92400e;border:1px solid #fde68a">${a}</span>`).join("")}</div>`, true));
+  if (p.attracts&&p.attracts.length) sections.push(S(IC.attract, 'rgba(212,160,23,.12)', '#f5c842', '#d4a017', 'Attracts', `<div class="tag-list">${p.attracts.map(a=>`<span class="tag-pill" style="background:rgba(212,160,23,.1);color:#f5c842;border:1px solid rgba(212,160,23,.25)">${a}</span>`).join("")}</div>`, true));
 
   // Foliage Interest
-  if (p.foliageInterest) sections.push(S(IC.foliage, 'linear-gradient(135deg,#ecfdf5,#d1fae5)', '#065f46', '#10b981', 'Foliage Interest', `<p>${p.foliageInterest}</p>`, false));
+  if (p.foliageInterest) sections.push(S(IC.foliage, 'rgba(52,211,153,.1)', '#34d399', '#10b981', 'Foliage Interest', `<p>${p.foliageInterest}</p>`, false));
 
   // Year-Round Interest
-  if (p.yearRound) sections.push(S(IC.year, 'linear-gradient(135deg,#f0f9ff,#e0f2fe)', '#0369a1', '#0ea5e9', 'Year-Round Interest', `<p>${p.yearRound}</p>`, false));
+  if (p.yearRound) sections.push(S(IC.year, 'rgba(96,165,250,.1)', '#93c5fd', '#60a5fa', 'Year-Round Interest', `<p>${p.yearRound}</p>`, false));
 
   // Companions (big section, open)
   if (p.companions&&p.companions.length) {
@@ -527,35 +527,35 @@ function renderDetail() {
       <div style="font-size:11px;font-weight:700;color:var(--green-light);text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px">Bloom Timeline</div>
       ${renderCompanionBloom(p)}
       ${renderCompanionHeight(p) ? `<div style="font-size:11px;font-weight:700;color:var(--green-light);text-transform:uppercase;letter-spacing:1px;margin:18px 0 6px">Height Comparison</div>${renderCompanionHeight(p)}` : ''}`;
-    sections.push(S(IC.companion, 'linear-gradient(135deg,#dbeafe,#bfdbfe)', '#1e40af', '#3b82f6', 'Companions', compContent, true));
+    sections.push(S(IC.companion, 'rgba(96,165,250,.1)', '#93c5fd', '#60a5fa', 'Companions', compContent, true));
   }
 
   // Garden Styles
-  if (p.gardenStyles&&p.gardenStyles.length) sections.push(S(IC.style, 'linear-gradient(135deg,#f3e8ff,#e9d5ff)', '#7c3aed', '#8b5cf6', 'Garden Styles', `<div class="tag-list">${p.gardenStyles.map(s=>`<span class="tag-pill" style="background:linear-gradient(135deg,#faf5ff,#f3e8ff);color:#7c3aed;border:1px solid #e9d5ff">${s}</span>`).join("")}</div>`, false));
+  if (p.gardenStyles&&p.gardenStyles.length) sections.push(S(IC.style, 'rgba(167,139,250,.1)', '#c4b5fd', '#a78bfa', 'Garden Styles', `<div class="tag-list">${p.gardenStyles.map(s=>`<span class="tag-pill" style="background:rgba(167,139,250,.08);color:#c4b5fd;border:1px solid rgba(167,139,250,.2)">${s}</span>`).join("")}</div>`, false));
 
   // Cleveland-Proven Cultivars
-  if (p.clevelandCultivars&&p.clevelandCultivars.length) sections.push(S(IC.cultivar, 'linear-gradient(135deg,#fce7f3,#fbcfe8)', '#9d174d', '#ec4899', 'Cleveland-Proven Cultivars', p.clevelandCultivars.map(c=>`<div class="cultivar-item">${c}</div>`).join(""), false));
+  if (p.clevelandCultivars&&p.clevelandCultivars.length) sections.push(S(IC.cultivar, 'rgba(244,114,182,.1)', '#f472b6', '#ec4899', 'Cleveland-Proven Cultivars', p.clevelandCultivars.map(c=>`<div class="cultivar-item">${c}</div>`).join(""), false));
 
   // Cultivars
-  if (p.cultivars&&p.cultivars.length) sections.push(S(IC.seedling, 'linear-gradient(135deg,#e0e7ff,#c7d2fe)', '#4338ca', '#6366f1', 'Cultivars', p.cultivars.map(c=>`<div class="cultivar-item">${c}</div>`).join(""), false));
+  if (p.cultivars&&p.cultivars.length) sections.push(S(IC.seedling, 'rgba(129,140,248,.1)', '#a5b4fc', '#818cf8', 'Cultivars', p.cultivars.map(c=>`<div class="cultivar-item">${c}</div>`).join(""), false));
 
   // Fertilizer
-  sections.push(S(IC.fert, 'linear-gradient(135deg,#fefce8,#fef9c3)', '#854d0e', '#eab308', 'Fertilizer', `<p>${p.fertilizer||"—"}</p>${p.fertMonth&&p.fertMonth.length?`<p style="margin-top:6px;font-size:12px;color:var(--text-light);font-weight:500">Apply: ${p.fertMonth.map(m=>MONTHS[m-1]).join(", ")}</p>`:''}`, false));
+  sections.push(S(IC.fert, 'rgba(212,160,23,.12)', '#f5c842', '#d4a017', 'Fertilizer', `<p>${p.fertilizer||"—"}</p>${p.fertMonth&&p.fertMonth.length?`<p style="margin-top:6px;font-size:12px;color:var(--text-light);font-weight:500">Apply: ${p.fertMonth.map(m=>MONTHS[m-1]).join(", ")}</p>`:''}`, false));
 
   // Monthly Care
-  if (careHtml) sections.push(S(IC.care, 'linear-gradient(135deg,#fff7ed,#ffedd5)', '#c2410c', '#f97316', 'Monthly Care', careHtml, false));
+  if (careHtml) sections.push(S(IC.care, 'rgba(251,146,60,.1)', '#fb923c', '#f97316', 'Monthly Care', careHtml, false));
 
   // Cleveland Light Notes
-  if (p.clevelandLightNote) sections.push(S(IC.light, 'linear-gradient(135deg,#fffbeb,#fef3c7)', '#b45309', '#f59e0b', 'Cleveland Light Notes', `<p>${p.clevelandLightNote}</p>`, false));
+  if (p.clevelandLightNote) sections.push(S(IC.light, 'rgba(212,160,23,.12)', '#f5c842', '#d4a017', 'Cleveland Light Notes', `<p>${p.clevelandLightNote}</p>`, false));
 
   // Where to Buy
-  if (p.whereToBuy) sections.push(S(IC.buy, 'linear-gradient(135deg,#f0fdf4,#dcfce7)', '#15803d', '#22c55e', 'Where to Buy', `<p>${p.whereToBuy}</p>`, false));
+  if (p.whereToBuy) sections.push(S(IC.buy, 'rgba(74,222,128,.1)', '#4ade80', '#22c55e', 'Where to Buy', `<p>${p.whereToBuy}</p>`, false));
 
   // When Available
-  if (p.whenAvailable) sections.push(S(IC.calendar, 'linear-gradient(135deg,#eff6ff,#dbeafe)', '#1d4ed8', '#3b82f6', 'When Available', `<p>${p.whenAvailable}</p>`, false));
+  if (p.whenAvailable) sections.push(S(IC.calendar, 'rgba(96,165,250,.1)', '#93c5fd', '#60a5fa', 'When Available', `<p>${p.whenAvailable}</p>`, false));
 
   // Video
-  if (p.video) sections.push(S(IC.video, 'linear-gradient(135deg,#fef2f2,#fee2e2)', '#dc2626', '#ef4444', 'Learn More', `<a class="video-link" href="${p.video.startsWith('http')?p.video:'https://www.youtube.com/results?search_query='+encodeURIComponent(p.video)}" target="_blank" rel="noopener">Watch Care Videos</a>`, false));
+  if (p.video) sections.push(S(IC.video, 'rgba(248,113,113,.1)', '#f87171', '#ef4444', 'Learn More', `<a class="video-link" href="${p.video.startsWith('http')?p.video:'https://www.youtube.com/results?search_query='+encodeURIComponent(p.video)}" target="_blank" rel="noopener">Watch Care Videos</a>`, false));
 
   // Fallback hero for plants without images
   const heroPlaceholder = `<div class="hero-placeholder"><div style="font-size:40px;opacity:.3">${IC.seedling}</div></div>`;
