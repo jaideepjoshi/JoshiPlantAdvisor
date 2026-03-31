@@ -7,6 +7,29 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Joshi Plant Advisor">
 <title>Joshi Plant Advisor</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+// ===== FIREBASE CONFIG — Replace with your own Firebase project details =====
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA9iFOqZPY8yqraN6mPkrKXnHMEYztGP6I",
+  authDomain: "plantbuddy-863be.firebaseapp.com",
+  databaseURL: "https://plantbuddy-863be-default-rtdb.firebaseio.com",
+  projectId: "plantbuddy-863be",
+  storageBucket: "plantbuddy-863be.firebasestorage.app",
+  messagingSenderId: "159643890588",
+  appId: "1:159643890588:web:2baa8470c8f73ea3964e59"
+};
+let _fbDb = null, _fbRef = null, _fbReady = false, _fbSyncing = false;
+if (FIREBASE_CONFIG.apiKey) {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    _fbDb = firebase.database();
+    _fbRef = _fbDb.ref('garden');
+    _fbReady = true;
+  } catch(e) { console.warn('Firebase init failed:', e); }
+}
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -140,10 +163,43 @@ let state = {
 
 function saveTasks() {
   localStorage.setItem("pt_tasks", JSON.stringify(state.tasks));
+  if (_fbReady) {
+    _fbDb.ref('tasks').set(state.tasks).catch(e => console.warn('Firebase tasks write failed:', e));
+  }
+}
+
+// Sync tasks from Firebase too
+if (_fbReady) {
+  _fbDb.ref('tasks').on('value', snap => {
+    const data = snap.val();
+    if (data && JSON.stringify(data) !== JSON.stringify(state.tasks)) {
+      state.tasks = data;
+      localStorage.setItem("pt_tasks", JSON.stringify(data));
+      render();
+    }
+  });
 }
 
 function saveGarden() {
   localStorage.setItem("pt_garden", JSON.stringify(state.garden));
+  // Sync to Firebase if configured
+  if (_fbReady && _fbRef && !_fbSyncing) {
+    _fbRef.set(state.garden).catch(e => console.warn('Firebase write failed:', e));
+  }
+}
+
+// Firebase real-time listener — syncs changes from other devices
+if (_fbReady && _fbRef) {
+  _fbRef.on('value', snap => {
+    const data = snap.val();
+    if (data && JSON.stringify(data) !== JSON.stringify(state.garden)) {
+      _fbSyncing = true;
+      state.garden = data;
+      localStorage.setItem("pt_garden", JSON.stringify(data));
+      render();
+      _fbSyncing = false;
+    }
+  });
 }
 
 // Initialize garden entries from pre-existing planted data
@@ -329,7 +385,7 @@ function parseHeight(h) {
 
 function companionLink(name) {
   const found = findPlantByName(name);
-  if (found) return `<a href="#" onclick="event.preventDefault();state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:#4ade80;font-weight:600;text-decoration:none;border-bottom:1px dotted rgba(74,222,128,.4)">${name}</a>`;
+  if (found) return `<a href="#" onclick="event.preventDefault();state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:#4ade80;font-weight:600;text-decoration:none">${name}</a>`;
   return `<span style="color:var(--text-mid)">${name}</span>`;
 }
 
