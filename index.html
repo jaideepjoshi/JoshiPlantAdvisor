@@ -483,7 +483,7 @@ function renderCompanionBloom(mainPlant) {
       const on = blooms.has(m);
       const bg = isMain
         ? (on ? 'background:linear-gradient(135deg,#22c55e,#4ade80)' : 'background:rgba(255,255,255,.05)')
-        : (on ? 'background:linear-gradient(135deg,#ec4899,#db2777)' : 'background:rgba(255,255,255,.05)');
+        : (on ? 'background:linear-gradient(135deg,#eab308,#facc15)' : 'background:rgba(255,255,255,.05)');
       const color = on ? 'color:#fff' : 'color:var(--text-light)';
       return `<div style="flex:1;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;${bg};${color}">${MONTHS[i+2]}</div>`;
     }).join('');
@@ -524,11 +524,11 @@ function renderCompanionHeight(mainPlant) {
   const plants = allItems.map(c => {
     const h = Math.max(Math.round((c.max / globalMax) * chartH), 20);
     const isMain = c.isMain;
-    const stemColor = isMain ? '#d4a017' : '#22804a';
-    const leafColor = isMain ? '#f5c842' : '#4ade80';
-    const leafBg = isMain ? 'rgba(212,160,23,.15)' : 'rgba(74,222,128,.1)';
+    const stemColor = isMain ? '#22804a' : '#d4a017';
+    const leafColor = isMain ? '#4ade80' : '#f5c842';
+    const leafBg = isMain ? 'rgba(74,222,128,.1)' : 'rgba(212,160,23,.15)';
     const label = isMain
-      ? `<strong style="color:var(--gold-light);font-size:10px">${c.name}</strong>`
+      ? `<strong style="color:#4ade80;font-size:10px">${c.name}</strong>`
       : `<span style="font-size:10px">${companionLink(c.name)}</span>`;
     // Plant silhouette SVG
     const svg = `<svg width="50" height="${h}" viewBox="0 0 50 ${h}" fill="none">
@@ -538,7 +538,7 @@ function renderCompanionHeight(mainPlant) {
     </svg>`;
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0">
       <div style="height:${chartH}px;display:flex;align-items:flex-end;justify-content:center">${svg}</div>
-      <div style="font-size:9px;color:${isMain?'var(--gold-light)':'var(--text-light)'};font-weight:700;white-space:nowrap">${c.min}-${c.max}"</div>
+      <div style="font-size:9px;color:${isMain?'#4ade80':'var(--gold-light)'};font-weight:700;white-space:nowrap">${c.min}-${c.max}"</div>
       <div style="text-align:center;line-height:1.2;overflow:hidden;width:100%">${label}</div>
     </div>`;
   }).join('');
