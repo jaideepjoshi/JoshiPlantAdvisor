@@ -482,7 +482,7 @@ function renderCompanionBloom(mainPlant) {
       const m = i + 3;
       const on = blooms.has(m);
       const bg = isMain
-        ? (on ? 'background:linear-gradient(135deg,#2d6a4f,#40916c)' : 'background:rgba(255,255,255,.05)')
+        ? (on ? 'background:linear-gradient(135deg,#22c55e,#4ade80)' : 'background:rgba(255,255,255,.05)')
         : (on ? 'background:linear-gradient(135deg,#ec4899,#db2777)' : 'background:rgba(255,255,255,.05)');
       const color = on ? 'color:#fff' : 'color:var(--text-light)';
       return `<div style="flex:1;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;${bg};${color}">${MONTHS[i+2]}</div>`;
