@@ -456,36 +456,47 @@ function companionLink(name) {
   return `<span style="color:var(--text-mid)">${name}</span>`;
 }
 
+const COMP_COLORS = [
+  { light:'#facc15', dark:'#eab308', bg:'rgba(234,179,8,.15)' },
+  { light:'#f472b6', dark:'#ec4899', bg:'rgba(244,114,182,.15)' },
+  { light:'#93c5fd', dark:'#60a5fa', bg:'rgba(96,165,250,.15)' },
+  { light:'#fb923c', dark:'#f97316', bg:'rgba(251,146,60,.15)' },
+  { light:'#c4b5fd', dark:'#a78bfa', bg:'rgba(167,139,250,.15)' }
+];
+
+function getCompanionColorMap(mainPlant) {
+  const map = {};
+  (mainPlant.companions || []).slice(0, 5).forEach((name, i) => {
+    map[name] = COMP_COLORS[i % COMP_COLORS.length];
+  });
+  return map;
+}
+
 function renderCompanionBloom(mainPlant) {
   const companions = (mainPlant.companions || []).slice(0, 5);
   if (!companions.length) return '';
-  const rows = [];
+  const colorMap = getCompanionColorMap(mainPlant);
   const mainBlooms = new Set(mainPlant.bloomMonths || []);
 
-  // Gather companion data
   const compData = companions.map(name => {
     const found = findPlantByName(name);
-    return {
-      name,
-      plant: found,
-      blooms: new Set(found ? (found.bloomMonths || []) : [])
-    };
+    return { name, plant: found, blooms: new Set(found ? (found.bloomMonths || []) : []) };
   }).filter(c => c.blooms.size > 0);
 
-  // Split companions: put some above, some below the main plant
   const above = compData.slice(0, Math.ceil(compData.length / 2));
   const below = compData.slice(Math.ceil(compData.length / 2));
 
-  function bloomRow(name, blooms, isMain, plantObj) {
-    const label = isMain ? `<strong style="color:#4ade80">${name}</strong>` : companionLink(name);
+  function bloomRow(name, blooms, isMain) {
+    const cc = colorMap[name];
+    const label = isMain
+      ? `<strong style="color:#4ade80">${name}</strong>`
+      : (function(){ const f=findPlantByName(name); return f ? `<a href="#" onclick="event.preventDefault();state.detailId=${f.id};render();window.scrollTo(0,0)" style="color:${cc.light};font-weight:600;text-decoration:none">${name}</a>` : `<span style="color:${cc.light}">${name}</span>`; })();
     const cells = Array.from({length:8}, (_, i) => {
-      const m = i + 3;
-      const on = blooms.has(m);
+      const m = i + 3, on = blooms.has(m);
       const bg = isMain
         ? (on ? 'background:linear-gradient(135deg,#22c55e,#4ade80)' : 'background:rgba(255,255,255,.05)')
-        : (on ? 'background:linear-gradient(135deg,#eab308,#facc15)' : 'background:rgba(255,255,255,.05)');
-      const color = on ? 'color:#fff' : 'color:var(--text-light)';
-      return `<div style="flex:1;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;${bg};${color}">${MONTHS[i+2]}</div>`;
+        : (on ? `background:linear-gradient(135deg,${cc.dark},${cc.light})` : 'background:rgba(255,255,255,.05)');
+      return `<div style="flex:1;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;${bg};${on?'color:#fff':'color:var(--text-light)'}">${MONTHS[i+2]}</div>`;
     }).join('');
     return `<div style="margin-bottom:6px">
       <div style="font-size:12px;margin-bottom:3px;line-height:1.3">${label}</div>
@@ -494,9 +505,9 @@ function renderCompanionBloom(mainPlant) {
   }
 
   let html = '';
-  above.forEach(c => html += bloomRow(c.name, c.blooms, false, c.plant));
-  html += bloomRow(mainPlant.name + ' (this plant)', mainBlooms, true, mainPlant);
-  below.forEach(c => html += bloomRow(c.name, c.blooms, false, c.plant));
+  above.forEach(c => html += bloomRow(c.name, c.blooms, false));
+  html += bloomRow(mainPlant.name + ' (this plant)', mainBlooms, true);
+  below.forEach(c => html += bloomRow(c.name, c.blooms, false));
 
   return `<div style="margin-top:8px">${html}</div>`;
 }
@@ -506,6 +517,8 @@ function renderCompanionHeight(mainPlant) {
   if (!companions.length) return '';
   const mainH = parseHeight(mainPlant.height);
   if (mainH.max === 0) return '';
+
+  const colorMap = getCompanionColorMap(mainPlant);
 
   const compData = companions.map(name => {
     const found = findPlantByName(name);
@@ -524,13 +537,14 @@ function renderCompanionHeight(mainPlant) {
   const plants = allItems.map(c => {
     const h = Math.max(Math.round((c.max / globalMax) * chartH), 20);
     const isMain = c.isMain;
-    const stemColor = isMain ? '#22804a' : '#d4a017';
-    const leafColor = isMain ? '#4ade80' : '#f5c842';
-    const leafBg = isMain ? 'rgba(74,222,128,.1)' : 'rgba(212,160,23,.15)';
+    const cc = colorMap[c.name];
+    const stemColor = isMain ? '#22804a' : (cc ? cc.dark : '#d4a017');
+    const leafColor = isMain ? '#4ade80' : (cc ? cc.light : '#f5c842');
+    const leafBg = isMain ? 'rgba(74,222,128,.1)' : (cc ? cc.bg : 'rgba(212,160,23,.15)');
+    const found = c.plant || findPlantByName(c.name);
     const label = isMain
       ? `<strong style="color:#4ade80;font-size:10px">${c.name}</strong>`
-      : `<span style="font-size:10px">${companionLink(c.name)}</span>`;
-    // Plant silhouette SVG
+      : (found ? `<a href="#" onclick="event.preventDefault();state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:${leafColor};font-weight:600;text-decoration:none;font-size:10px">${c.name}</a>` : `<span style="color:${leafColor};font-size:10px">${c.name}</span>`);
     const svg = `<svg width="50" height="${h}" viewBox="0 0 50 ${h}" fill="none">
       <rect x="23" y="${h*0.3}" width="4" height="${h*0.7}" rx="2" fill="${stemColor}" opacity="0.7"/>
       <ellipse cx="25" cy="${h*0.25}" rx="${Math.min(22, 10+h*0.1)}" ry="${Math.min(h*0.3, 30)}" fill="${leafBg}" stroke="${leafColor}" stroke-width="1.5"/>
@@ -538,7 +552,7 @@ function renderCompanionHeight(mainPlant) {
     </svg>`;
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0">
       <div style="height:${chartH}px;display:flex;align-items:flex-end;justify-content:center">${svg}</div>
-      <div style="font-size:9px;color:${isMain?'#4ade80':'var(--gold-light)'};font-weight:700;white-space:nowrap">${c.min}-${c.max}"</div>
+      <div style="font-size:9px;color:${leafColor};font-weight:700;white-space:nowrap">${c.min}-${c.max}"</div>
       <div style="text-align:center;line-height:1.2;overflow:hidden;width:100%">${label}</div>
     </div>`;
   }).join('');
