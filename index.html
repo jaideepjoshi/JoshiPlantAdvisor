@@ -656,9 +656,12 @@ function renderCalendar() {
     `<div class="chip ${m===i+1?'active':''}" onclick="state.currentMonth=${i+1};render()">${MONTHS[i]}</div>`
   ).join("");
   
+  // Only show plants in my garden
+  const myPlants = PLANTS.filter(p => isPlanted(p.id));
+
   // Get tasks for this month
   const tasks = [];
-  PLANTS.forEach(p => {
+  myPlants.forEach(p => {
     const care = p.care||{};
     const task = care[String(m)];
     if (task) tasks.push({plant:p.name, task:task, id:p.id});
@@ -667,10 +670,14 @@ function renderCalendar() {
       tasks.push({plant:p.name, task:`Fertilize: ${p.fertilizer||'as needed'}`, id:p.id});
     }
   });
-  
+
   // Blooming this month
-  const blooming = PLANTS.filter(p=>(p.bloomMonths||[]).includes(m));
+  const blooming = myPlants.filter(p=>(p.bloomMonths||[]).includes(m));
   
+  if (!myPlants.length) return `
+    <div class="filters">${monthPicker}</div>
+    <div class="calendar-view"><div class="empty-state" style="padding:40px 20px;text-align:center;color:var(--text-mid)">Mark plants as "Planted in my garden" to see your personalized calendar here.</div></div>`;
+
   return `
     <div class="filters">${monthPicker}</div>
     <div class="calendar-view">
