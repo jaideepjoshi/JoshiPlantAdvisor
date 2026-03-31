@@ -329,7 +329,7 @@ function parseHeight(h) {
 
 function companionLink(name) {
   const found = findPlantByName(name);
-  if (found) return `<a href="#" onclick="event.preventDefault();state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:var(--green);font-weight:600;text-decoration:none;border-bottom:1px dotted var(--green-accent)">${name}</a>`;
+  if (found) return `<a href="#" onclick="event.preventDefault();state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:#4ade80;font-weight:600;text-decoration:none;border-bottom:1px dotted rgba(74,222,128,.4)">${name}</a>`;
   return `<span style="color:var(--text-mid)">${name}</span>`;
 }
 
@@ -354,7 +354,7 @@ function renderCompanionBloom(mainPlant) {
   const below = compData.slice(Math.ceil(compData.length / 2));
 
   function bloomRow(name, blooms, isMain, plantObj) {
-    const label = isMain ? `<strong style="color:var(--green)">${name}</strong>` : companionLink(name);
+    const label = isMain ? `<strong style="color:var(--gold-light)">${name}</strong>` : companionLink(name);
     const cells = Array.from({length:8}, (_, i) => {
       const m = i + 3;
       const on = blooms.has(m);
