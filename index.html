@@ -83,7 +83,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bloom-bar{display:flex;gap:3px;margin-top:4px}
 .bloom-cell{flex:1;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;letter-spacing:.3px;transition:transform .15s}
 .bloom-on{background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;box-shadow:0 2px 6px rgba(236,72,153,.3)}
-.bloom-off{background:#f1f0ec;color:#a8a29e}
+.bloom-off{background:rgba(255,255,255,.05);color:var(--text-light)}
 .care-month{padding:11px 14px;margin-bottom:6px;border-radius:10px;background:rgba(255,255,255,.04);font-size:13px;display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);line-height:1.55}
 .care-month .mo{font-weight:700;color:var(--gold-light);min-width:34px;font-size:12px;letter-spacing:.5px}
 .tag-list{display:flex;flex-wrap:wrap;gap:6px}
@@ -132,6 +132,7 @@ let state = {
   search: "",
   filter: "all",
   detailId: null,
+  prevPlantId: null,
   tasks: JSON.parse(localStorage.getItem("pt_tasks")||"{}"),
   garden: JSON.parse(localStorage.getItem("pt_garden")||"{}"),
   currentMonth: new Date().getMonth() + 1
@@ -297,7 +298,7 @@ const IC = {
   garden: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>`,
   about: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
   info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>`,
-  bloom: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2a5 5 0 0 0-2.7 9.2A5 5 0 0 0 5 16a5 5 0 0 0 4.3 5A5 5 0 0 0 12 22a5 5 0 0 0 2.7-1A5 5 0 0 0 19 16a5 5 0 0 0-4.3-4.8A5 5 0 0 0 12 2z"/></svg>`,
+  bloom: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22V12"/><path d="M12 12C12 8 9 4.5 5 3c1 4 2.5 7 7 9"/><path d="M12 12c0-4 3-7.5 7-9-1 4-2.5 7-7 9"/><path d="M12 12c-3-2-6-3-9-2 2 3 5 4 9 2"/><path d="M12 12c3-2 6-3 9-2-2 3-5 4-9 2"/></svg>`,
   attract: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>`,
   foliage: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 17 3.5s1 2 .5 6.5c2.5-1 3.5-.5 3.5-.5s-1 3-3.5 4.5c1 2 .5 3 .5 3s-2-.5-3.5-2c-1 2-3 4-3.5 4.5"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 12 13"/></svg>`,
   year: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
@@ -354,14 +355,14 @@ function renderCompanionBloom(mainPlant) {
 
   function bloomRow(name, blooms, isMain, plantObj) {
     const label = isMain ? `<strong style="color:var(--green)">${name}</strong>` : companionLink(name);
-    const cells = Array.from({length:12}, (_, i) => {
-      const m = i + 1;
+    const cells = Array.from({length:8}, (_, i) => {
+      const m = i + 3;
       const on = blooms.has(m);
       const bg = isMain
-        ? (on ? 'background:linear-gradient(135deg,#2d6a4f,#40916c)' : 'background:#f1f0ec')
-        : (on ? 'background:linear-gradient(135deg,#ec4899,#db2777)' : 'background:#f1f0ec');
-      const color = on ? 'color:#fff' : 'color:#a8a29e';
-      return `<div style="flex:1;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;${bg};${color}">${MONTHS[i]}</div>`;
+        ? (on ? 'background:linear-gradient(135deg,#2d6a4f,#40916c)' : 'background:rgba(255,255,255,.05)')
+        : (on ? 'background:linear-gradient(135deg,#ec4899,#db2777)' : 'background:rgba(255,255,255,.05)');
+      const color = on ? 'color:#fff' : 'color:var(--text-light)';
+      return `<div style="flex:1;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;${bg};${color}">${MONTHS[i+2]}</div>`;
     }).join('');
     return `<div style="margin-bottom:6px">
       <div style="font-size:12px;margin-bottom:3px;line-height:1.3">${label}</div>
@@ -391,43 +392,44 @@ function renderCompanionHeight(mainPlant) {
 
   if (!compData.length) return '';
 
-  // Split: left side, main in center, right side
   const left = compData.slice(0, Math.ceil(compData.length / 2));
   const right = compData.slice(Math.ceil(compData.length / 2));
   const allItems = [...left, { name: mainPlant.name, max: mainH.max, min: mainH.min, isMain: true }, ...right];
   const globalMax = Math.max(...allItems.map(c => c.max));
+  const chartH = 140;
 
-  const bars = allItems.map(c => {
-    const pctMax = Math.round((c.max / globalMax) * 100);
-    const pctMin = Math.round((c.min / globalMax) * 100);
+  const plants = allItems.map(c => {
+    const h = Math.max(Math.round((c.max / globalMax) * chartH), 20);
     const isMain = c.isMain;
-    const barGrad = isMain
-      ? 'background:linear-gradient(180deg,#2d6a4f,#40916c)'
-      : 'background:linear-gradient(180deg,#ec4899,#f472b6)';
-    const rangeGrad = isMain
-      ? 'background:rgba(45,106,79,.15)'
-      : 'background:rgba(236,72,153,.1)';
-    const label = isMain ? `<strong style="color:var(--green);font-size:10px">${c.name}</strong>` : `<span style="font-size:10px">${companionLink(c.name)}</span>`;
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0">
-      <div style="position:relative;width:100%;height:120px;display:flex;align-items:flex-end;justify-content:center">
-        <div style="position:absolute;bottom:0;width:80%;height:${pctMax}%;${rangeGrad};border-radius:6px 6px 0 0"></div>
-        <div style="position:relative;width:50%;height:${pctMin}%;min-height:4px;${barGrad};border-radius:4px 4px 0 0;z-index:1"></div>
-      </div>
-      <div style="font-size:9px;color:var(--text-light);font-weight:600;white-space:nowrap">${c.min}-${c.max}"</div>
+    const stemColor = isMain ? '#d4a017' : '#22804a';
+    const leafColor = isMain ? '#f5c842' : '#4ade80';
+    const leafBg = isMain ? 'rgba(212,160,23,.15)' : 'rgba(74,222,128,.1)';
+    const label = isMain
+      ? `<strong style="color:var(--gold-light);font-size:10px">${c.name}</strong>`
+      : `<span style="font-size:10px">${companionLink(c.name)}</span>`;
+    // Plant silhouette SVG
+    const svg = `<svg width="50" height="${h}" viewBox="0 0 50 ${h}" fill="none">
+      <rect x="23" y="${h*0.3}" width="4" height="${h*0.7}" rx="2" fill="${stemColor}" opacity="0.7"/>
+      <ellipse cx="25" cy="${h*0.25}" rx="${Math.min(22, 10+h*0.1)}" ry="${Math.min(h*0.3, 30)}" fill="${leafBg}" stroke="${leafColor}" stroke-width="1.5"/>
+      <ellipse cx="25" cy="${h*0.2}" rx="${Math.min(14, 6+h*0.06)}" ry="${Math.min(h*0.18, 18)}" fill="${leafBg}" stroke="${stemColor}" stroke-width="1" opacity="0.5"/>
+    </svg>`;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0">
+      <div style="height:${chartH}px;display:flex;align-items:flex-end;justify-content:center">${svg}</div>
+      <div style="font-size:9px;color:${isMain?'var(--gold-light)':'var(--text-light)'};font-weight:700;white-space:nowrap">${c.min}-${c.max}"</div>
       <div style="text-align:center;line-height:1.2;overflow:hidden;width:100%">${label}</div>
     </div>`;
   }).join('');
 
-  return `<div style="display:flex;gap:6px;align-items:flex-end;margin-top:10px;padding:12px 4px 0;border-top:1px solid var(--border)">${bars}</div>`;
+  return `<div style="display:flex;gap:4px;align-items:flex-end;margin-top:10px;padding:12px 4px 0;border-top:1px solid var(--border);background:linear-gradient(180deg,transparent 0%,rgba(74,222,128,.03) 100%);border-radius:0 0 12px 12px">${plants}</div>`;
 }
 
 function renderDetail() {
   const p = PLANTS.find(x=>x.id===state.detailId);
   if (!p) return '';
   const img = IMAGES[String(p.id)];
-  const bloomBar = Array.from({length:12},(_,i)=>{
-    const on = (p.bloomMonths||[]).includes(i+1);
-    return `<div class="bloom-cell ${on?'bloom-on':'bloom-off'}">${MONTHS[i]}</div>`;
+  const bloomBar = Array.from({length:8},(_,i)=>{
+    const on = (p.bloomMonths||[]).includes(i+3);
+    return `<div class="bloom-cell ${on?'bloom-on':'bloom-off'}">${MONTHS[i+2]}</div>`;
   }).join("");
   
   const careHtml = Object.entries(p.care||{}).sort((a,b)=>Number(a[0])-Number(b[0])).map(([m,t])=>
@@ -517,16 +519,25 @@ function renderDetail() {
 
   // Companions (big section, open)
   if (p.companions&&p.companions.length) {
-    const compPills = p.companions.map(c=>{
+    const compCards = p.companions.map(c=>{
       const found = findPlantByName(c);
-      return found
-        ? `<a href="#" onclick="event.preventDefault();state.detailId=${found.id};render();window.scrollTo(0,0)" class="tag-pill" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1e40af;border:1px solid #bfdbfe;text-decoration:none;cursor:pointer">${c}</a>`
-        : `<span class="tag-pill" style="background:linear-gradient(135deg,#f5f5f4,#e7e5e4);color:var(--text-mid);border:1px solid #d6d3d1">${c}</span>`;
+      if (!found) return `<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:12px;color:var(--text-mid)">${c}</div>`;
+      const imgUrl = localStorage.getItem('pimg_' + found.id);
+      const thumb = imgUrl
+        ? `<img src="${imgUrl}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0">`
+        : `<div style="width:40px;height:40px;border-radius:8px;background:rgba(74,222,128,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">🌱</div>`;
+      return `<a href="#" onclick="event.preventDefault();state.prevPlantId=${p.id};state.detailId=${found.id};render();window.scrollTo(0,0)" style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--border);text-decoration:none;color:var(--text);transition:border-color .2s,background .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(74,222,128,.3)';this.style.background='rgba(74,222,128,.05)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='rgba(255,255,255,.04)'">
+        ${thumb}
+        <div style="min-width:0">
+          <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${found.name}</div>
+          <div style="font-size:10px;color:var(--text-light);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${found.botanical||''}</div>
+        </div>
+      </a>`;
     }).join("");
-    const compContent = `<div class="tag-list" style="margin-bottom:14px">${compPills}</div>
-      <div style="font-size:11px;font-weight:700;color:var(--green-light);text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px">Bloom Timeline</div>
+    const compContent = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${compCards}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px">Bloom Timeline</div>
       ${renderCompanionBloom(p)}
-      ${renderCompanionHeight(p) ? `<div style="font-size:11px;font-weight:700;color:var(--green-light);text-transform:uppercase;letter-spacing:1px;margin:18px 0 6px">Height Comparison</div>${renderCompanionHeight(p)}` : ''}`;
+      ${renderCompanionHeight(p) ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:18px 0 6px">Height Comparison</div>${renderCompanionHeight(p)}` : ''}`;
     sections.push(S(IC.companion, 'rgba(96,165,250,.1)', '#93c5fd', '#60a5fa', 'Companions', compContent, true));
   }
 
@@ -566,7 +577,7 @@ function renderDetail() {
       <div class="detail-hero">
         ${heroImg ? `<img src="${heroImg}" alt="${p.name}">` : heroPlaceholder}
         <div class="hero-overlay">
-          <div class="hero-back" onclick="state.detailId=null;render()">
+          <div class="hero-back" onclick="if(state.prevPlantId){state.detailId=state.prevPlantId;state.prevPlantId=null;render();window.scrollTo(0,0)}else{state.detailId=null;state.prevPlantId=null;render()}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </div>
           <h2>${p.name}</h2>
