@@ -508,10 +508,10 @@ function renderCompanionBloom(mainPlant) {
       } else {
         bg = on ? `background:linear-gradient(135deg,${cc.dark},${cc.light})` : 'background:rgba(255,255,255,.05)';
       }
-      return `<div style="width:32px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;flex-shrink:0;${bg};${on?'color:#fff':'color:var(--text-light)'}">${MONTHS[i+2]}</div>`;
+      return `<div style="width:64px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;${bg};${on?'color:#fff':'color:var(--text-light)'}">${MONTHS[i+2]}</div>`;
     }).join('');
-    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-      <div style="width:140px;flex-shrink:0;font-size:10px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}${suffix}</div>
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <div style="flex-shrink:0;font-size:10px;line-height:1.2;white-space:nowrap">${label}${suffix}</div>
       <div style="display:flex;gap:2px">${cells}</div>
     </div>`;
   }
