@@ -510,56 +510,176 @@ function getFiltered() {
   });
 }
 
+// ── Image Cache System ──
+// Firebase stores permanent base64 thumbnails under /imageCache/{plantId}
+// localStorage stores them too for offline/instant access
+// Pixabay API only called when an image doesn't exist in either cache
+
+let _imgCache = {}; // in-memory cache: { plantId: base64DataUrl }
+let _imgCacheReady = false;
+
+// Load image cache from Firebase on startup
+if (_fbReady) {
+  _fbDb.ref('imageCache').once('value', snap => {
+    const data = snap.val();
+    if (data) {
+      _imgCache = data;
+      // Also populate localStorage for offline access
+      Object.keys(data).forEach(id => {
+        if (!localStorage.getItem('pimg_' + id)) {
+          localStorage.setItem('pimg_' + id, data[id]);
+        }
+      });
+    }
+    // Also pull any localStorage entries not yet in Firebase
+    Object.keys(localStorage).filter(k => k.startsWith('pimg_')).forEach(k => {
+      const id = k.replace('pimg_', '');
+      const val = localStorage.getItem(k);
+      if (val && val.startsWith('data:') && !_imgCache[id]) {
+        _imgCache[id] = val;
+      }
+    });
+    _imgCacheReady = true;
+    render();
+    // Start fetching any missing images
+    setTimeout(fetchAllImages, 1000);
+  });
+} else {
+  _imgCacheReady = true;
+  setTimeout(fetchAllImages, 1000);
+}
+
+function getCachedImage(plantId) {
+  const key = String(plantId);
+  return _imgCache[key] || localStorage.getItem('pimg_' + key) || null;
+}
+
+function saveCachedImage(plantId, base64) {
+  const key = String(plantId);
+  _imgCache[key] = base64;
+  localStorage.setItem('pimg_' + key, base64);
+  // Write to Firebase individually (not the whole cache at once)
+  if (_fbReady) {
+    _fbDb.ref('imageCache/' + key).set(base64).catch(e => console.warn('Firebase img cache write failed:', e));
+  }
+}
+
 function plantImage(p) {
   const photos = getPhotos(p.id);
   if (photos.length) return `<img src="${photos[0]}" alt="${p.name}" loading="lazy">`;
-  const cached = localStorage.getItem('pimg_' + p.id);
-  if (cached) return `<img src="${cached}" alt="${p.name}" loading="lazy">`;
+  const cached = getCachedImage(p.id);
+  if (cached && cached.startsWith('data:')) return `<img src="${cached}" alt="${p.name}" loading="lazy">`;
+  // Stale Pixabay URL in localStorage — clear it
+  if (cached) localStorage.removeItem('pimg_' + p.id);
   const colors = ["#0f2b1d","#1a1525","#101d2e","#1f1a0f","#161225","#0f1f1c","#1f160f","#151f0f"];
   const c = colors[p.id % colors.length];
   const init = p.name.split(/[\s(]+/).filter(w=>w.length>1).slice(0,2).map(w=>w[0]).join("");
-  fetchPixabayImage(p);
   return `<div class="placeholder" id="img-${p.id}" style="background:${c}"><span>🌱</span><span style="font-size:12px;color:#64748b">${init}</span></div>`;
 }
 
+// Convert an image URL to a compressed base64 data URL
+function urlToBase64(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const MAX = 300;
+      let w = img.width, h = img.height;
+      if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+      else { w = Math.round(w * MAX / h); h = MAX; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.6));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 const _pixQ = new Set();
+let _pixThrottled = false;
+
 async function fetchPixabayImage(p) {
-  if (_pixQ.has(p.id)) return;
+  if (_pixQ.has(p.id) || _pixThrottled) return;
   _pixQ.add(p.id);
-  // Skip API call if already cached in localStorage or user has custom photo
-  if (getPhotos(p.id).length > 0 || localStorage.getItem('pimg_' + p.id)) return;
+  if (getPhotos(p.id).length > 0) return;
+  const existing = getCachedImage(p.id);
+  if (existing && existing.startsWith('data:')) return;
   try {
     const bot = (p.botanical || '').split(' spp.')[0].split("'")[0].split('/')[0].replace(/\(.*?\)/g,'').trim();
-    const queries = [
-      bot ? bot + ' flower' : p.name + ' flower',
-      p.name.replace(/\s*[-–(].*$/, '') + ' flower plant',
-      p.name.split(/[\s-]+/).slice(0,2).join(' ') + ' garden plant'
-    ];
-    let url = null;
-    for (let i = 0; i < queries.length && !url; i++) {
-      const q = encodeURIComponent(queries[i]);
-      const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${q}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`);
-      const data = await res.json();
-      if (data.hits && data.hits.length > 0) url = data.hits[0].webformatURL;
+    const q = encodeURIComponent(bot ? bot + ' flower' : p.name + ' flower');
+    const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${q}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`);
+    if (res.status === 429 || !res.ok) {
+      _pixThrottled = true; _pixQ.delete(p.id);
+      console.warn('Pixabay throttled, retrying in 60s');
+      setTimeout(() => { _pixThrottled = false; fetchAllImages(); }, 60000);
+      return;
+    }
+    const data = await res.json();
+    if (data.detail && data.detail.includes('throttled')) {
+      _pixThrottled = true; _pixQ.delete(p.id);
+      setTimeout(() => { _pixThrottled = false; fetchAllImages(); }, 60000);
+      return;
+    }
+    let url = (data.hits && data.hits.length > 0) ? data.hits[0].webformatURL : null;
+    if (!url) {
+      const q2 = encodeURIComponent(p.name.replace(/\s*[-–(].*$/, '') + ' flower plant');
+      const res2 = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${q2}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`);
+      if (res2.ok) {
+        const d2 = await res2.json();
+        if (d2.hits && d2.hits.length > 0) url = d2.hits[0].webformatURL;
+      }
     }
     if (url) {
-      localStorage.setItem('pimg_' + p.id, url);
-      const el = document.getElementById('img-' + p.id);
-      if (el) el.outerHTML = `<img src="${url}" alt="${p.name}" loading="lazy">`;
-      const hero = document.querySelector('.detail-hero img');
-      if (hero && state.detailId === p.id) hero.src = url;
+      try {
+        // Convert to permanent base64 and store in Firebase + localStorage
+        const base64 = await urlToBase64(url);
+        saveCachedImage(p.id, base64);
+        const el = document.getElementById('img-' + p.id);
+        if (el) el.outerHTML = `<img src="${base64}" alt="${p.name}" loading="lazy">`;
+        const hero = document.querySelector('.detail-hero img');
+        if (hero && state.detailId === p.id) hero.src = base64;
+      } catch(imgErr) {
+        // CORS blocked — fall back to storing the URL directly
+        saveCachedImage(p.id, url);
+        const el = document.getElementById('img-' + p.id);
+        if (el) el.outerHTML = `<img src="${url}" alt="${p.name}" loading="lazy">`;
+      }
     }
   } catch(e) { console.log('Pixabay fetch failed for', p.name, e); }
 }
 
-// Batch fetch all visible plant images on load
-function fetchAllImages() {
-  const visible = getFiltered().slice(0, 20);
-  visible.forEach((p, i) => setTimeout(() => fetchPixabayImage(p), i * 200));
-  // Fetch rest in background
-  PLANTS.forEach((p, i) => setTimeout(() => fetchPixabayImage(p), 4000 + i * 300));
+// Wave-based loading: visible first, batches of 20 with pauses
+let _waveRunning = false;
+async function fetchAllImages() {
+  if (_pixThrottled || _waveRunning) return;
+  _waveRunning = true;
+  const uncached = PLANTS.filter(p => {
+    if (getPhotos(p.id).length > 0) return false;
+    const c = getCachedImage(p.id);
+    if (c && c.startsWith('data:')) return false;
+    return !_pixQ.has(p.id);
+  });
+  if (!uncached.length) { _waveRunning = false; return; }
+  const visibleIds = new Set(getFiltered().slice(0, 20).map(p => p.id));
+  uncached.sort((a, b) => (visibleIds.has(b.id) ? 1 : 0) - (visibleIds.has(a.id) ? 1 : 0));
+  const WAVE_SIZE = 20, DELAY = 1200, WAVE_PAUSE = 10000;
+  for (let w = 0; w < uncached.length; w += WAVE_SIZE) {
+    if (_pixThrottled) break;
+    const wave = uncached.slice(w, w + WAVE_SIZE);
+    for (let i = 0; i < wave.length; i++) {
+      if (_pixThrottled) break;
+      await new Promise(r => setTimeout(r, DELAY));
+      await fetchPixabayImage(wave[i]);
+    }
+    if (w + WAVE_SIZE < uncached.length && !_pixThrottled) {
+      await new Promise(r => setTimeout(r, WAVE_PAUSE));
+    }
+  }
+  _waveRunning = false;
 }
-setTimeout(fetchAllImages, 500);
+setTimeout(fetchAllImages, 1000);
 
 function sunBadge(p) {
   if (p.sun === "Part Sun to Full Sun") return '<span class="badge badge-sun">☀️ Part Sun–Full Sun</span>';
