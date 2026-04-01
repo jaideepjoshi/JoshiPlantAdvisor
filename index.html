@@ -753,13 +753,13 @@ function renderPlants() {
   const sunCounts = {sun:0,part:0,shade:0};
   plantedAll.forEach(p => { if(p.sun==="Part Sun to Full Sun") sunCounts.sun++; else if(p.sun==="Part Shade to Part Sun") sunCounts.part++; else sunCounts.shade++; });
   const statsHtml = state.filter==="planted" && plantedAll.length > 0 ? `<div style="display:flex;gap:8px;padding:8px 16px;overflow-x:auto;white-space:nowrap">
-    <div style="flex:0 0 auto;padding:10px 14px;border-radius:12px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.15)">
+    <div onclick="state.filter='planted';render()" style="flex:0 0 auto;padding:10px 14px;border-radius:12px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.15);cursor:pointer">
       <div style="font-size:20px;font-weight:700;color:#4ade80">${plantedAll.length}</div><div style="font-size:10px;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Planted</div></div>
-    <div style="flex:0 0 auto;padding:10px 14px;border-radius:12px;background:rgba(244,114,182,.08);border:1px solid rgba(244,114,182,.15)">
+    <div onclick="state.filter='blooming';render()" style="flex:0 0 auto;padding:10px 14px;border-radius:12px;background:rgba(244,114,182,.08);border:1px solid rgba(244,114,182,.15);cursor:pointer">
       <div style="font-size:20px;font-weight:700;color:#f472b6">${bloomingNow.length}</div><div style="font-size:10px;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Blooming</div></div>
-    <div style="flex:0 0 auto;padding:10px 14px;border-radius:12px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.15)">
+    <div onclick="state.filter='wishlist';render()" style="flex:0 0 auto;padding:10px 14px;border-radius:12px;background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.15);cursor:pointer">
       <div style="font-size:20px;font-weight:700;color:#fb923c">${wishAll.length}</div><div style="font-size:10px;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Wishlist</div></div>
-    <div style="flex:0 0 auto;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--border)">
+    <div onclick="state.filter='sun';render()" style="flex:0 0 auto;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--border);cursor:pointer">
       <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.5">☀️${sunCounts.sun} ⛅${sunCounts.part} 🌥️${sunCounts.shade}</div><div style="font-size:10px;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px">Sun Mix</div></div>
   </div>` : '';
   return `
