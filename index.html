@@ -776,7 +776,7 @@ function renderPlants() {
             ${sunBadge(p)}
             ${p.bloomMonths&&p.bloomMonths.length?'<span class="badge badge-bloom">'+p.bloomMonths.map(m=>MONTHS[m-1]).join("-")+'</span>':''}
             ${p.deerResistant?'<span class="badge badge-deer">🦌</span>':''}
-            ${isPlanted(p.id)?'<span class="badge" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25)">✓ Mine</span>':''}
+            ${isPlanted(p.id)?'<span class="badge" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25)">✓ In My Garden</span>':''}
             ${isWishlisted(p.id)?'<span class="badge" style="background:rgba(251,146,60,.1);color:#fb923c;border:1px solid rgba(251,146,60,.25)">★ Want</span>':''}
             ${p.provenWinners?'<span class="badge" style="background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.15)">★ PW</span>':''}
           </div>
@@ -1277,7 +1277,7 @@ function searchUpdate() {
               ${sunBadge(p)}
               ${p.bloomMonths&&p.bloomMonths.length?'<span class="badge badge-bloom">'+p.bloomMonths.map(m=>MONTHS[m-1]).join("-")+'</span>':''}
               ${p.deerResistant?'<span class="badge badge-deer">🦌</span>':''}
-              ${isPlanted(p.id)?'<span class="badge" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25)">✓ Mine</span>':''}
+              ${isPlanted(p.id)?'<span class="badge" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25)">✓ In My Garden</span>':''}
             ${isWishlisted(p.id)?'<span class="badge" style="background:rgba(251,146,60,.1);color:#fb923c;border:1px solid rgba(251,146,60,.25)">★ Want</span>':''}
             ${p.provenWinners?'<span class="badge" style="background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.15)">★ PW</span>':''}
             </div>
