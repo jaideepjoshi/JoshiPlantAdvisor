@@ -433,9 +433,10 @@ function getEntries(id) {
   const g = state.garden[id];
   if (!g) return [];
   if (g.entries && g.entries.length) return g.entries;
-  // Migrate old single "name" field to entries
+  // Migrate old single "name" field to entries — persist immediately
   if (g.name) {
-    return g.name.split(',').map(n => ({ cultivar: n.trim(), source: '' })).filter(e => e.cultivar);
+    g.entries = g.name.split(',').map(n => ({ cultivar: n.trim(), source: '' })).filter(e => e.cultivar);
+    return g.entries;
   }
   return [];
 }
