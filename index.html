@@ -526,6 +526,8 @@ function isWishlisted(id) {
   return g && g.wishlist;
 }
 
+const POLLINATOR_IDS = new Set([1,2,5,6,11,19,20,28,30,46,59,73,79,81,87,89,114,115,129,134,187,188,214,215,216,217,218,219]);
+
 function getFiltered() {
   let list = PLANTS;
   if (state.search) {
@@ -546,6 +548,7 @@ function getFiltered() {
   else if (state.filter === "monrovia") list = list.filter(p => p.monrovia);
   else if (state.filter === "fe") list = list.filter(p => p.firstEditions);
   else if (state.filter === "rebloom") list = list.filter(p => p.reblooming);
+  else if (state.filter === "pollinator") list = list.filter(p => POLLINATOR_IDS.has(p.id));
   else if (state.filter.startsWith("color:")) { const c = state.filter.split(":")[1]; list = list.filter(p => p.bloomColor === c); }
   const sunOrder = {"Part Sun to Full Sun":0, "Part Shade to Part Sun":1, "Shade to Part Shade":2};
   return list.sort((a,b) => {
@@ -739,7 +742,7 @@ function renderPlants() {
     ["deepshade","Shade to Part Shade"],["shade","Part Shade to Part Sun"],["sun","Part Sun to Full Sun"],
     ["rebloom","Reblooming"],["wishlist","Wishlist"],
     ["deer","Deer Resist"],["rabbit","Rabbit Resist"],["drought","Drought Tolerant"],
-    ["native","Native OH"],["pw","Proven Winners"],["monrovia","Monrovia"],["fe","First Editions"]
+    ["native","Native OH"],["pollinator","🦋 Pollinator Garden"],["pw","Proven Winners"],["monrovia","Monrovia"],["fe","First Editions"]
   ];
   const colorFilters = [
     ["color:purple","Purple","#a855f7"],["color:pink","Pink","#ec4899"],["color:blue","Blue","#3b82f6"],
@@ -776,6 +779,8 @@ function renderPlants() {
             ${sunBadge(p)}
             ${p.bloomMonths&&p.bloomMonths.length?'<span class="badge badge-bloom">'+p.bloomMonths.map(m=>MONTHS[m-1]).join("-")+'</span>':''}
             ${p.deerResistant?'<span class="badge badge-deer">🦌</span>':''}
+            ${p.droughtTolerant&&state.filter==='pollinator'?'<span class="badge" style="background:rgba(234,179,8,.1);color:#eab308;border:1px solid rgba(234,179,8,.25)">☀️ Prefers Dry</span>':''}
+            ${!p.droughtTolerant&&state.filter==='pollinator'?'<span class="badge" style="background:rgba(56,189,248,.1);color:#38bdf8;border:1px solid rgba(56,189,248,.25)">💧 Prefers Moist</span>':''}
             ${isPlanted(p.id)?'<span class="badge" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25)">✓ In My Garden</span>':''}
             ${isWishlisted(p.id)?'<span class="badge" style="background:rgba(251,146,60,.1);color:#fb923c;border:1px solid rgba(251,146,60,.25)">★ Want</span>':''}
             ${p.provenWinners?'<span class="badge" style="background:rgba(255,255,255,.08);color:#e2e8f0;border:1px solid rgba(255,255,255,.15)">★ PW</span>':''}
