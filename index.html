@@ -531,6 +531,8 @@ const HOTDRY_IDS = new Set([1,2,6,8,11,16,24,28,30,34,51,56,79,87,89,106,114,115
 const MOIST_SUN_IDS = new Set([64,74,85,128,153,182,210,214]);
 const MOIST_SHADE_IDS = new Set([9,39,46,57,146,185,207]);
 const MOIST_PART_IDS = new Set([3,5,23,25,35,72,122,124,131,159,166,189,193,195,206]);
+const RAINGARDEN_IDS = new Set([9,25,35,39,46,57,61,64,72,80,85,131,146,153,207,210,214,124]);
+const WOODLAND_IDS = new Set([3,5,9,19,21,25,26,27,38,55,59,69,92,96,97,99,100,103,104,107,117,118,121,122,123,124,125,131,138,139,144,145,146,158,179,185,206,109]);
 
 function getFiltered() {
   let list = PLANTS;
@@ -557,6 +559,8 @@ function getFiltered() {
   else if (state.filter === "moistsun") list = list.filter(p => MOIST_SUN_IDS.has(p.id));
   else if (state.filter === "moistshade") list = list.filter(p => MOIST_SHADE_IDS.has(p.id));
   else if (state.filter === "moistpart") list = list.filter(p => MOIST_PART_IDS.has(p.id));
+  else if (state.filter === "raingarden") list = list.filter(p => RAINGARDEN_IDS.has(p.id));
+  else if (state.filter === "woodland") list = list.filter(p => WOODLAND_IDS.has(p.id));
   else if (state.filter.startsWith("color:")) { const c = state.filter.split(":")[1]; list = list.filter(p => p.bloomColor === c); }
   const sunOrder = {"Part Sun to Full Sun":0, "Part Shade to Part Sun":1, "Shade to Part Shade":2};
   return list.sort((a,b) => {
@@ -752,6 +756,7 @@ function renderPlants() {
     ["deer","Deer Resist"],["rabbit","Rabbit Resist"],["drought","Drought Tolerant"],
     ["native","Native OH"],["pollinator","🦋 Pollinator Garden"],["hotdry","☀️ Full Sun Hot Dry"],
     ["moistsun","💧☀️ Sun + Moist"],["moistpart","💧⛅ Part Sun + Moist"],["moistshade","💧🌥️ Shade + Moist"],
+    ["raingarden","🌧️ Rain Garden"],["woodland","🌲 Woodland Shade"],
     ["pw","Proven Winners"],["monrovia","Monrovia"],["fe","First Editions"]
   ];
   const colorFilters = [
