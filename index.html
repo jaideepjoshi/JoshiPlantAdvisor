@@ -528,6 +528,9 @@ function isWishlisted(id) {
 
 const POLLINATOR_IDS = new Set([1,2,5,6,11,19,20,28,30,46,59,73,79,81,87,89,114,115,129,134,187,188,214,215,216,217,218,219]);
 const HOTDRY_IDS = new Set([1,2,6,8,11,16,24,28,30,34,51,56,79,87,89,106,114,115,129,134,143,147,187,188,205,220,221]);
+const MOIST_SUN_IDS = new Set([64,74,85,128,153,182,210,214]);
+const MOIST_SHADE_IDS = new Set([9,39,46,57,146,185,207]);
+const MOIST_PART_IDS = new Set([3,5,23,25,35,72,122,124,131,159,166,189,193,195,206]);
 
 function getFiltered() {
   let list = PLANTS;
@@ -551,6 +554,9 @@ function getFiltered() {
   else if (state.filter === "rebloom") list = list.filter(p => p.reblooming);
   else if (state.filter === "pollinator") list = list.filter(p => POLLINATOR_IDS.has(p.id));
   else if (state.filter === "hotdry") list = list.filter(p => HOTDRY_IDS.has(p.id));
+  else if (state.filter === "moistsun") list = list.filter(p => MOIST_SUN_IDS.has(p.id));
+  else if (state.filter === "moistshade") list = list.filter(p => MOIST_SHADE_IDS.has(p.id));
+  else if (state.filter === "moistpart") list = list.filter(p => MOIST_PART_IDS.has(p.id));
   else if (state.filter.startsWith("color:")) { const c = state.filter.split(":")[1]; list = list.filter(p => p.bloomColor === c); }
   const sunOrder = {"Part Sun to Full Sun":0, "Part Shade to Part Sun":1, "Shade to Part Shade":2};
   return list.sort((a,b) => {
@@ -744,7 +750,9 @@ function renderPlants() {
     ["deepshade","Shade to Part Shade"],["shade","Part Shade to Part Sun"],["sun","Part Sun to Full Sun"],
     ["rebloom","Reblooming"],["wishlist","Wishlist"],
     ["deer","Deer Resist"],["rabbit","Rabbit Resist"],["drought","Drought Tolerant"],
-    ["native","Native OH"],["pollinator","🦋 Pollinator Garden"],["hotdry","☀️ Full Sun Hot Dry"],["pw","Proven Winners"],["monrovia","Monrovia"],["fe","First Editions"]
+    ["native","Native OH"],["pollinator","🦋 Pollinator Garden"],["hotdry","☀️ Full Sun Hot Dry"],
+    ["moistsun","💧☀️ Sun + Moist"],["moistpart","💧⛅ Part Sun + Moist"],["moistshade","💧🌥️ Shade + Moist"],
+    ["pw","Proven Winners"],["monrovia","Monrovia"],["fe","First Editions"]
   ];
   const colorFilters = [
     ["color:purple","Purple","#a855f7"],["color:pink","Pink","#ec4899"],["color:blue","Blue","#3b82f6"],
