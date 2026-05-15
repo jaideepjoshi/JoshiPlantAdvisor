@@ -3105,6 +3105,44 @@ const PLANTS = [
     whereToBuy: "Home Depot; bulb suppliers; Monrovia", whenAvailable: "Fall bulb planting; potted in spring",
     clevelandLightNote: "Full sun to light shade; heads in sun, roots in shade."
   },
+  {
+    id: 156, name: "Euphorbia (Cushion Spurge)", botanical: "Euphorbia polychroma",
+    type: "Perennial Flower", height: "12-18 in", width: "12-18 in",
+    bloomMonths: [3,4,5], sun: "Full Sun", partialShade: true,
+    deerResistant: true, rabbitResistant: true, droughtTolerant: true,
+    waterReq: "Low", ph: "5.5-7.5", reblooming: false,
+    rebloomNote: "Single spring bloom lasting 6-8 weeks; bracts persist longer than flowers",
+    attracts: ["Bees","Early Pollinators"], nativeOhio: false,
+    gardenStyles: ["Rock Garden","Border","Mediterranean","Contemporary","Cottage"],
+    companions: ["Sedum Coral Carpet","Festuca Elijah Blue","Lavender","Russian Sage","Catmint"],
+    yearRound: "Excellent year-round structure. Spring: bright sulfur-yellow bracts. Summer: foliage turns deep burgundy-red. Fall: transitions to showy red, orange, or purple tones. Winter: dried stems provide architectural interest; semi-persistent foliage adds winter structure",
+    foliageInterest: "Attractive dome-shaped mounding habit with fine-textured blue-green foliage. Spring bracts are actually colorful modified leaves (bracts), not true flowers. Medium green leaves transition through burgundy to red-purple in summer heat, then shift to brilliant autumn reds, oranges, and purples as temperatures cool. Compact, cushion-like form stays neat without leggy appearance",
+    cultivars: ["Bonfire (10 in, burgundy leaves, golden bracts) [Walters Gardens]","Candy/Purpurea (12-18 in, purple stems, pale yellow bracts)","Emerald Jade (12 in, bright green bracts, outstanding fall color)","First Blush (compact, early bloomer, smallest cultivar)","Polychroma (classic species, 12-18 in tall and wide)"],
+    fertilizer: "Light to minimal; avoid over-fertilizing. Light balanced 10-10-10 if needed", fertMonth: [3],
+    care: {3:"Apply light balanced fertilizer if soil is poor; divide established clumps if desired",4:"Cut back spent flowers to 4 inches to keep compact and prevent splitting in center; encourage bushier growth",5:"Water if spring is particularly dry; plant settles in; allow to establish",6:"Minimal care; water during extreme drought",7:"Water during hot, dry periods; plant fully mature",8:"Continue watering during heat; foliage may show burgundy tones",9:"Foliage transitions to red-orange-purple tones; no deadheading needed; enjoy seasonal color changes",10:"Fall color peaks; minimal maintenance",11:"Plant becomes dormant; no winter care needed; stems may be left standing for winter interest or cut back"},
+    video: "https://www.youtube.com/results?search_query=euphorbia+polychroma+cushion+spurge+care+zone+6",
+    description: "One of the best perennials for spring color and year-round interest. This European native produces stunning golden-yellow flower bracts in spring, followed by dramatic burgundy-red foliage in summer and brilliant fall colors. Thrives in poor, well-drained soil and requires minimal water once established.",
+    planted: [], clevelandCultivars: ["Bonfire", "Emerald Jade", "Candy"], whereToBuy: "Proven Winners; Walters Gardens; Bluestone Perennials", whenAvailable: "Apr-Jun (spring color best viewed in April-May)", clevelandLightNote: "Full sun preferred; part shade acceptable but may cause leggier growth and reduce color intensity in Zone 6"
+  },
+  {
+    id: 157, name: "Common Milkweed", botanical: "Asclepias syriaca",
+    type: "Perennial Flower", height: "36-60 in", width: "12-24 in",
+    bloomMonths: [6,7,8], sun: "Full Sun", partialShade: false,
+    deerResistant: true, rabbitResistant: true, droughtTolerant: true,
+    waterReq: "Medium", ph: "5.8-7.2", reblooming: false,
+    rebloomNote: "Single long bloom period June-August; flowers develop into ornamental warty seed pods in late summer through fall",
+    attracts: ["Monarch Butterflies","Bees","Hummingbirds","Beneficial Insects","Pollinators (450+ species)"], nativeOhio: true,
+    gardenStyles: ["Meadow","Prairie","Native Plant","Pollinator Garden","Naturalized","Butterfly Garden"],
+    companions: ["Black-eyed Susan","Echinacea","Purple Coneflower","Bee Balm","Switchgrass"],
+    yearRound: "Essential native for year-round habitat value. Spring: sturdy upright stems emerge from rhizomes. Summer: lush green foliage with fragrant domed flower clusters attract monarch larvae. Fall: distinctive warty seed pods develop, opening to release silky-winged seeds. Winter: persistent seed pods and dried stems provide architectural interest and seed source for wildlife; plants die back but rhizomes survive cold winters",
+    foliageInterest: "Thick, glossy, simple opposite leaves create lush appearance even in peak summer heat. Foliage is broadly ovate-lanceolate, 4-5 inches long, with prominent reddish veins that add texture. Tall, sturdy, upright growth habit (3-5 feet) provides vertical accent. Fine texture adds visual interest. Foliage remains attractive through summer; after frost, stems can be left standing for winter habitat and seed dispersal",
+    cultivars: ["Asclepias syriaca species (standard form, most common)","Asclepias syriaca f. inermis (form with non-warty seed pods, rarer)"],
+    fertilizer: "Not needed; tolerates poor soil. Optional light compost application in spring to promote vigor", fertMonth: [],
+    care: {3:"Optional: lightly cut back previous year's stems if not done in fall; apply compost if soil is poor; divide rhizomes for propagation if desired",4:"New stems emerge vigorously; water if spring is dry; mulch lightly to retain moisture",5:"Rapid growth period; stems reach 2-3 feet by late May; water regularly during establishment year",6:"Fragrant domed flower clusters bloom; bees and other pollinators visit heavily; water during dry spells",7:"Blooming continues; foliage lush and green; butterfly larvae actively feed on leaves (expect some leaf damage — this is natural and beneficial); water regularly",8:"Late blooms develop; flower heads transition to developing seed pods; watch for monarch caterpillars; water less as plants are now drought-tolerant",9:"Seed pods develop warty texture; watch for pods opening to reveal silky seeds; reduce watering; allow seed pods to mature",10:"Seed pods fully mature and begin opening; allow seeds to disperse naturally for self-seeding; enjoy architectural seed pod interest; drought-tolerant now, minimal water needed",11:"Cut back old stems if desired for tidiness, or leave standing through winter for seeds, overwintering insects, and winter structure"},
+    video: "https://www.youtube.com/results?search_query=asclepias+syriaca+common+milkweed+monarch+butterfly+care",
+    description: "The essential native plant for monarch butterfly gardens. Common milkweed provides larval host plant food for monarch caterpillars and nectar for adult butterflies and 450+ other insect species. This Ohio native creates vertical interest in meadows and prairies with fragrant pink-lavender flower clusters, followed by distinctive warty seed pods. Extremely vigorous and can spread — best in naturalized areas rather than formal gardens.",
+    planted: [], clevelandCultivars: ["Asclepias syriaca (species)"], whereToBuy: "Prairie Moon Nursery; American Meadows; Prairie Nursery; native plant suppliers", whenAvailable: "Jun-Aug (blooms peak); seed pods Aug-Oct", clevelandLightNote: "Full sun required for best flowering; at least 6-8 hours direct sunlight daily"
+  },
 ];
 
 // ─── MONTHS & HELPERS ────────────────────────────────────────────────────────

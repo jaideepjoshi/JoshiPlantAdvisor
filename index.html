@@ -143,6 +143,36 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .nav-item svg{width:24px;height:24px;margin:0 auto 3px;display:block}
 .nav-item span{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
 .count-badge{background:var(--green);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:4px}
+
+/* ===== FLOWER BED DESIGNER ===== */
+.beds-container{padding:16px;padding-bottom:200px}
+.beds-toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.beds-toolbar button{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.beds-toolbar button.active{background:var(--green-light);color:#fff;border-color:var(--green-light)}
+.beds-toolbar button:hover{border-color:var(--green-light)}
+.beds-toolbar select{padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;cursor:pointer}
+.bed-canvas-wrap{position:relative;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;touch-action:none;margin-bottom:12px}
+.bed-canvas-wrap canvas{display:block;width:100%;cursor:crosshair}
+.bed-plant-marker{position:absolute;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;cursor:grab;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.3);transition:opacity .3s,box-shadow .3s;text-align:center;line-height:1.1;z-index:10;user-select:none}
+.bed-plant-marker.dimmed{opacity:.25}
+.bed-plant-marker.blooming{box-shadow:0 0 12px rgba(74,222,128,.6);border-color:var(--green-accent)}
+.bed-plant-marker .marker-label{position:absolute;top:38px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-mid);white-space:nowrap;pointer-events:none;max-width:70px;overflow:hidden;text-overflow:ellipsis}
+.bed-sidebar{position:fixed;right:0;top:0;bottom:84px;width:220px;background:rgba(20,31,25,.97);border-left:1px solid var(--border);z-index:99;overflow-y:auto;transform:translateX(100%);transition:transform .3s;padding:12px}
+.bed-sidebar.open{transform:translateX(0)}
+.bed-sidebar h3{font-size:13px;color:var(--gold-light);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.bed-sidebar-search{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.05);color:var(--text);font-size:13px;margin-bottom:8px;font-family:'Inter',sans-serif;outline:none}
+.bed-sidebar-plant{padding:8px;border-radius:8px;background:rgba(255,255,255,.04);margin-bottom:4px;cursor:grab;font-size:12px;color:var(--text);display:flex;align-items:center;gap:6px;transition:background .2s}
+.bed-sidebar-plant:hover{background:rgba(255,255,255,.1)}
+.bed-sidebar-plant .bloom-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.month-strip{display:flex;gap:4px;padding:12px 16px;background:rgba(20,31,25,.97);border-top:1px solid var(--border);position:fixed;bottom:56px;left:0;right:0;z-index:99;overflow-x:auto;justify-content:center}
+.month-strip .m-btn{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text-mid);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;min-width:36px;text-align:center;flex-shrink:0}
+.month-strip .m-btn.sel{background:var(--green-light);color:#fff;border-color:var(--green-light)}
+.bed-recs{margin-top:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius)}
+.bed-recs h3{font-size:13px;color:var(--gold-light);margin-bottom:8px;font-weight:700}
+.bed-rec-item{padding:6px 8px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:6px;cursor:pointer;border-radius:6px;transition:background .2s}
+.bed-rec-item:hover{background:rgba(255,255,255,.06)}
+.bed-name-input{background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--gold-light);font-size:15px;font-weight:700;font-family:'Playfair Display',serif;padding:4px 0;outline:none;width:140px}
+.bed-empty-msg{text-align:center;padding:60px 20px;color:var(--text-light);font-size:14px}
 </style>
 </head>
 <body>
@@ -165,7 +195,16 @@ let state = {
   photos: JSON.parse(localStorage.getItem("pt_photos")||"{}"),
   garden: JSON.parse(localStorage.getItem("pt_garden")||"{}"),
   notes: JSON.parse(localStorage.getItem("pt_notes")||"{}"),
-  currentMonth: new Date().getMonth() + 1
+  currentMonth: new Date().getMonth() + 1,
+  // Bed Designer
+  bedView: 'list', // list, edit
+  beds: JSON.parse(localStorage.getItem("pt_beds")||"[]"),
+  currentBedIdx: 0,
+  bedDrawing: false,
+  bedSidebarOpen: false,
+  bedSidebarSearch: '',
+  bedSelectedMonths: [new Date().getMonth()+1],
+  bedDragging: null
 };
 
 let _fbTasksInitDone = false;
@@ -367,6 +406,382 @@ function initGardenDefaults() {
   if (changed) saveGarden();
 }
 
+// ===== BED DESIGNER FUNCTIONS =====
+function saveBeds() {
+  localStorage.setItem("pt_beds", JSON.stringify(state.beds));
+  if (_fbReady && _fbRef && _fbInitialLoadDone) {
+    _fbDb.ref('beds').set(state.beds).catch(e => console.warn('Firebase beds write failed:', e));
+  }
+}
+function createNewBed() {
+  state.beds.push({ name: 'Bed ' + (state.beds.length+1), paths: [], plants: [] });
+  state.currentBedIdx = state.beds.length - 1;
+  state.bedView = 'edit';
+  saveBeds();
+  render();
+}
+function deleteBed(idx) {
+  if (!confirm('Delete this bed?')) return;
+  state.beds.splice(idx, 1);
+  if (state.currentBedIdx >= state.beds.length) state.currentBedIdx = Math.max(0, state.beds.length-1);
+  if (state.beds.length === 0) state.bedView = 'list';
+  saveBeds();
+  render();
+}
+function getBedPlantColor(p) {
+  const colors = {'pink':'#ec4899','red':'#ef4444','purple':'#a855f7','blue':'#3b82f6','white':'#e2e8f0','yellow':'#eab308','orange':'#f97316','green':'#22c55e','lavender':'#c084fc','coral':'#fb7185','cream':'#fef3c7','bronze':'#b45309','gold':'#d4a017','magenta':'#e879f9','silver':'#94a3b8','chartreuse':'#a3e635'};
+  const c = (p.bloomColor||'green').toLowerCase().split(/[\/,]/)[0].trim();
+  return colors[c] || '#4ade80';
+}
+function bedPlantInitials(name) {
+  return name.split(/\s+/).map(w=>w[0]).join('').slice(0,3).toUpperCase();
+}
+function getCompanionRecs(bed) {
+  if (!bed || !bed.plants || bed.plants.length === 0) return [];
+  const placedIds = new Set(bed.plants.map(bp => bp.id));
+  const compSet = new Set();
+  bed.plants.forEach(bp => {
+    const plant = PLANTS.find(p => p.id === bp.id);
+    if (plant && plant.companions) {
+      plant.companions.split(',').forEach(c => {
+        const ct = c.trim().toLowerCase();
+        PLANTS.forEach(pp => {
+          if (!placedIds.has(pp.id) && isPlanted(pp.id) && pp.name.toLowerCase().includes(ct)) compSet.add(pp.id);
+        });
+      });
+    }
+  });
+  // Also find plants that bloom in gap months
+  const coveredMonths = new Set();
+  bed.plants.forEach(bp => {
+    const plant = PLANTS.find(p => p.id === bp.id);
+    if (plant) plant.bloomMonths.forEach(m => coveredMonths.add(m));
+  });
+  const gapMonths = [];
+  for (let m=3;m<=10;m++) if (!coveredMonths.has(m)) gapMonths.push(m);
+  if (gapMonths.length > 0) {
+    PLANTS.forEach(pp => {
+      if (!placedIds.has(pp.id) && isPlanted(pp.id) && pp.bloomMonths.some(m => gapMonths.includes(m))) compSet.add(pp.id);
+    });
+  }
+  return Array.from(compSet).slice(0, 8).map(id => PLANTS.find(p => p.id === id)).filter(Boolean);
+}
+
+function renderBeds() {
+  if (state.bedView === 'list' || state.beds.length === 0) return renderBedList();
+  return renderBedEditor();
+}
+
+function renderBedList() {
+  let h = '<div class="beds-container">';
+  h += '<div class="beds-toolbar"><button onclick="createNewBed()">+ New Bed</button></div>';
+  if (state.beds.length === 0) {
+    h += '<div class="bed-empty-msg"><p style="font-size:40px;margin-bottom:12px">🌻</p><p>No flower beds yet.</p><p style="margin-top:8px;font-size:13px;color:var(--text-mid)">Tap <b>+ New Bed</b> to draw your first bed shape and place plants.</p></div>';
+  } else {
+    state.beds.forEach((bed, i) => {
+      const plantCount = bed.plants ? bed.plants.length : 0;
+      h += '<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer" onclick="state.currentBedIdx='+i+';state.bedView=\'edit\';render()">';
+      h += '<div style="display:flex;justify-content:space-between;align-items:center">';
+      h += '<div><div style="font-weight:700;font-size:15px;color:var(--gold-light)">'+bed.name+'</div>';
+      h += '<div style="font-size:12px;color:var(--text-mid);margin-top:2px">'+plantCount+' plant'+(plantCount!==1?'s':'')+'</div></div>';
+      h += '<div style="display:flex;gap:8px">';
+      h += '<button onclick="event.stopPropagation();state.currentBedIdx='+i+';state.bedView=\'edit\';render()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--green-accent);font-size:12px;cursor:pointer;font-weight:600">Edit</button>';
+      h += '<button onclick="event.stopPropagation();deleteBed('+i+')" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#ef4444;font-size:12px;cursor:pointer;font-weight:600">Del</button>';
+      h += '</div></div></div>';
+    });
+  }
+  h += '</div>';
+  return h;
+}
+
+function renderBedEditor() {
+  const bed = state.beds[state.currentBedIdx];
+  if (!bed) { state.bedView='list'; return renderBedList(); }
+  const myPlants = PLANTS.filter(p => isPlanted(p.id));
+  const searchQ = state.bedSidebarSearch.toLowerCase();
+  const filteredPlants = searchQ ? myPlants.filter(p => p.name.toLowerCase().includes(searchQ)) : myPlants;
+  const selMonths = state.bedSelectedMonths;
+
+  let h = '<div class="beds-container" style="padding-bottom:260px">';
+  // Toolbar
+  h += '<div class="beds-toolbar">';
+  h += '<button onclick="state.bedView=\'list\';render()" style="font-size:18px;padding:6px 10px" title="Back">←</button>';
+  h += '<input class="bed-name-input" value="'+bed.name+'" onchange="state.beds[state.currentBedIdx].name=this.value;saveBeds()" />';
+  h += '<button class="'+(state.bedDrawing?'active':'')+'" onclick="state.bedDrawing=!state.bedDrawing;render()" title="Draw bed shape">✏️ Draw</button>';
+  h += '<button onclick="state.beds[state.currentBedIdx].paths=[];saveBeds();render()" title="Clear drawing">🗑️ Clear</button>';
+  h += '<button onclick="state.bedSidebarOpen=!state.bedSidebarOpen;render()" title="Plant sidebar">🌱 Plants</button>';
+  h += '</div>';
+
+  // Canvas
+  h += '<div class="bed-canvas-wrap" id="bedCanvasWrap" style="height:400px">';
+  h += '<canvas id="bedCanvas" width="800" height="400"></canvas>';
+  // Plant markers
+  if (bed.plants) {
+    bed.plants.forEach((bp, pi) => {
+      const plant = PLANTS.find(p => p.id === bp.id);
+      if (!plant) return;
+      const isBlooming = selMonths.length===0 || plant.bloomMonths.some(m => selMonths.includes(m));
+      const col = getBedPlantColor(plant);
+      h += '<div class="bed-plant-marker '+(isBlooming?'blooming':'dimmed')+'" style="left:'+bp.x+'%;top:'+bp.y+'%;background:'+col+'" ';
+      h += 'onmousedown="startDragPlant(event,'+pi+')" ontouchstart="startDragPlant(event,'+pi+')" ';
+      h += 'ondblclick="removeBedPlant('+pi+')" title="'+plant.name+' (dbl-click to remove)">';
+      h += bedPlantInitials(plant.name);
+      h += '<span class="marker-label">'+plant.name.split(" ").slice(0,2).join(" ")+'</span>';
+      h += '</div>';
+    });
+  }
+  h += '</div>';
+
+  // Companion recommendations
+  const recs = getCompanionRecs(bed);
+  if (recs.length > 0) {
+    h += '<div class="bed-recs"><h3>💡 Suggested Companions</h3>';
+    h += '<div style="font-size:11px;color:var(--text-light);margin-bottom:6px">Fill bloom gaps & complement your bed</div>';
+    recs.forEach(p => {
+      const col = getBedPlantColor(p);
+      const months = p.bloomMonths.map(m => ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]).join(', ');
+      h += '<div class="bed-rec-item" onclick="addPlantToBedCenter('+p.id+')">';
+      h += '<span class="bloom-dot" style="background:'+col+'"></span>';
+      h += '<span style="flex:1">'+p.name+'</span>';
+      h += '<span style="font-size:10px;color:var(--text-light)">'+months+'</span>';
+      h += '</div>';
+    });
+    h += '</div>';
+  }
+
+  h += '</div>'; // beds-container
+
+  // Plant sidebar
+  h += '<div class="bed-sidebar '+(state.bedSidebarOpen?'open':'')+'" id="bedSidebar">';
+  h += '<h3>🌱 My Plants</h3>';
+  h += '<input class="bed-sidebar-search" placeholder="Search..." value="'+state.bedSidebarSearch+'" oninput="state.bedSidebarSearch=this.value;render()">';
+  filteredPlants.forEach(p => {
+    const col = getBedPlantColor(p);
+    h += '<div class="bed-sidebar-plant" draggable="true" ondragstart="onPlantDragStart(event,'+p.id+')" ontouchstart="onPlantTouchStart(event,'+p.id+')">';
+    h += '<span class="bloom-dot" style="background:'+col+'"></span>';
+    h += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.name+'</span>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // Month strip
+  h += '<div class="month-strip">';
+  const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  mNames.forEach((mn, mi) => {
+    const m = mi + 1;
+    const isSel = selMonths.includes(m);
+    h += '<div class="m-btn '+(isSel?'sel':'')+'" onclick="toggleBedMonth('+m+')">'+mn+'</div>';
+  });
+  h += '</div>';
+
+  return h;
+}
+
+function toggleBedMonth(m) {
+  const idx = state.bedSelectedMonths.indexOf(m);
+  if (idx >= 0) state.bedSelectedMonths.splice(idx, 1);
+  else state.bedSelectedMonths.push(m);
+  render();
+}
+
+function addPlantToBedCenter(plantId) {
+  const bed = state.beds[state.currentBedIdx];
+  if (!bed) return;
+  if (!bed.plants) bed.plants = [];
+  // Place at a random-ish center position
+  const x = 30 + Math.random() * 40;
+  const y = 30 + Math.random() * 40;
+  bed.plants.push({ id: plantId, x: Math.round(x*10)/10, y: Math.round(y*10)/10 });
+  saveBeds();
+  render();
+}
+
+function removeBedPlant(idx) {
+  const bed = state.beds[state.currentBedIdx];
+  if (!bed) return;
+  bed.plants.splice(idx, 1);
+  saveBeds();
+  render();
+}
+
+// Canvas drawing
+function initBedCanvas() {
+  const canvas = document.getElementById('bedCanvas');
+  if (!canvas) return;
+  const wrap = document.getElementById('bedCanvasWrap');
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  const ctx = canvas.getContext('2d');
+  const bed = state.beds[state.currentBedIdx];
+  if (!bed) return;
+
+  // Draw saved paths
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Grid
+  ctx.strokeStyle = 'rgba(30,48,40,.5)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+  for (let y = 0; y < canvas.height; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+
+  if (bed.paths) {
+    bed.paths.forEach(path => {
+      if (path.length < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(path[0][0] * canvas.width, path[0][1] * canvas.height);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i][0] * canvas.width, path[i][1] * canvas.height);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(34,128,74,.12)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(74,222,128,.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  }
+
+  // Drawing mode
+  if (state.bedDrawing) {
+    let drawing = false;
+    let currentPath = [];
+    const getPos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return [(clientX - rect.left) / rect.width, (clientY - rect.top) / rect.height];
+    };
+    const startDraw = (e) => { e.preventDefault(); drawing = true; currentPath = [getPos(e)]; };
+    const moveDraw = (e) => {
+      if (!drawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      currentPath.push(pos);
+      // Redraw
+      initBedCanvas.__redraw(ctx, canvas, bed);
+      ctx.beginPath();
+      ctx.moveTo(currentPath[0][0]*canvas.width, currentPath[0][1]*canvas.height);
+      currentPath.forEach(pt => ctx.lineTo(pt[0]*canvas.width, pt[1]*canvas.height));
+      ctx.strokeStyle = 'rgba(245,200,66,.8)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    };
+    const endDraw = (e) => {
+      if (!drawing) return;
+      drawing = false;
+      if (currentPath.length > 3) {
+        if (!bed.paths) bed.paths = [];
+        bed.paths.push(currentPath);
+        saveBeds();
+      }
+      state.bedDrawing = false;
+      render();
+    };
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('touchstart', startDraw, {passive:false});
+    canvas.addEventListener('touchmove', moveDraw, {passive:false});
+    canvas.addEventListener('touchend', endDraw);
+  }
+
+  // Drop zone for plants
+  canvas.addEventListener('dragover', (e) => { e.preventDefault(); });
+  canvas.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const plantId = parseInt(e.dataTransfer.getData('text/plain'));
+    if (!plantId) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    if (!bed.plants) bed.plants = [];
+    bed.plants.push({ id: plantId, x: Math.round(x*10)/10, y: Math.round(y*10)/10 });
+    saveBeds();
+    render();
+  });
+}
+
+// Static redraw helper for drawing mode
+initBedCanvas.__redraw = function(ctx, canvas, bed) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'rgba(30,48,40,.5)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+  for (let y = 0; y < canvas.height; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+  if (bed.paths) {
+    bed.paths.forEach(path => {
+      if (path.length < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(path[0][0]*canvas.width, path[0][1]*canvas.height);
+      for (let i=1;i<path.length;i++) ctx.lineTo(path[i][0]*canvas.width, path[i][1]*canvas.height);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(34,128,74,.12)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(74,222,128,.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  }
+};
+
+// Drag from sidebar
+function onPlantDragStart(e, plantId) {
+  e.dataTransfer.setData('text/plain', plantId.toString());
+}
+function onPlantTouchStart(e, plantId) {
+  state.bedDragging = plantId;
+}
+
+// Drag plant markers around the canvas
+function startDragPlant(e, plantIdx) {
+  e.preventDefault();
+  const bed = state.beds[state.currentBedIdx];
+  if (!bed || !bed.plants[plantIdx]) return;
+  const wrap = document.getElementById('bedCanvasWrap');
+  if (!wrap) return;
+  const rect = wrap.getBoundingClientRect();
+  const move = (ev) => {
+    const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+    bed.plants[plantIdx].x = Math.round(((cx - rect.left) / rect.width) * 1000) / 10;
+    bed.plants[plantIdx].y = Math.round(((cy - rect.top) / rect.height) * 1000) / 10;
+    const marker = e.target.closest('.bed-plant-marker');
+    if (marker) { marker.style.left = bed.plants[plantIdx].x+'%'; marker.style.top = bed.plants[plantIdx].y+'%'; }
+  };
+  const up = () => {
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchend', up);
+    saveBeds();
+  };
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+  document.addEventListener('touchmove', move, {passive:false});
+  document.addEventListener('touchend', up);
+}
+
+// Touch drop on canvas for mobile
+document.addEventListener('touchend', function(e) {
+  if (!state.bedDragging) return;
+  const canvas = document.getElementById('bedCanvas');
+  if (!canvas) { state.bedDragging=null; return; }
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.changedTouches[0];
+  if (touch.clientX >= rect.left && touch.clientX <= rect.right && touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+    const bed = state.beds[state.currentBedIdx];
+    if (bed) {
+      if (!bed.plants) bed.plants = [];
+      const x = ((touch.clientX - rect.left) / rect.width) * 100;
+      const y = ((touch.clientY - rect.top) / rect.height) * 100;
+      bed.plants.push({ id: state.bedDragging, x: Math.round(x*10)/10, y: Math.round(y*10)/10 });
+      saveBeds();
+      render();
+    }
+  }
+  state.bedDragging = null;
+});
+
+
 // Firebase real-time listener — merges on first load, then syncs ongoing changes
 if (_fbReady && _fbRef) {
   _fbRef.on('value', snap => {
@@ -388,6 +803,14 @@ if (_fbReady && _fbRef) {
       _fbInitialLoadDone = true;
       // Now run defaults and save merged result
       initGardenDefaults();
+      // Sync beds from Firebase
+      _fbDb.ref('beds').once('value').then(snap => {
+        const remoteBeds = snap.val();
+        if (remoteBeds && Array.isArray(remoteBeds)) {
+          state.beds = remoteBeds;
+          localStorage.setItem("pt_beds", JSON.stringify(state.beds));
+        }
+      });
       localStorage.setItem("pt_garden", JSON.stringify(state.garden));
       render();
       _fbSyncing = false;
@@ -1330,6 +1753,7 @@ function render() {
   // Main content
   if (state.view === 'plants') content += renderPlants();
   else if (state.view === 'calendar') content += renderCalendar();
+  else if (state.view === 'beds') content += renderBeds();
 
   // Bottom nav
   content += `
@@ -1342,6 +1766,10 @@ function render() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Calendar</span>
       </div>
+      <div class="nav-item ${state.view==='beds'?'active':''}" onclick="state.view='beds';render()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22h20"/><path d="M6 18V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14"/><path d="M6 12h12"/><path d="M10 6h4"/></svg>
+        <span>Beds</span>
+      </div>
     </div>
   `;
 
@@ -1349,6 +1777,7 @@ function render() {
   if (state.detailId) content += renderDetail();
 
   app.innerHTML = content;
+  if (state.view === 'beds' && state.bedView === 'edit') setTimeout(initBedCanvas, 50);
 }
 
 // Initialize
