@@ -555,7 +555,7 @@ function renderBedEditor() {
   filteredPlants.slice(0, 50).forEach(p => {
     const col = getBedPlantColor(p);
     const isSelected = state.bedDragging === p.id;
-    h += '<div onclick="selectSidebarPlant('+p.id+')" ontouchend="event.preventDefault();selectSidebarPlant('+p.id+')" style="padding:6px 10px;border-radius:8px;';
+    h += '<div onclick="addPlantToBedCenter('+p.id+')" style="padding:6px 10px;border-radius:8px;';
     h += 'background:'+(isSelected?'rgba(74,222,128,.2)':'rgba(255,255,255,.04)')+';';
     h += 'border:1px solid '+(isSelected?'var(--green-accent)':'var(--border)')+';';
     h += 'cursor:pointer;font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px;transition:background .15s">';
