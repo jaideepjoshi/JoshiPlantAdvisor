@@ -445,7 +445,8 @@ function getCompanionRecs(bed) {
   bed.plants.forEach(bp => {
     const plant = PLANTS.find(p => p.id === bp.id);
     if (plant && plant.companions) {
-      plant.companions.split(',').forEach(c => {
+      const compList = Array.isArray(plant.companions) ? plant.companions : String(plant.companions).split(',');
+      compList.forEach(c => {
         const ct = c.trim().toLowerCase();
         PLANTS.forEach(pp => {
           if (!placedIds.has(pp.id) && isPlanted(pp.id) && pp.name.toLowerCase().includes(ct)) compSet.add(pp.id);
