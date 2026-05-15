@@ -163,6 +163,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bed-sidebar-search{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.05);color:var(--text);font-size:13px;margin-bottom:8px;font-family:'Inter',sans-serif;outline:none}
 .bed-sidebar-plant{padding:8px;border-radius:8px;background:rgba(255,255,255,.04);margin-bottom:4px;cursor:grab;font-size:12px;color:var(--text);display:flex;align-items:center;gap:6px;transition:background .2s}
 .bed-sidebar-plant:hover{background:rgba(255,255,255,.1)}
+.bed-sidebar-plant.selected{background:rgba(74,222,128,.15);border:1px solid var(--green-accent)}
 .bed-sidebar-plant .bloom-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .month-strip{display:flex;gap:4px;padding:12px 16px;background:rgba(20,31,25,.97);border-top:1px solid var(--border);position:fixed;bottom:56px;left:0;right:0;z-index:99;overflow-x:auto;justify-content:center}
 .month-strip .m-btn{padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text-mid);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;min-width:36px;text-align:center;flex-shrink:0}
@@ -557,9 +558,11 @@ function renderBedEditor() {
   h += '<input class="bed-sidebar-search" placeholder="Search..." value="'+state.bedSidebarSearch+'" oninput="state.bedSidebarSearch=this.value;render()">';
   filteredPlants.forEach(p => {
     const col = getBedPlantColor(p);
-    h += '<div class="bed-sidebar-plant" draggable="true" ondragstart="onPlantDragStart(event,'+p.id+')" ontouchstart="onPlantTouchStart(event,'+p.id+')">';
+    const isSelected = state.bedDragging === p.id;
+    h += '<div class="bed-sidebar-plant'+(isSelected?' selected':'')+'" onclick="selectSidebarPlant('+p.id+')" draggable="true" ondragstart="onPlantDragStart(event,'+p.id+')">';
     h += '<span class="bloom-dot" style="background:'+col+'"></span>';
     h += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.name+'</span>';
+    h += (isSelected?'<span style="font-size:10px;color:var(--green-accent)">TAP BED ▶</span>':'');
     h += '</div>';
   });
   h += '</div>';
@@ -684,7 +687,7 @@ function initBedCanvas() {
     canvas.addEventListener('touchend', endDraw);
   }
 
-  // Drop zone for plants
+  // Drop zone for plants (desktop drag & drop)
   canvas.addEventListener('dragover', (e) => { e.preventDefault(); });
   canvas.addEventListener('drop', (e) => {
     e.preventDefault();
@@ -697,6 +700,26 @@ function initBedCanvas() {
     bed.plants.push({ id: plantId, x: Math.round(x*10)/10, y: Math.round(y*10)/10 });
     saveBeds();
     render();
+  });
+
+  // Tap-to-place on canvas (mobile + desktop click)
+  const placePlant = (clientX, clientY) => {
+    if (!state.bedDragging || state.bedDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
+    if (!bed.plants) bed.plants = [];
+    bed.plants.push({ id: state.bedDragging, x: Math.round(x*10)/10, y: Math.round(y*10)/10 });
+    state.bedDragging = null;
+    saveBeds();
+    render();
+  };
+  canvas.addEventListener('click', (e) => { placePlant(e.clientX, e.clientY); });
+  canvas.addEventListener('touchend', (e) => {
+    if (e.changedTouches && e.changedTouches[0]) {
+      placePlant(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    }
   });
 }
 
@@ -723,23 +746,27 @@ initBedCanvas.__redraw = function(ctx, canvas, bed) {
   }
 };
 
-// Drag from sidebar
+// Select plant from sidebar (tap to select, then tap canvas to place)
+function selectSidebarPlant(plantId) {
+  state.bedDragging = (state.bedDragging === plantId) ? null : plantId;
+  render();
+}
+// Desktop drag from sidebar
 function onPlantDragStart(e, plantId) {
   e.dataTransfer.setData('text/plain', plantId.toString());
 }
-function onPlantTouchStart(e, plantId) {
-  state.bedDragging = plantId;
-}
 
-// Drag plant markers around the canvas
+// Drag plant markers around the canvas (works on both mobile and desktop)
 function startDragPlant(e, plantIdx) {
   e.preventDefault();
+  e.stopPropagation();
   const bed = state.beds[state.currentBedIdx];
   if (!bed || !bed.plants[plantIdx]) return;
   const wrap = document.getElementById('bedCanvasWrap');
   if (!wrap) return;
   const rect = wrap.getBoundingClientRect();
   const move = (ev) => {
+    ev.preventDefault();
     const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
     const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
     bed.plants[plantIdx].x = Math.round(((cx - rect.left) / rect.width) * 1000) / 10;
@@ -759,27 +786,6 @@ function startDragPlant(e, plantIdx) {
   document.addEventListener('touchmove', move, {passive:false});
   document.addEventListener('touchend', up);
 }
-
-// Touch drop on canvas for mobile
-document.addEventListener('touchend', function(e) {
-  if (!state.bedDragging) return;
-  const canvas = document.getElementById('bedCanvas');
-  if (!canvas) { state.bedDragging=null; return; }
-  const rect = canvas.getBoundingClientRect();
-  const touch = e.changedTouches[0];
-  if (touch.clientX >= rect.left && touch.clientX <= rect.right && touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-    const bed = state.beds[state.currentBedIdx];
-    if (bed) {
-      if (!bed.plants) bed.plants = [];
-      const x = ((touch.clientX - rect.left) / rect.width) * 100;
-      const y = ((touch.clientY - rect.top) / rect.height) * 100;
-      bed.plants.push({ id: state.bedDragging, x: Math.round(x*10)/10, y: Math.round(y*10)/10 });
-      saveBeds();
-      render();
-    }
-  }
-  state.bedDragging = null;
-});
 
 
 // Firebase real-time listener — merges on first load, then syncs ongoing changes
