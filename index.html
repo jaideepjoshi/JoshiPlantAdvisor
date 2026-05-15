@@ -657,7 +657,7 @@ function initBedCanvas() {
     const savePath = () => {
       drawing = false;
       if (currentPath.length > 3) {
-        bed.paths = [simplifyPath(currentPath, 0.008)];
+        bed.paths = [cleanBedPath(currentPath)];
         saveBeds();
       }
       state.bedDrawing = false;
@@ -701,6 +701,57 @@ function initBedCanvas() {
   }
 
   // Placement is handled by inline bedWrapTap() on the wrap div
+}
+
+function segIntersect(a, b, c, d) {
+  var dx1=b[0]-a[0], dy1=b[1]-a[1], dx2=d[0]-c[0], dy2=d[1]-c[1];
+  var denom = dx1*dy2 - dy1*dx2;
+  if (Math.abs(denom) < 1e-10) return null;
+  var t = ((c[0]-a[0])*dy2 - (c[1]-a[1])*dx2) / denom;
+  var u = ((c[0]-a[0])*dy1 - (c[1]-a[1])*dx1) / denom;
+  if (t > 0.01 && t < 0.99 && u > 0.01 && u < 0.99)
+    return [a[0]+t*dx1, a[1]+t*dy1];
+  return null;
+}
+
+function removeIntersections(pts) {
+  if (pts.length < 4) return pts;
+  pts = pts.slice();
+  for (var iter = 0; iter < 30; iter++) {
+    var found = false;
+    for (var i = 0; i < pts.length - 2 && !found; i++) {
+      for (var j = i + 2; j < pts.length - 1; j++) {
+        if (i === 0 && j === pts.length - 2) continue;
+        var ix = segIntersect(pts[i], pts[i+1], pts[j], pts[j+1]);
+        if (ix) {
+          pts.splice(i+1, j - i, ix);
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found) break;
+  }
+  return pts;
+}
+
+function chaikinSmooth(pts, iterations) {
+  for (var iter = 0; iter < iterations; iter++) {
+    var np = [];
+    for (var i = 0; i < pts.length; i++) {
+      var nx = (i + 1) % pts.length;
+      np.push([0.75*pts[i][0]+0.25*pts[nx][0], 0.75*pts[i][1]+0.25*pts[nx][1]]);
+      np.push([0.25*pts[i][0]+0.75*pts[nx][0], 0.25*pts[i][1]+0.75*pts[nx][1]]);
+    }
+    pts = np;
+  }
+  return pts;
+}
+
+function cleanBedPath(raw) {
+  var pts = removeIntersections(raw);
+  pts = chaikinSmooth(pts, 3);
+  return simplifyPath(pts, 0.006);
 }
 
 function simplifyPath(pts, tolerance) {
