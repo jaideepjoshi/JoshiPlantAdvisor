@@ -526,7 +526,7 @@ function renderBedEditor() {
   }
 
   // Canvas
-  h += '<div class="bed-canvas-wrap'+(state.bedDrawing?' drawing':'')+'" id="bedCanvasWrap" style="height:350px" onclick="bedWrapTap(event)" ontouchend="bedWrapTap(event)">';
+  h += '<div class="bed-canvas-wrap'+(state.bedDrawing?' drawing':'')+'" id="bedCanvasWrap" style="height:350px" onclick="bedWrapTap(event)" ontouchend="bedWrapTap(event)" ontouchstart="bedWrapTouchStart(event)">';
   h += '<canvas id="bedCanvas" width="800" height="400"></canvas>';
   // Plant markers
   if (bed.plants && !state.bedDrawing) {
@@ -555,7 +555,7 @@ function renderBedEditor() {
   filteredPlants.slice(0, 50).forEach(p => {
     const col = getBedPlantColor(p);
     const isSelected = state.bedDragging === p.id;
-    h += '<div onclick="selectSidebarPlant('+p.id+')" style="padding:6px 10px;border-radius:8px;';
+    h += '<div onclick="selectSidebarPlant('+p.id+')" ontouchend="event.preventDefault();selectSidebarPlant('+p.id+')" style="padding:6px 10px;border-radius:8px;';
     h += 'background:'+(isSelected?'rgba(74,222,128,.2)':'rgba(255,255,255,.04)')+';';
     h += 'border:1px solid '+(isSelected?'var(--green-accent)':'var(--border)')+';';
     h += 'cursor:pointer;font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px;transition:background .15s">';
@@ -707,6 +707,13 @@ function drawBedCanvas(ctx, canvas, bed) {
       ctx.lineWidth = 2;
       ctx.stroke();
     });
+  }
+}
+
+// Prevent page scroll when tapping canvas to place a plant on mobile
+function bedWrapTouchStart(e) {
+  if (state.bedDragging && !state.bedDrawing && !e.target.closest('.bed-plant-marker')) {
+    e.preventDefault();
   }
 }
 
