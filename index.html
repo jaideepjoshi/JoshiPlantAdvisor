@@ -652,6 +652,17 @@ function initBedCanvas() {
       return [(clientX - rect.left) / rect.width, (clientY - rect.top) / rect.height];
     };
     const minDist = 0.015;
+    const closeDist = 0.05;
+    const minPointsToClose = 8;
+    const savePath = () => {
+      drawing = false;
+      if (currentPath.length > 3) {
+        bed.paths = [simplifyPath(currentPath, 0.008)];
+        saveBeds();
+      }
+      state.bedDrawing = false;
+      render();
+    };
     const startDraw = (e) => { e.preventDefault(); e.stopPropagation(); drawing = true; currentPath = [getPos(e)]; };
     const moveDraw = (e) => {
       if (!drawing) return;
@@ -661,19 +672,24 @@ function initBedCanvas() {
       const dx = pt[0] - last[0], dy = pt[1] - last[1];
       if (dx*dx + dy*dy < minDist*minDist) return;
       currentPath.push(pt);
+      const start = currentPath[0];
+      const toDx = pt[0] - start[0], toDy = pt[1] - start[1];
+      const nearStart = currentPath.length >= minPointsToClose && Math.sqrt(toDx*toDx + toDy*toDy) < closeDist;
       drawBedCanvas(ctx, canvas, bed);
-      drawSmoothPath(ctx, canvas, currentPath, 'rgba(245,200,66,.8)', 2, false);
+      drawSmoothPath(ctx, canvas, currentPath, nearStart ? 'rgba(74,222,128,.9)' : 'rgba(245,200,66,.8)', 2, false);
+      var w = canvas.width, h = canvas.height;
+      ctx.beginPath();
+      ctx.arc(start[0]*w, start[1]*h, nearStart ? 10 : 6, 0, Math.PI*2);
+      ctx.fillStyle = nearStart ? 'rgba(74,222,128,.5)' : 'rgba(245,200,66,.3)';
+      ctx.fill();
+      ctx.strokeStyle = nearStart ? 'rgba(74,222,128,1)' : 'rgba(245,200,66,.6)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      if (nearStart) savePath();
     };
     const endDraw = () => {
       if (!drawing) return;
-      drawing = false;
-      if (currentPath.length > 3) {
-        if (!bed.paths) bed.paths = [];
-        bed.paths.push(simplifyPath(currentPath, 0.008));
-        saveBeds();
-      }
-      state.bedDrawing = false;
-      render();
+      savePath();
     };
     canvas.addEventListener('mousedown', startDraw);
     canvas.addEventListener('mousemove', moveDraw);
