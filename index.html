@@ -651,25 +651,25 @@ function initBedCanvas() {
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       return [(clientX - rect.left) / rect.width, (clientY - rect.top) / rect.height];
     };
+    const minDist = 0.015;
     const startDraw = (e) => { e.preventDefault(); e.stopPropagation(); drawing = true; currentPath = [getPos(e)]; };
     const moveDraw = (e) => {
       if (!drawing) return;
       e.preventDefault(); e.stopPropagation();
-      currentPath.push(getPos(e));
+      const pt = getPos(e);
+      const last = currentPath[currentPath.length - 1];
+      const dx = pt[0] - last[0], dy = pt[1] - last[1];
+      if (dx*dx + dy*dy < minDist*minDist) return;
+      currentPath.push(pt);
       drawBedCanvas(ctx, canvas, bed);
-      ctx.beginPath();
-      ctx.moveTo(currentPath[0][0]*canvas.width, currentPath[0][1]*canvas.height);
-      currentPath.forEach(pt => ctx.lineTo(pt[0]*canvas.width, pt[1]*canvas.height));
-      ctx.strokeStyle = 'rgba(245,200,66,.8)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      drawSmoothPath(ctx, canvas, currentPath, 'rgba(245,200,66,.8)', 2, false);
     };
     const endDraw = () => {
       if (!drawing) return;
       drawing = false;
       if (currentPath.length > 3) {
         if (!bed.paths) bed.paths = [];
-        bed.paths.push(currentPath);
+        bed.paths.push(simplifyPath(currentPath, 0.008));
         saveBeds();
       }
       state.bedDrawing = false;
@@ -687,9 +687,59 @@ function initBedCanvas() {
   // Placement is handled by inline bedWrapTap() on the wrap div
 }
 
+function simplifyPath(pts, tolerance) {
+  if (pts.length <= 2) return pts;
+  var maxDist = 0, maxIdx = 0;
+  var ax = pts[0][0], ay = pts[0][1], bx = pts[pts.length-1][0], by = pts[pts.length-1][1];
+  var dx = bx - ax, dy = by - ay, lenSq = dx*dx + dy*dy;
+  for (var i = 1; i < pts.length - 1; i++) {
+    var t = lenSq ? Math.max(0, Math.min(1, ((pts[i][0]-ax)*dx + (pts[i][1]-ay)*dy) / lenSq)) : 0;
+    var px = ax + t*dx - pts[i][0], py = ay + t*dy - pts[i][1];
+    var d = px*px + py*py;
+    if (d > maxDist) { maxDist = d; maxIdx = i; }
+  }
+  if (maxDist > tolerance * tolerance) {
+    var left = simplifyPath(pts.slice(0, maxIdx + 1), tolerance);
+    var right = simplifyPath(pts.slice(maxIdx), tolerance);
+    return left.slice(0, -1).concat(right);
+  }
+  return [pts[0], pts[pts.length - 1]];
+}
+
+function drawSmoothPath(ctx, canvas, path, strokeColor, lineWidth, closePath) {
+  if (path.length < 2) return;
+  ctx.beginPath();
+  var w = canvas.width, h = canvas.height;
+  ctx.moveTo(path[0][0]*w, path[0][1]*h);
+  if (path.length === 2) {
+    ctx.lineTo(path[1][0]*w, path[1][1]*h);
+  } else {
+    for (var i = 0; i < path.length - 1; i++) {
+      var cx = (path[i][0] + path[i+1][0]) / 2 * w;
+      var cy = (path[i][1] + path[i+1][1]) / 2 * h;
+      if (i === 0) {
+        ctx.lineTo(cx, cy);
+      } else {
+        ctx.quadraticCurveTo(path[i][0]*w, path[i][1]*h, cx, cy);
+      }
+    }
+    var last = path[path.length - 1];
+    if (closePath) {
+      ctx.quadraticCurveTo(last[0]*w, last[1]*h, (last[0]+path[0][0])/2*w, (last[1]+path[0][1])/2*h);
+      ctx.quadraticCurveTo(path[0][0]*w, path[0][1]*h, (path[0][0]+path[1][0])/2*w, (path[0][1]+path[1][1])/2*h);
+      ctx.closePath();
+    } else {
+      ctx.lineTo(last[0]*w, last[1]*h);
+    }
+  }
+  if (closePath) { ctx.fillStyle = 'rgba(34,128,74,.12)'; ctx.fill(); }
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = lineWidth;
+  ctx.stroke();
+}
+
 function drawBedCanvas(ctx, canvas, bed) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // Grid
   ctx.strokeStyle = 'rgba(30,48,40,.5)';
   ctx.lineWidth = 0.5;
   for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
@@ -697,15 +747,7 @@ function drawBedCanvas(ctx, canvas, bed) {
   if (bed.paths) {
     bed.paths.forEach(path => {
       if (path.length < 2) return;
-      ctx.beginPath();
-      ctx.moveTo(path[0][0]*canvas.width, path[0][1]*canvas.height);
-      for (let i=1;i<path.length;i++) ctx.lineTo(path[i][0]*canvas.width, path[i][1]*canvas.height);
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(34,128,74,.12)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(74,222,128,.6)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      drawSmoothPath(ctx, canvas, path, 'rgba(74,222,128,.6)', 2, true);
     });
   }
 }
