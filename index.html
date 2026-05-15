@@ -503,18 +503,28 @@ function renderBedEditor() {
   const filteredPlants = searchQ ? myPlants.filter(p => p.name.toLowerCase().includes(searchQ)) : myPlants;
   const selMonths = state.bedSelectedMonths;
 
-  let h = '<div class="beds-container" style="padding-bottom:260px">';
+  let h = '<div class="beds-container" style="padding-bottom:160px">';
   // Toolbar
   h += '<div class="beds-toolbar">';
   h += '<button onclick="state.bedView=\'list\';render()" style="font-size:18px;padding:6px 10px" title="Back">←</button>';
   h += '<input class="bed-name-input" value="'+bed.name+'" onchange="state.beds[state.currentBedIdx].name=this.value;saveBeds()" />';
   h += '<button class="'+(state.bedDrawing?'active':'')+'" onclick="state.bedDrawing=!state.bedDrawing;render()" title="Draw bed shape">✏️ Draw</button>';
   h += '<button onclick="state.beds[state.currentBedIdx].paths=[];saveBeds();render()" title="Clear drawing">🗑️ Clear</button>';
-  h += '<button onclick="state.bedSidebarOpen=!state.bedSidebarOpen;render()" title="Plant sidebar">🌱 Plants</button>';
   h += '</div>';
 
+  // Status bar showing selected plant
+  if (state.bedDragging) {
+    const selPlant = PLANTS.find(p => p.id === state.bedDragging);
+    if (selPlant) {
+      h += '<div style="background:rgba(74,222,128,.15);border:1px solid var(--green-accent);border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">';
+      h += '<span style="color:var(--green-accent);font-weight:600;font-size:13px">👆 Tap the bed to place: '+selPlant.name+'</span>';
+      h += '<button onclick="state.bedDragging=null;render()" style="background:none;border:none;color:var(--text-mid);font-size:18px;cursor:pointer;padding:0 4px">✕</button>';
+      h += '</div>';
+    }
+  }
+
   // Canvas
-  h += '<div class="bed-canvas-wrap" id="bedCanvasWrap" style="height:400px">';
+  h += '<div class="bed-canvas-wrap" id="bedCanvasWrap" style="height:350px">';
   h += '<canvas id="bedCanvas" width="800" height="400"></canvas>';
   // Plant markers
   if (bed.plants) {
@@ -524,14 +534,37 @@ function renderBedEditor() {
       const isBlooming = selMonths.length===0 || plant.bloomMonths.some(m => selMonths.includes(m));
       const col = getBedPlantColor(plant);
       h += '<div class="bed-plant-marker '+(isBlooming?'blooming':'dimmed')+'" style="left:'+bp.x+'%;top:'+bp.y+'%;background:'+col+'" ';
-      h += 'onmousedown="startDragPlant(event,'+pi+')" ontouchstart="startDragPlant(event,'+pi+')" ';
-      h += 'ondblclick="removeBedPlant('+pi+')" title="'+plant.name+' (dbl-click to remove)">';
+      h += 'onmousedown="startDragPlant(event,'+pi+')" ontouchstart="startDragPlant(event,'+pi+')">';
       h += bedPlantInitials(plant.name);
       h += '<span class="marker-label">'+plant.name.split(" ").slice(0,2).join(" ")+'</span>';
+      h += '<button onclick="event.stopPropagation();removeBedPlant('+pi+')" style="position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:11px;line-height:18px;text-align:center;cursor:pointer;padding:0">✕</button>';
       h += '</div>';
     });
   }
   h += '</div>';
+
+  // Inline plant picker (replaces sidebar)
+  h += '<div style="margin-top:12px">';
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+  h += '<h3 style="font-size:13px;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0">🌱 Add Plants</h3>';
+  h += '<input class="bed-sidebar-search" placeholder="Search my plants..." value="'+state.bedSidebarSearch+'" oninput="state.bedSidebarSearch=this.value;render()" style="flex:1;margin:0">';
+  h += '</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;max-height:150px;overflow-y:auto">';
+  filteredPlants.slice(0, 50).forEach(p => {
+    const col = getBedPlantColor(p);
+    const isSelected = state.bedDragging === p.id;
+    h += '<div onclick="selectSidebarPlant('+p.id+')" style="padding:6px 10px;border-radius:8px;';
+    h += 'background:'+(isSelected?'rgba(74,222,128,.2)':'rgba(255,255,255,.04)')+';';
+    h += 'border:1px solid '+(isSelected?'var(--green-accent)':'var(--border)')+';';
+    h += 'cursor:pointer;font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px;transition:background .15s">';
+    h += '<span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0"></span>';
+    h += p.name;
+    h += '</div>';
+  });
+  if (filteredPlants.length === 0) {
+    h += '<div style="color:var(--text-light);font-size:12px;padding:8px">No planted plants found. Mark plants as "In My Garden" first.</div>';
+  }
+  h += '</div></div>';
 
   // Companion recommendations
   const recs = getCompanionRecs(bed);
@@ -551,21 +584,6 @@ function renderBedEditor() {
   }
 
   h += '</div>'; // beds-container
-
-  // Plant sidebar
-  h += '<div class="bed-sidebar '+(state.bedSidebarOpen?'open':'')+'" id="bedSidebar">';
-  h += '<h3>🌱 My Plants</h3>';
-  h += '<input class="bed-sidebar-search" placeholder="Search..." value="'+state.bedSidebarSearch+'" oninput="state.bedSidebarSearch=this.value;render()">';
-  filteredPlants.forEach(p => {
-    const col = getBedPlantColor(p);
-    const isSelected = state.bedDragging === p.id;
-    h += '<div class="bed-sidebar-plant'+(isSelected?' selected':'')+'" onclick="selectSidebarPlant('+p.id+')" draggable="true" ondragstart="onPlantDragStart(event,'+p.id+')">';
-    h += '<span class="bloom-dot" style="background:'+col+'"></span>';
-    h += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.name+'</span>';
-    h += (isSelected?'<span style="font-size:10px;color:var(--green-accent)">TAP BED ▶</span>':'');
-    h += '</div>';
-  });
-  h += '</div>';
 
   // Month strip
   h += '<div class="month-strip">';
@@ -610,8 +628,8 @@ function removeBedPlant(idx) {
 // Canvas drawing
 function initBedCanvas() {
   const canvas = document.getElementById('bedCanvas');
-  if (!canvas) return;
   const wrap = document.getElementById('bedCanvasWrap');
+  if (!canvas || !wrap) return;
   canvas.width = wrap.clientWidth;
   canvas.height = wrap.clientHeight;
   const ctx = canvas.getContext('2d');
@@ -619,31 +637,9 @@ function initBedCanvas() {
   if (!bed) return;
 
   // Draw saved paths
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // Grid
-  ctx.strokeStyle = 'rgba(30,48,40,.5)';
-  ctx.lineWidth = 0.5;
-  for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
-  for (let y = 0; y < canvas.height; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+  drawBedCanvas(ctx, canvas, bed);
 
-  if (bed.paths) {
-    bed.paths.forEach(path => {
-      if (path.length < 2) return;
-      ctx.beginPath();
-      ctx.moveTo(path[0][0] * canvas.width, path[0][1] * canvas.height);
-      for (let i = 1; i < path.length; i++) {
-        ctx.lineTo(path[i][0] * canvas.width, path[i][1] * canvas.height);
-      }
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(34,128,74,.12)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(74,222,128,.6)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    });
-  }
-
-  // Drawing mode
+  // Drawing mode — only attach when active
   if (state.bedDrawing) {
     let drawing = false;
     let currentPath = [];
@@ -653,14 +649,12 @@ function initBedCanvas() {
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       return [(clientX - rect.left) / rect.width, (clientY - rect.top) / rect.height];
     };
-    const startDraw = (e) => { e.preventDefault(); drawing = true; currentPath = [getPos(e)]; };
+    const startDraw = (e) => { e.preventDefault(); e.stopPropagation(); drawing = true; currentPath = [getPos(e)]; };
     const moveDraw = (e) => {
       if (!drawing) return;
-      e.preventDefault();
-      const pos = getPos(e);
-      currentPath.push(pos);
-      // Redraw
-      initBedCanvas.__redraw(ctx, canvas, bed);
+      e.preventDefault(); e.stopPropagation();
+      currentPath.push(getPos(e));
+      drawBedCanvas(ctx, canvas, bed);
       ctx.beginPath();
       ctx.moveTo(currentPath[0][0]*canvas.width, currentPath[0][1]*canvas.height);
       currentPath.forEach(pt => ctx.lineTo(pt[0]*canvas.width, pt[1]*canvas.height));
@@ -668,7 +662,7 @@ function initBedCanvas() {
       ctx.lineWidth = 2;
       ctx.stroke();
     };
-    const endDraw = (e) => {
+    const endDraw = () => {
       if (!drawing) return;
       drawing = false;
       if (currentPath.length > 3) {
@@ -685,27 +679,13 @@ function initBedCanvas() {
     canvas.addEventListener('touchstart', startDraw, {passive:false});
     canvas.addEventListener('touchmove', moveDraw, {passive:false});
     canvas.addEventListener('touchend', endDraw);
+    return; // Don't add placement listeners when drawing
   }
 
-  // Drop zone for plants (desktop drag & drop)
-  canvas.addEventListener('dragover', (e) => { e.preventDefault(); });
-  canvas.addEventListener('drop', (e) => {
-    e.preventDefault();
-    const plantId = parseInt(e.dataTransfer.getData('text/plain'));
-    if (!plantId) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    if (!bed.plants) bed.plants = [];
-    bed.plants.push({ id: plantId, x: Math.round(x*10)/10, y: Math.round(y*10)/10 });
-    saveBeds();
-    render();
-  });
-
-  // Tap-to-place on canvas (mobile + desktop click)
-  const placePlant = (clientX, clientY) => {
-    if (!state.bedDragging || state.bedDrawing) return;
-    const rect = canvas.getBoundingClientRect();
+  // Tap-to-place: use the WRAP div so taps work even over canvas
+  function handlePlace(clientX, clientY) {
+    if (!state.bedDragging) return;
+    const rect = wrap.getBoundingClientRect();
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
     if (x < 0 || x > 100 || y < 0 || y > 100) return;
@@ -714,18 +694,38 @@ function initBedCanvas() {
     state.bedDragging = null;
     saveBeds();
     render();
-  };
-  canvas.addEventListener('click', (e) => { placePlant(e.clientX, e.clientY); });
-  canvas.addEventListener('touchend', (e) => {
+  }
+  wrap.addEventListener('click', function(e) {
+    if (e.target.closest('.bed-plant-marker')) return; // don't place when clicking markers
+    handlePlace(e.clientX, e.clientY);
+  });
+  wrap.addEventListener('touchend', function(e) {
+    if (e.target.closest('.bed-plant-marker')) return;
     if (e.changedTouches && e.changedTouches[0]) {
-      placePlant(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      e.preventDefault();
+      handlePlace(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
     }
+  }, {passive:false});
+
+  // Desktop drag & drop from sidebar
+  wrap.addEventListener('dragover', function(e) { e.preventDefault(); });
+  wrap.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const plantId = parseInt(e.dataTransfer.getData('text/plain'));
+    if (!plantId) return;
+    const rect = wrap.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    if (!bed.plants) bed.plants = [];
+    bed.plants.push({ id: plantId, x: Math.round(x*10)/10, y: Math.round(y*10)/10 });
+    saveBeds();
+    render();
   });
 }
 
-// Static redraw helper for drawing mode
-initBedCanvas.__redraw = function(ctx, canvas, bed) {
+function drawBedCanvas(ctx, canvas, bed) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Grid
   ctx.strokeStyle = 'rgba(30,48,40,.5)';
   ctx.lineWidth = 0.5;
   for (let x = 0; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
@@ -744,7 +744,7 @@ initBedCanvas.__redraw = function(ctx, canvas, bed) {
       ctx.stroke();
     });
   }
-};
+}
 
 // Select plant from sidebar (tap to select, then tap canvas to place)
 function selectSidebarPlant(plantId) {
