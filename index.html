@@ -1962,10 +1962,18 @@ function renderDetail() {
   if (p.video) sections.push(S(IC.video, 'rgba(248,113,113,.1)', '#f87171', '#ef4444', 'Learn More', `<a class="video-link" href="${p.video.startsWith('http')?p.video:'https://www.youtube.com/results?search_query='+encodeURIComponent(p.video)}" target="_blank" rel="noopener">Watch Care Videos</a>`, false));
 
   // Build photo list: user photos first, then DB image as fallback
+  // Use fingerprint-based dedup to avoid O(n²) comparison on large base64 strings
   const plantPhotos = getPhotos(p.id);
   const pixImg = localStorage.getItem("pimg_" + p.id);
   const dbImg = pixImg || img;
-  const allPhotos = [...plantPhotos, ...(dbImg ? [dbImg] : [])].filter((x,i,a) => x && a.indexOf(x) === i);
+  const _seen = new Set();
+  const allPhotos = [...plantPhotos, ...(dbImg ? [dbImg] : [])].filter(x => {
+    if (!x) return false;
+    const fp = x.length > 200 ? x.slice(0, 200) : x;
+    if (_seen.has(fp)) return false;
+    _seen.add(fp);
+    return true;
+  });
   _heroPhotos = allPhotos;
   _heroIdx = 0;
   const heroPlaceholder = `<div class="hero-placeholder"><div style="font-size:48px;opacity:.25">${IC.seedling}</div></div>`;
@@ -2200,7 +2208,10 @@ function closeDetail() {
   if (!el) { state.detailId = null; state.prevPlantId = null; render(); return; }
   el.classList.remove('open');
   el.classList.add('closing');
-  el.addEventListener('animationend', () => { state.detailId = null; state.prevPlantId = null; render(); }, { once: true });
+  let done = false;
+  const finish = () => { if (done) return; done = true; state.detailId = null; state.prevPlantId = null; render(); };
+  el.addEventListener('animationend', finish, { once: true });
+  setTimeout(finish, 400); // fallback: animationend can drop on iOS Safari
 }
 
 function render() {
@@ -2265,7 +2276,10 @@ function render() {
   `;
 
   // Detail overlay
-  if (state.detailId) content += renderDetail();
+  if (state.detailId) {
+    try { content += renderDetail(); }
+    catch(e) { console.error('renderDetail failed:', e); state.detailId = null; }
+  }
 
   // Modals
   if (state.showSetup) content += renderSetupModal();
