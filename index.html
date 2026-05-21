@@ -1004,6 +1004,62 @@ function updateGardenField(id, field, value) {
   saveGarden();
 }
 
+function addMyPairing(plantId, name) {
+  name = name.trim(); if (!name) return;
+  const id = String(plantId);
+  if (!state.garden[id]) state.garden[id] = {};
+  if (!state.garden[id].myPairings) state.garden[id].myPairings = [];
+  if (!state.garden[id].myPairings.includes(name)) { state.garden[id].myPairings.push(name); saveGarden(); }
+}
+
+function removeMyPairing(plantId, idx) {
+  const id = String(plantId);
+  if (state.garden[id] && state.garden[id].myPairings) {
+    state.garden[id].myPairings.splice(idx, 1);
+    saveGarden();
+    const scrollY = document.querySelector('.detail.open')?.scrollTop || 0;
+    render();
+    requestAnimationFrame(() => { const d = document.querySelector('.detail.open'); if (d) d.scrollTop = scrollY; });
+  }
+}
+
+function selectPairing(plantId, name) {
+  addMyPairing(plantId, name);
+  const scrollY = document.querySelector('.detail.open')?.scrollTop || 0;
+  render();
+  requestAnimationFrame(() => {
+    const d = document.querySelector('.detail.open'); if (d) d.scrollTop = scrollY;
+    const inp = document.getElementById('pairing-input'); if (inp) inp.focus();
+  });
+}
+
+function updatePairingInput(plantId, query) {
+  const dd = document.getElementById('pairing-dropdown'); if (!dd) return;
+  const q = query.trim().toLowerCase();
+  if (!q) { dd.innerHTML = ''; dd.style.display = 'none'; return; }
+  const existing = (state.garden[String(plantId)] || {}).myPairings || [];
+  const matches = PLANTS
+    .filter(p => p.name.toLowerCase().includes(q) && !existing.includes(p.name))
+    .sort((a, b) => (isPlanted(a.id) ? 0 : 1) - (isPlanted(b.id) ? 0 : 1))
+    .slice(0, 8);
+  const exactExists = existing.includes(query.trim());
+  let html = matches.map(m => {
+    const planted = isPlanted(m.id);
+    const safe = m.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div onclick="selectPairing(${plantId},'${safe}')" style="padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(74,222,128,.08)'" onmouseout="this.style.background='none'">
+      ${planted ? '<span style="font-size:10px;background:rgba(74,222,128,.15);color:#4ade80;padding:2px 6px;border-radius:8px;font-weight:600;flex-shrink:0">In My Garden</span>' : '<span style="width:6px;height:6px;border-radius:50%;background:rgba(74,222,128,.3);flex-shrink:0;display:inline-block"></span>'}
+      ${escHtml(m.name)}
+    </div>`;
+  }).join('');
+  if (!exactExists) {
+    const safe = query.trim().replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    html += `<div onclick="selectPairing(${plantId},'${safe}')" style="padding:10px 14px;cursor:pointer;font-size:13px;color:#7a8a80;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px" onmouseover="this.style.background='rgba(74,222,128,.08)'" onmouseout="this.style.background='none'">
+      <span style="color:#4ade80;font-weight:700">+</span> Add "${escHtml(query.trim())}" as custom
+    </div>`;
+  }
+  dd.innerHTML = html; dd.style.display = 'block';
+}
+
 // Multi-cultivar entry system
 function getEntries(id) {
   const g = state.garden[id];
@@ -1675,6 +1731,36 @@ function renderDetail() {
       ${renderCompanionBloom(p)}
       ${renderCompanionHeight(p) ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:18px 0 6px">Height Comparison</div>${renderCompanionHeight(p)}` : ''}`;
     sections.push(S(IC.companion, 'rgba(96,165,250,.1)', '#93c5fd', '#60a5fa', 'Companions', compContent, true));
+  }
+
+  // My Pairings — always shown, user-editable
+  {
+    const myP = (state.garden[String(p.id)] || {}).myPairings || [];
+    const pairingIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+    const chips = myP.map((name, idx) => {
+      const found = findPlantByName(name);
+      const planted = found && isPlanted(found.id);
+      const namePart = found
+        ? `<a href="#" onclick="event.preventDefault();state.prevPlantId=${p.id};state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:#4ade80;text-decoration:none;font-weight:600">${escHtml(name)}</a>`
+        : `<span style="color:#4ade80;font-weight:600">${escHtml(name)}</span>`;
+      return `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 8px 5px 10px;border-radius:20px;border:1.5px solid rgba(74,222,128,.3);background:rgba(74,222,128,.06);font-size:12px">
+        ${planted ? '<span style="font-size:9px">🌱</span>' : ''}${namePart}
+        <span onclick="removeMyPairing(${p.id},${idx})" title="Remove" style="cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;padding:0 2px;opacity:.7">&times;</span>
+      </span>`;
+    }).join('');
+    const myPairingsContent = `
+      ${myP.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${chips}</div>` : ''}
+      <div style="position:relative">
+        <input id="pairing-input" type="text" placeholder="Search any plant or type a name…" autocomplete="off"
+          oninput="updatePairingInput(${p.id},this.value)"
+          onkeydown="if(event.key==='Enter'&&this.value.trim())selectPairing(${p.id},this.value.trim())"
+          onblur="setTimeout(()=>{const d=document.getElementById('pairing-dropdown');if(d)d.style.display='none'},200)"
+          onfocus="if(this.value.trim())updatePairingInput(${p.id},this.value)"
+          style="width:100%;padding:10px 12px;border:1px solid rgba(74,222,128,.25);border-radius:10px;font-size:14px;background:rgba(74,222,128,.05);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif">
+        <div id="pairing-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);background:#111c16;border:1px solid rgba(74,222,128,.2);border-radius:10px;overflow:hidden;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
+      </div>
+      <p style="font-size:11px;color:var(--text-light);margin-top:8px">${myP.length ? '🌱 = in your garden · tap name to open plant page' : 'Record combinations that work well together. Tap a saved name to open its page.'}</p>`;
+    sections.push(S(pairingIcon, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'My Pairings', myPairingsContent, true));
   }
 
   // Garden Styles
