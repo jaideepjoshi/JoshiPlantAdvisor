@@ -1,5 +1,5 @@
 // Cache key includes today's date — changes automatically with each new day's deploy
-const CACHE = 'plant-buddy-2026-05-20b';
+const CACHE = 'plant-buddy-2026-05-20c';
 const SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
