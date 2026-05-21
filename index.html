@@ -75,9 +75,9 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding:16px}
 @media(min-width:640px){.grid{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1024px){.grid{grid-template-columns:repeat(4,1fr);max-width:1100px;margin:0 auto}}
-.card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease,border-color .2s;border:1px solid var(--border)}
-.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:rgba(74,222,128,.25)}
-.card:active{transform:scale(.97)}
+.card{background:linear-gradient(145deg,rgba(20,31,25,.85) 0%,rgba(11,61,44,.5) 100%);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:var(--radius);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05);cursor:pointer;transition:transform .22s cubic-bezier(.16,1,.3,1),box-shadow .25s ease,border-color .25s ease;border:1px solid rgba(74,222,128,.1)}
+.card:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 16px 48px rgba(0,0,0,.5),0 0 0 1px rgba(74,222,128,.25),inset 0 1px 0 rgba(255,255,255,.07);border-color:rgba(74,222,128,.3)}
+.card:active{transform:scale(.96);box-shadow:0 2px 8px rgba(0,0,0,.35);transition:transform .08s,box-shadow .08s}
 .card img{width:100%;height:160px;object-fit:cover;background:#0a1f14}
 .card .placeholder{width:100%;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:32px;background:linear-gradient(135deg,#0a1f14,#0f2b1d)}
 .card-body{padding:10px 12px 12px}
@@ -89,10 +89,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .badge-shade{background:rgba(96,165,250,.12);color:#93c5fd;border:1px solid rgba(96,165,250,.25)}
 .badge-deer{background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)}
 .badge-bloom{background:rgba(244,114,182,.12);color:#f472b6;border:1px solid rgba(244,114,182,.25)}
-.detail{position:fixed;inset:0;background:#0c1410;z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
-.detail.open{display:block;animation:slideUp .35s cubic-bezier(.16,1,.3,1)}
-@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.detail{position:fixed;inset:0;background:rgba(7,26,18,.98);z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
+.detail.open{display:block;animation:slideInRight .32s cubic-bezier(.16,1,.3,1)}
+.detail.closing{display:block;animation:slideOutRight .22s cubic-bezier(.4,0,1,1) forwards;pointer-events:none}
+@keyframes slideInRight{from{transform:translateX(100%);opacity:.6}to{transform:translateX(0);opacity:1}}
+@keyframes slideOutRight{from{transform:translateX(0);opacity:1}to{transform:translateX(72%);opacity:0}}
 @keyframes fadeInUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pageFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.page-anim{animation:pageFade .2s ease both}
 .detail-hero{position:relative;width:100%;background:linear-gradient(135deg,#061208,#0b3d2c,#145236);padding:18px;display:flex;flex-direction:row;align-items:center;gap:18px;overflow:hidden;border-bottom:1px solid rgba(212,160,23,.15)}
 .detail-hero img{width:160px;height:160px;object-fit:cover;display:block;border-radius:14px;flex-shrink:0;border:2px solid rgba(255,255,255,.2);box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .detail-hero .hero-placeholder{width:160px;height:160px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.1)}
@@ -106,7 +110,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .hero-stat{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.2px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .hero-stat svg{width:14px;height:14px;flex-shrink:0}
 .detail-body{padding:14px;display:flex;flex-direction:column;gap:12px}
-.ds{background:var(--card);border-radius:16px;box-shadow:0 1px 8px rgba(0,0,0,.2);border:1px solid var(--border);overflow:hidden;animation:fadeInUp .4s ease both}
+.ds{background:linear-gradient(145deg,rgba(20,31,25,.8) 0%,rgba(11,61,44,.4) 100%);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:16px;box-shadow:0 2px 16px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);overflow:hidden;animation:fadeInUp .4s ease both}
 .ds:nth-child(2){animation-delay:.05s}.ds:nth-child(3){animation-delay:.1s}.ds:nth-child(4){animation-delay:.15s}.ds:nth-child(5){animation-delay:.2s}.ds:nth-child(6){animation-delay:.25s}
 .ds-head{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:background .15s}
 .ds-head:hover{background:rgba(0,0,0,.015)}
@@ -1920,7 +1924,7 @@ function renderDetail() {
         </div>
         ${galleryHtml}
         <div class="hero-overlay">
-          <div class="hero-back" onclick="if(state.prevPlantId){state.detailId=state.prevPlantId;state.prevPlantId=null;render();window.scrollTo(0,0)}else{state.detailId=null;state.prevPlantId=null;render()}">
+          <div class="hero-back" onclick="if(state.prevPlantId){state.detailId=state.prevPlantId;state.prevPlantId=null;render();window.scrollTo(0,0)}else{closeDetail()}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           </div>
           <h2 id="plantNameDisplay" style="display:flex;align-items:center;gap:8px">
@@ -2094,6 +2098,14 @@ function renderSettingsModal() {
   </div>`;
 }
 
+function closeDetail() {
+  const el = document.querySelector('.detail');
+  if (!el) { state.detailId = null; state.prevPlantId = null; render(); return; }
+  el.classList.remove('open');
+  el.classList.add('closing');
+  el.addEventListener('animationend', () => { state.detailId = null; state.prevPlantId = null; render(); }, { once: true });
+}
+
 function render() {
   const app = document.getElementById("app");
   let content = '';
@@ -2122,9 +2134,8 @@ function render() {
   `;
 
   // Main content
-  if (state.view === 'plants') content += renderPlants();
-  else if (state.view === 'calendar') content += renderCalendar();
-  else if (state.view === 'beds') content += renderBeds();
+  const _mainHTML = state.view === 'plants' ? renderPlants() : state.view === 'calendar' ? renderCalendar() : renderBeds();
+  content += `<div class="page-anim">${_mainHTML}</div>`;
 
   // Bottom nav
   content += `
