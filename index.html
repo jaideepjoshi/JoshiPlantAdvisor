@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Joshi Plant Buddy">
-<title>Joshi Plant Buddy</title>
+<meta name="apple-mobile-web-app-title" content="Plant Buddy">
+<title>Plant Buddy</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
 // ===== FIREBASE CONFIG — Replace with your own Firebase project details =====
 const FIREBASE_CONFIG = {
@@ -20,15 +21,31 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "159643890588",
   appId: "1:159643890588:web:2baa8470c8f73ea3964e59"
 };
-let _fbDb = null, _fbRef = null, _fbReady = false, _fbSyncing = false, _fbInitialLoadDone = false;
+let _fbDb = null, _fbRef = null, _fbReady = false, _fbUserId = null;
+let _fbSyncing = false, _fbInitialLoadDone = false;
 if (FIREBASE_CONFIG.apiKey) {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     _fbDb = firebase.database();
-    _fbRef = _fbDb.ref('garden');
-    _fbReady = true;
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        _fbUserId = user.uid;
+        _fbRef = _fbDb.ref('users/' + _fbUserId + '/garden');
+        _fbReady = true;
+        initFirebaseSync();
+      }
+    });
+    firebase.auth().signInAnonymously().catch(e => {
+      console.warn('Anonymous auth failed, running offline:', e);
+      _fbInitialLoadDone = true; _fbTasksInitDone = true;
+      _fbPhotosInitDone = true; _fbNotesInitDone = true;
+      _imgCacheReady = true;
+      initGardenDefaults();
+      setTimeout(fetchAllImages, 1000);
+    });
   } catch(e) { console.warn('Firebase init failed:', e); }
 }
+function userRef(path) { return _fbDb.ref('users/' + _fbUserId + '/' + path); }
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -206,73 +223,27 @@ let state = {
   bedSidebarOpen: false,
   bedSidebarSearch: '',
   bedSelectedMonths: [new Date().getMonth()+1],
-  bedDragging: null
+  bedDragging: null,
+  gardenName: localStorage.getItem("pt_gardenName") || "",
+  gardenLocation: localStorage.getItem("pt_gardenLocation") || "",
+  showSetup: false,
+  showSettings: false
 };
 
 let _fbTasksInitDone = false;
 function saveTasks() {
   localStorage.setItem("pt_tasks", JSON.stringify(state.tasks));
   if (_fbReady && _fbTasksInitDone) {
-    _fbDb.ref('tasks').set(state.tasks).catch(e => console.warn('Firebase tasks write failed:', e));
+    userRef('tasks').set(state.tasks).catch(e => console.warn('Firebase tasks write failed:', e));
   }
-}
-
-// Sync tasks from Firebase
-if (_fbReady) {
-  _fbDb.ref('tasks').on('value', snap => {
-    const data = snap.val();
-    if (!_fbTasksInitDone) {
-      if (data) {
-        const local = state.tasks;
-        state.tasks = Object.assign({}, data);
-        Object.keys(local).forEach(k => {
-          if (!state.tasks[k]) state.tasks[k] = local[k];
-        });
-      }
-      _fbTasksInitDone = true;
-      localStorage.setItem("pt_tasks", JSON.stringify(state.tasks));
-      render();
-    } else if (data && JSON.stringify(data) !== JSON.stringify(state.tasks)) {
-      state.tasks = data;
-      localStorage.setItem("pt_tasks", JSON.stringify(data));
-      render();
-    }
-  });
-} else {
-  _fbTasksInitDone = true;
 }
 
 let _fbPhotosInitDone = false;
 function savePhotos() {
   localStorage.setItem("pt_photos", JSON.stringify(state.photos));
   if (_fbReady && _fbPhotosInitDone) {
-    _fbDb.ref('photos').set(state.photos).catch(e => console.warn('Firebase photos write failed:', e));
+    userRef('photos').set(state.photos).catch(e => console.warn('Firebase photos write failed:', e));
   }
-}
-
-if (_fbReady) {
-  _fbDb.ref('photos').on('value', snap => {
-    const data = snap.val();
-    if (!_fbPhotosInitDone) {
-      // First load: merge remote + local, remote wins
-      if (data) {
-        const local = state.photos;
-        state.photos = Object.assign({}, data);
-        Object.keys(local).forEach(id => {
-          if (!state.photos[id]) state.photos[id] = local[id];
-        });
-      }
-      _fbPhotosInitDone = true;
-      localStorage.setItem("pt_photos", JSON.stringify(state.photos));
-      render();
-    } else if (data && JSON.stringify(data) !== JSON.stringify(state.photos)) {
-      state.photos = data;
-      localStorage.setItem("pt_photos", JSON.stringify(data));
-      render();
-    }
-  });
-} else {
-  _fbPhotosInitDone = true;
 }
 
 // Notes persistence and Firebase sync
@@ -280,29 +251,8 @@ let _fbNotesInitDone = false;
 function saveNotes() {
   localStorage.setItem("pt_notes", JSON.stringify(state.notes));
   if (_fbReady && _fbNotesInitDone) {
-    _fbDb.ref('notes').set(state.notes).catch(e => console.warn('Firebase notes write failed:', e));
+    userRef('notes').set(state.notes).catch(e => console.warn('Firebase notes write failed:', e));
   }
-}
-if (_fbReady) {
-  _fbDb.ref('notes').on('value', snap => {
-    const data = snap.val();
-    if (!_fbNotesInitDone) {
-      if (data) {
-        const local = state.notes;
-        state.notes = Object.assign({}, data);
-        Object.keys(local).forEach(id => {
-          if (!state.notes[id]) state.notes[id] = local[id];
-        });
-      }
-      _fbNotesInitDone = true;
-      localStorage.setItem("pt_notes", JSON.stringify(state.notes));
-    } else if (data && JSON.stringify(data) !== JSON.stringify(state.notes)) {
-      state.notes = data;
-      localStorage.setItem("pt_notes", JSON.stringify(data));
-    }
-  });
-} else {
-  _fbNotesInitDone = true;
 }
 
 let _notesTimer = null;
@@ -408,11 +358,142 @@ function initGardenDefaults() {
   if (changed) saveGarden();
 }
 
+function saveProfile() {
+  localStorage.setItem("pt_gardenName", state.gardenName || "");
+  localStorage.setItem("pt_gardenLocation", state.gardenLocation || "");
+  if (_fbReady && _fbUserId) {
+    userRef('profile').set({ gardenName: state.gardenName, gardenLocation: state.gardenLocation })
+      .catch(e => console.warn('Firebase profile write failed:', e));
+  }
+  document.title = state.gardenName || 'Plant Buddy';
+}
+
+function initFirebaseSync() {
+  // Load profile first so we know the garden name before rendering
+  userRef('profile').once('value').then(snap => {
+    const profile = snap.val();
+    if (profile) {
+      if (profile.gardenName) { state.gardenName = profile.gardenName; localStorage.setItem("pt_gardenName", profile.gardenName); }
+      if (profile.gardenLocation) { state.gardenLocation = profile.gardenLocation; localStorage.setItem("pt_gardenLocation", profile.gardenLocation); }
+    }
+    if (!state.gardenName) state.showSetup = true;
+    document.title = state.gardenName || 'Plant Buddy';
+    render();
+  }).catch(() => { if (!state.gardenName) { state.showSetup = true; render(); } });
+
+  // Tasks sync
+  userRef('tasks').on('value', snap => {
+    const data = snap.val();
+    if (!_fbTasksInitDone) {
+      if (data) { const local = state.tasks; state.tasks = Object.assign({}, data); Object.keys(local).forEach(k => { if (!state.tasks[k]) state.tasks[k] = local[k]; }); }
+      _fbTasksInitDone = true;
+      localStorage.setItem("pt_tasks", JSON.stringify(state.tasks));
+      render();
+    } else if (data && JSON.stringify(data) !== JSON.stringify(state.tasks)) {
+      state.tasks = data; localStorage.setItem("pt_tasks", JSON.stringify(data)); render();
+    }
+  });
+
+  // Photos sync
+  userRef('photos').on('value', snap => {
+    const data = snap.val();
+    if (!_fbPhotosInitDone) {
+      if (data) { const local = state.photos; state.photos = Object.assign({}, data); Object.keys(local).forEach(id => { if (!state.photos[id]) state.photos[id] = local[id]; }); }
+      _fbPhotosInitDone = true;
+      localStorage.setItem("pt_photos", JSON.stringify(state.photos));
+      render();
+    } else if (data && JSON.stringify(data) !== JSON.stringify(state.photos)) {
+      state.photos = data; localStorage.setItem("pt_photos", JSON.stringify(data)); render();
+    }
+  });
+
+  // Notes sync
+  userRef('notes').on('value', snap => {
+    const data = snap.val();
+    if (!_fbNotesInitDone) {
+      if (data) { const local = state.notes; state.notes = Object.assign({}, data); Object.keys(local).forEach(id => { if (!state.notes[id]) state.notes[id] = local[id]; }); }
+      _fbNotesInitDone = true;
+      localStorage.setItem("pt_notes", JSON.stringify(state.notes));
+    } else if (data && JSON.stringify(data) !== JSON.stringify(state.notes)) {
+      state.notes = data; localStorage.setItem("pt_notes", JSON.stringify(data));
+    }
+  });
+
+  // Garden + beds sync — with one-time migration from old global path
+  _fbRef.once('value').then(userSnap => {
+    if (!userSnap.val()) {
+      // No user-specific garden yet — check old global path for migration
+      _fbDb.ref('garden').once('value').then(oldSnap => {
+        const oldData = oldSnap.val();
+        // Only migrate if old data exists and hasn't been marked as migrated
+        if (oldData && typeof oldData === 'object' && !oldData._migrated_to_users) {
+          const gardenData = Object.assign({}, oldData);
+          delete gardenData._migrated_to_users;
+          _fbRef.set(gardenData).catch(() => {});
+          // Migrate other paths too
+          _fbDb.ref('tasks').once('value').then(s => { if (s.val()) userRef('tasks').set(s.val()).catch(() => {}); });
+          _fbDb.ref('photos').once('value').then(s => { if (s.val()) userRef('photos').set(s.val()).catch(() => {}); });
+          _fbDb.ref('notes').once('value').then(s => { if (s.val()) userRef('notes').set(s.val()).catch(() => {}); });
+          _fbDb.ref('beds').once('value').then(s => { if (s.val()) userRef('beds').set(s.val()).catch(() => {}); });
+          _fbDb.ref('garden/_migrated_to_users').set(true).catch(() => {});
+        }
+        startGardenListener();
+      }).catch(() => startGardenListener());
+    } else {
+      startGardenListener();
+    }
+  }).catch(() => startGardenListener());
+
+  function startGardenListener() {
+    _fbRef.on('value', snap => {
+      const remoteData = snap.val();
+      if (!_fbInitialLoadDone) {
+        _fbSyncing = true;
+        if (remoteData) {
+          const localGarden = state.garden;
+          state.garden = Object.assign({}, remoteData);
+          Object.keys(localGarden).forEach(id => { if (!state.garden[id]) state.garden[id] = localGarden[id]; });
+        }
+        _fbInitialLoadDone = true;
+        initGardenDefaults();
+        userRef('beds').once('value').then(snap => {
+          const remoteBeds = snap.val();
+          if (remoteBeds && Array.isArray(remoteBeds)) { state.beds = remoteBeds; localStorage.setItem("pt_beds", JSON.stringify(state.beds)); }
+        });
+        localStorage.setItem("pt_garden", JSON.stringify(state.garden));
+        render(); _fbSyncing = false;
+      } else if (remoteData && JSON.stringify(remoteData) !== JSON.stringify(state.garden)) {
+        _fbSyncing = true;
+        state.garden = remoteData;
+        localStorage.setItem("pt_garden", JSON.stringify(remoteData));
+        render(); _fbSyncing = false;
+      }
+    });
+  }
+
+  // Image cache — shared global path (not user-scoped, just plant thumbnails)
+  _fbDb.ref('imageCache').once('value', snap => {
+    const data = snap.val();
+    if (data) {
+      _imgCache = data;
+      Object.keys(data).forEach(id => { if (!localStorage.getItem('pimg_' + id)) localStorage.setItem('pimg_' + id, data[id]); });
+    }
+    Object.keys(localStorage).filter(k => k.startsWith('pimg_')).forEach(k => {
+      const id = k.replace('pimg_', '');
+      const val = localStorage.getItem(k);
+      if (val && val.startsWith('data:') && !_imgCache[id]) _imgCache[id] = val;
+    });
+    _imgCacheReady = true;
+    render();
+    setTimeout(fetchAllImages, 1000);
+  });
+}
+
 // ===== BED DESIGNER FUNCTIONS =====
 function saveBeds() {
   localStorage.setItem("pt_beds", JSON.stringify(state.beds));
   if (_fbReady && _fbRef && _fbInitialLoadDone) {
-    _fbDb.ref('beds').set(state.beds).catch(e => console.warn('Firebase beds write failed:', e));
+    userRef('beds').set(state.beds).catch(e => console.warn('Firebase beds write failed:', e));
   }
 }
 function createNewBed() {
@@ -896,52 +977,7 @@ function startDragPlant(e, plantIdx) {
 }
 
 
-// Firebase real-time listener — merges on first load, then syncs ongoing changes
-if (_fbReady && _fbRef) {
-  _fbRef.on('value', snap => {
-    const remoteData = snap.val();
-    if (!_fbInitialLoadDone) {
-      // First load: merge remote + local, remote wins for conflicts
-      _fbSyncing = true;
-      if (remoteData) {
-        const localGarden = state.garden;
-        // Start with remote as base
-        state.garden = Object.assign({}, remoteData);
-        // Add any local-only entries that don't exist in remote
-        Object.keys(localGarden).forEach(id => {
-          if (!state.garden[id]) {
-            state.garden[id] = localGarden[id];
-          }
-        });
-      }
-      _fbInitialLoadDone = true;
-      // Now run defaults and save merged result
-      initGardenDefaults();
-      // Sync beds from Firebase
-      _fbDb.ref('beds').once('value').then(snap => {
-        const remoteBeds = snap.val();
-        if (remoteBeds && Array.isArray(remoteBeds)) {
-          state.beds = remoteBeds;
-          localStorage.setItem("pt_beds", JSON.stringify(state.beds));
-        }
-      });
-      localStorage.setItem("pt_garden", JSON.stringify(state.garden));
-      render();
-      _fbSyncing = false;
-    } else if (remoteData && JSON.stringify(remoteData) !== JSON.stringify(state.garden)) {
-      // Ongoing sync from other devices
-      _fbSyncing = true;
-      state.garden = remoteData;
-      localStorage.setItem("pt_garden", JSON.stringify(remoteData));
-      render();
-      _fbSyncing = false;
-    }
-  });
-} else {
-  // No Firebase — just run defaults locally
-  _fbInitialLoadDone = true;
-  initGardenDefaults();
-}
+// Firebase sync is initialized in initFirebaseSync() after anonymous auth resolves
 
 function toggleGardenPlanted(id) {
   if (!state.garden[id]) state.garden[id] = { planted: false, wishlist: false, name: "", where: "" };
@@ -1114,36 +1150,7 @@ function getFiltered() {
 let _imgCache = {}; // in-memory cache: { plantId: base64DataUrl }
 let _imgCacheReady = false;
 
-// Load image cache from Firebase on startup
-if (_fbReady) {
-  _fbDb.ref('imageCache').once('value', snap => {
-    const data = snap.val();
-    if (data) {
-      _imgCache = data;
-      // Also populate localStorage for offline access
-      Object.keys(data).forEach(id => {
-        if (!localStorage.getItem('pimg_' + id)) {
-          localStorage.setItem('pimg_' + id, data[id]);
-        }
-      });
-    }
-    // Also pull any localStorage entries not yet in Firebase
-    Object.keys(localStorage).filter(k => k.startsWith('pimg_')).forEach(k => {
-      const id = k.replace('pimg_', '');
-      const val = localStorage.getItem(k);
-      if (val && val.startsWith('data:') && !_imgCache[id]) {
-        _imgCache[id] = val;
-      }
-    });
-    _imgCacheReady = true;
-    render();
-    // Start fetching any missing images
-    setTimeout(fetchAllImages, 1000);
-  });
-} else {
-  _imgCacheReady = true;
-  setTimeout(fetchAllImages, 1000);
-}
+// imageCache init runs inside initFirebaseSync() after auth resolves
 
 function getCachedImage(plantId) {
   const key = String(plantId);
@@ -1846,15 +1853,76 @@ function searchUpdate() {
   }, 120);
 }
 
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function saveSetup() {
+  const name = (document.getElementById('setupName')||{}).value||'';
+  state.gardenName = name.trim() || 'My Garden';
+  state.gardenLocation = ((document.getElementById('setupLocation')||{}).value||'').trim();
+  state.showSetup = false;
+  saveProfile();
+  render();
+}
+
+function saveSettings() {
+  const name = (document.getElementById('settingsName')||{}).value||'';
+  if (name.trim()) state.gardenName = name.trim();
+  state.gardenLocation = ((document.getElementById('settingsLocation')||{}).value||'').trim();
+  state.showSettings = false;
+  saveProfile();
+  render();
+}
+
+function renderSetupModal() {
+  return `<div style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#141f19;border-radius:16px;padding:28px 24px;max-width:360px;width:100%;border:1px solid rgba(212,160,23,.3);box-shadow:0 8px 40px rgba(0,0,0,.6)">
+      <div style="font-family:'Playfair Display',serif;font-size:22px;background:linear-gradient(135deg,#f5c842,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">Welcome to Plant Buddy</div>
+      <p style="color:#7a8a80;font-size:13px;margin-bottom:22px">Set up your personal garden space — your data is completely separate from anyone else's.</p>
+      <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Your Garden Name</label>
+      <input id="setupName" type="text" placeholder="e.g. Sarah's Garden" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
+      <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone <span style="font-style:italic;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <input id="setupLocation" type="text" placeholder="e.g. Chicago Zone 5b" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
+      <button onclick="saveSetup()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Get Started</button>
+    </div>
+  </div>`;
+}
+
+function renderSettingsModal() {
+  const uid = _fbUserId || '';
+  return `<div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this){state.showSettings=false;render()}">
+    <div style="background:#141f19;border-radius:16px;padding:24px;max-width:360px;width:100%;border:1px solid rgba(212,160,23,.25);box-shadow:0 8px 40px rgba(0,0,0,.6)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <span style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9">Garden Settings</span>
+        <button onclick="state.showSettings=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:2px 6px">&times;</button>
+      </div>
+      <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Garden Name</label>
+      <input id="settingsName" type="text" value="${escHtml(state.gardenName)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
+      <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone</label>
+      <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
+      <button onclick="saveSettings()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px">Save</button>
+      ${uid ? `<p style="font-size:11px;color:#4a5a50;text-align:center">Garden ID: <span style="font-family:monospace;word-break:break-all">${uid}</span></p>` : ''}
+    </div>
+  </div>`;
+}
+
 function render() {
   const app = document.getElementById("app");
   let content = '';
 
   // Header
+  const _displayName = state.gardenName || 'Plant Buddy';
+  const _displayLoc = state.gardenLocation ? escHtml(state.gardenLocation) + ' &middot; ' : '';
   content += `
     <div class="header">
-      <h1>Joshi Plant Buddy</h1>
-      <p>Cleveland Zone 6a/6b &middot; Over 200 Perennials &middot; Year-Round Care</p>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div style="min-width:0">
+          <h1 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(_displayName)}</h1>
+          <p>${_displayLoc}Over 200 Perennials &middot; Year-Round Care</p>
+        </div>
+        <button onclick="state.showSettings=true;render()" title="Settings" style="flex-shrink:0;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;cursor:pointer;color:rgba(255,255,255,.75);padding:7px 8px;display:flex;align-items:center;margin-top:2px;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
       ${state.view==='plants'?`
         <div class="search-bar">
           <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1890,11 +1958,15 @@ function render() {
   // Detail overlay
   if (state.detailId) content += renderDetail();
 
+  // Modals
+  if (state.showSetup) content += renderSetupModal();
+  if (state.showSettings) content += renderSettingsModal();
+
   app.innerHTML = content;
   if (state.view === 'beds' && state.bedView === 'edit') setTimeout(initBedCanvas, 50);
 }
 
-// Initialize
+// Initialize — show app immediately with local data; Firebase syncs once auth resolves
 render();
 </script>
 </body>
