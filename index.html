@@ -161,11 +161,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .video-link{display:inline-flex;align-items:center;gap:8px;color:#f87171;font-weight:600;font-size:13px;text-decoration:none;padding:10px 18px;background:rgba(239,68,68,.1);border-radius:10px;margin-top:8px;border:1px solid rgba(239,68,68,.25);transition:transform .15s}
 .video-link:hover{transform:translateY(-1px)}
 .planted-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(74,222,128,.12);color:#4ade80;padding:6px 14px;border-radius:14px;font-size:12px;font-weight:700;border:1px solid rgba(74,222,128,.25)}
-.nav-bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(12,20,16,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(212,160,23,.15);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
-.nav-item{flex:1;padding:10px 4px 8px;text-align:center;cursor:pointer;color:#4a5a50;transition:color .2s}
-.nav-item.active{color:var(--gold-light)}
-.nav-item svg{width:24px;height:24px;margin:0 auto 3px;display:block}
-.nav-item span{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.nav-bottom{position:fixed;bottom:0;left:0;right:0;background:rgba(5,16,9,.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border-top:1px solid rgba(255,255,255,.07);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -8px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04)}
+.nav-item{flex:1;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:rgba(255,255,255,.28);transition:color .18s;-webkit-tap-highlight-color:transparent;user-select:none;position:relative}
+.nav-item .ni-pill{position:absolute;top:3px;width:52px;height:30px;border-radius:10px;background:rgba(74,222,128,.13);opacity:0;transition:opacity .2s;pointer-events:none}
+.nav-item.active{color:#4ade80}
+.nav-item.active .ni-pill{opacity:1}
+.nav-item svg{width:22px;height:22px;transition:transform .25s cubic-bezier(.16,1,.3,1);position:relative}
+.nav-item.active svg{transform:scale(1.12)}
+.nav-item span{font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;line-height:1}
 .count-badge{background:var(--green);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:4px}
 
 /* ===== FLOWER BED DESIGNER ===== */
@@ -212,9 +215,10 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 const MONTH_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 let state = {
-  view: "plants", // plants, calendar
+  view: "browse", // browse, garden, beds, wishlist
   search: "",
-  filter: "planted",
+  filter: "all",
+  gardenTab: "plants", // plants, calendar
   detailId: null,
   prevPlantId: null,
   tasks: JSON.parse(localStorage.getItem("pt_tasks")||"{}"),
@@ -1354,7 +1358,7 @@ function sunBadge(p) {
   return '<span class="badge badge-shade">'+p.sun+'</span>';
 }
 
-function renderPlants() {
+function renderBrowse() {
   const list = getFiltered();
   const filters = [
     ["all","All"],["blooming","Blooming Now"],["planted","In My Garden"],
@@ -1410,6 +1414,76 @@ function renderPlants() {
       </div>
     `).join("")}</div>
   `;
+}
+
+function renderGarden() {
+  const myPlants = PLANTS.filter(p => isPlanted(p.id)).sort((a,b) => a.name.localeCompare(b.name));
+  const bloomingNow = myPlants.filter(p => (p.bloomMonths||[]).includes(state.currentMonth));
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const activeTab = state.gardenTab || 'plants';
+
+  const subNav = `<div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);display:flex;justify-content:center">
+    <div style="display:inline-flex;background:rgba(0,0,0,.25);border-radius:12px;padding:3px;gap:2px">
+      <div onclick="state.gardenTab='plants';render()" style="padding:7px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab==='plants'?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">My Plants</div>
+      <div onclick="state.gardenTab='calendar';render()" style="padding:7px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab==='calendar'?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">Calendar</div>
+    </div>
+  </div>`;
+
+  if (activeTab === 'calendar') return subNav + renderCalendar();
+
+  if (!myPlants.length) return subNav + `<div style="padding:60px 24px;text-align:center"><div style="font-size:52px;margin-bottom:14px;opacity:.3">🌱</div><div style="color:var(--text-mid);font-size:15px;font-weight:500">Your garden is empty</div><div style="color:var(--text-light);font-size:13px;margin-top:8px;line-height:1.6">Browse plants and tap<br>"Planted in my garden" to add them here.</div></div>`;
+
+  const statsRow = `<div style="display:flex;gap:8px;padding:10px 14px">
+    <div style="flex:1;padding:12px;border-radius:12px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.15);text-align:center">
+      <div style="font-size:26px;font-weight:700;color:#4ade80;line-height:1">${myPlants.length}</div>
+      <div style="font-size:10px;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Plants</div>
+    </div>
+    <div style="flex:1;padding:12px;border-radius:12px;background:rgba(244,114,182,.08);border:1px solid rgba(244,114,182,.15);text-align:center">
+      <div style="font-size:26px;font-weight:700;color:#f472b6;line-height:1">${bloomingNow.length}</div>
+      <div style="font-size:10px;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Blooming</div>
+    </div>
+    <div onclick="state.gardenTab='calendar';render()" style="flex:1;padding:12px;border-radius:12px;background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.15);text-align:center;cursor:pointer">
+      <div style="font-size:16px;font-weight:700;color:#f5c842;line-height:1.4">${MONTH_NAMES[state.currentMonth-1]}</div>
+      <div style="font-size:10px;color:var(--text-mid);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Calendar</div>
+    </div>
+  </div>`;
+
+  const grid = `<div class="grid">${myPlants.map(p => `
+    <div class="card" onclick="state.detailId=${p.id};render()">
+      ${plantImage(p)}
+      <div class="card-body">
+        <h3>${displayName(p)}</h3>
+        <div class="meta">${p.botanical||""}</div>
+        <div class="badges">
+          ${sunBadge(p)}
+          ${p.bloomMonths&&p.bloomMonths.length?'<span class="badge badge-bloom">'+p.bloomMonths.map(m=>MONTHS[m-1]).join("-")+'</span>':''}
+          ${bloomingNow.some(bp=>bp.id===p.id)?'<span class="badge" style="background:rgba(244,114,182,.12);color:#f472b6;border:1px solid rgba(244,114,182,.25)">🌸 Now</span>':''}
+        </div>
+      </div>
+    </div>`).join("")}</div>`;
+
+  return subNav + statsRow + grid;
+}
+
+function renderWishlist() {
+  const wishPlants = PLANTS.filter(p => isWishlisted(p.id)).sort((a,b) => a.name.localeCompare(b.name));
+  if (!wishPlants.length) return `<div style="padding:60px 24px;text-align:center"><div style="font-size:52px;margin-bottom:14px;opacity:.3">★</div><div style="color:var(--text-mid);font-size:15px;font-weight:500">No wishlist plants yet</div><div style="color:var(--text-light);font-size:13px;margin-top:8px;line-height:1.6">Open any plant and tap<br>"On my wishlist" to save it here.</div></div>`;
+  return `
+    <div style="padding:10px 16px 4px;font-size:12px;color:var(--text-light);font-weight:500;letter-spacing:.3px">${wishPlants.length} plant${wishPlants.length!==1?'s':''} on your wishlist</div>
+    <div class="grid">${wishPlants.map(p => `
+      <div class="card" onclick="state.detailId=${p.id};render()">
+        ${plantImage(p)}
+        <div class="card-body">
+          <h3>${displayName(p)}</h3>
+          <div class="meta">${p.botanical||""}</div>
+          <div class="badges">
+            ${sunBadge(p)}
+            ${p.bloomMonths&&p.bloomMonths.length?'<span class="badge badge-bloom">'+p.bloomMonths.map(m=>MONTHS[m-1]).join("-")+'</span>':''}
+            ${p.deerResistant?'<span class="badge badge-deer">🦌</span>':''}
+            ${isPlanted(p.id)?'<span class="badge" style="background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25)">✓ In Garden</span>':''}
+          </div>
+        </div>
+      </div>`).join("")}</div>`;
 }
 
 function toggleSection(el) {
@@ -2124,33 +2198,45 @@ function render() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
       </div>
-      ${state.view==='plants'?`
+      ${state.view==='browse'?`
         <div class="search-bar">
           <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="search" id="searchInput" placeholder="Search plants..." value="${state.search}" oninput="state.search=this.value;searchUpdate()">
+          <input type="search" id="searchInput" placeholder="Search 200+ plants..." value="${state.search}" oninput="state.search=this.value;searchUpdate()">
         </div>
       `:''}
     </div>
   `;
 
   // Main content
-  const _mainHTML = state.view === 'plants' ? renderPlants() : state.view === 'calendar' ? renderCalendar() : renderBeds();
+  const _mainHTML = state.view === 'browse' ? renderBrowse()
+    : state.view === 'garden' ? renderGarden()
+    : state.view === 'wishlist' ? renderWishlist()
+    : renderBeds();
   content += `<div class="page-anim">${_mainHTML}</div>`;
 
-  // Bottom nav
+  // Bottom nav — 4 tabs
+  const _v = state.view;
   content += `
     <div class="nav-bottom">
-      <div class="nav-item ${state.view==='plants'?'active':''}" onclick="state.view='plants';render()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>
-        <span>Plants</span>
+      <div class="nav-item ${_v==='browse'?'active':''}" onclick="state.view='browse';render()">
+        <div class="ni-pill"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Browse</span>
       </div>
-      <div class="nav-item ${state.view==='calendar'?'active':''}" onclick="state.view='calendar';render()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span>Calendar</span>
+      <div class="nav-item ${_v==='garden'?'active':''}" onclick="state.view='garden';render()">
+        <div class="ni-pill"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 20h10M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.5 4.3c1.6 0 3-.6 4.2-1.6 1.1-1 1.9-2.4 2.2-4.2a7 7 0 0 0-4.9 1.5z"/></svg>
+        <span>Garden</span>
       </div>
-      <div class="nav-item ${state.view==='beds'?'active':''}" onclick="state.view='beds';render()">
+      <div class="nav-item ${_v==='beds'?'active':''}" onclick="state.view='beds';render()">
+        <div class="ni-pill"></div>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22h20"/><path d="M6 18V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14"/><path d="M6 12h12"/><path d="M10 6h4"/></svg>
         <span>Beds</span>
+      </div>
+      <div class="nav-item ${_v==='wishlist'?'active':''}" onclick="state.view='wishlist';render()">
+        <div class="ni-pill"></div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>Wishlist</span>
       </div>
     </div>
   `;
