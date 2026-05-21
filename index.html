@@ -2281,30 +2281,8 @@ render();
 
 // ===== SERVICE WORKER — auto-update on new deploy =====
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    reg.addEventListener('updatefound', () => {
-      const nw = reg.installing;
-      nw.addEventListener('statechange', () => {
-        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-          // A new version is waiting — show the update banner
-          const banner = document.createElement('div');
-          banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#0b3d2c,#145236);color:#e8ece9;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,system-ui,sans-serif;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,.5);border-bottom:1px solid rgba(74,222,128,.3)';
-          const bannerLabel = document.createElement('span');
-          bannerLabel.style.cssText = 'display:flex;align-items:center;gap:8px';
-          bannerLabel.innerHTML = '<span style="font-size:18px">🌱</span><span>New version available</span>';
-          const bannerBtn = document.createElement('button');
-          bannerBtn.textContent = 'Update now';
-          bannerBtn.style.cssText = 'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:1px solid rgba(74,222,128,.3);padding:7px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit';
-          bannerBtn.addEventListener('click', () => { reg.waiting.postMessage('skipWaiting'); banner.remove(); });
-          banner.appendChild(bannerLabel);
-          banner.appendChild(bannerBtn);
-          document.body.prepend(banner);
-        }
-      });
-    });
-  }).catch(e => console.warn('SW registration failed:', e));
-
-  // When the new SW takes over, reload to serve fresh content
+  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW registration failed:', e));
+  // New SW uses skipWaiting, so controllerchange fires automatically — reload to get fresh content
   let _swRefreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!_swRefreshing) { _swRefreshing = true; window.location.reload(); }
