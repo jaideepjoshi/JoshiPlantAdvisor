@@ -1,17 +1,17 @@
 // Bump date on each deploy to refresh cached assets
-const CACHE = 'plant-buddy-2026-05-20f';
+const CACHE = 'plant-buddy-2026-05-20g';
 const SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
-  // No skipWaiting — avoids triggering a reload on the same page
+  // No skipWaiting — avoids reload loop on iOS Safari
 });
 
 self.addEventListener('activate', e => {
+  // No clients.claim() — avoids flicker/re-render on iOS when SW first activates
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
   );
 });
 

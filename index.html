@@ -2214,6 +2214,7 @@ function closeDetail() {
   setTimeout(finish, 400); // fallback: animationend can drop on iOS Safari
 }
 
+let _lastView = null;
 function render() {
   const app = document.getElementById("app");
   let content = '';
@@ -2241,12 +2242,14 @@ function render() {
     </div>
   `;
 
-  // Main content
+  // Main content — only animate when the tab actually changes, not on every Firebase re-render
   const _mainHTML = state.view === 'browse' ? renderBrowse()
     : state.view === 'garden' ? renderGarden()
     : state.view === 'wishlist' ? renderWishlist()
     : renderBeds();
-  content += `<div class="page-anim">${_mainHTML}</div>`;
+  const _viewChanged = state.view !== _lastView;
+  _lastView = state.view;
+  content += `<div class="${_viewChanged ? 'page-anim' : ''}">${_mainHTML}</div>`;
 
   // Bottom nav — 4 tabs
   const _v = state.view;
