@@ -1,11 +1,10 @@
-// Bump date on each deploy to force cache refresh
-const CACHE = 'plant-buddy-2026-05-20e';
+// Bump date on each deploy to refresh cached assets
+const CACHE = 'plant-buddy-2026-05-20f';
 const SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
-  );
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
+  // No skipWaiting — avoids triggering a reload on the same page
 });
 
 self.addEventListener('activate', e => {
@@ -18,23 +17,15 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) return; // let Firebase/CDN through
 
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request)
-        .then(r => { caches.open(CACHE).then(c => c.put(e.request, r.clone())); return r; })
-        .catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
-
+  // Network-first for everything: always fetch fresh when online, cache as fallback
   e.respondWith(
-    caches.match(e.request).then(r => r ||
-      fetch(e.request).then(nr => {
-        if (nr.ok) caches.open(CACHE).then(c => c.put(e.request, nr.clone()));
-        return nr;
+    fetch(e.request)
+      .then(r => {
+        if (r.ok) caches.open(CACHE).then(c => c.put(e.request, r.clone()));
+        return r;
       })
-    )
+      .catch(() => caches.match(e.request))
   );
 });

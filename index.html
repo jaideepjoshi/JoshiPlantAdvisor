@@ -2282,11 +2282,6 @@ render();
 // ===== SERVICE WORKER — auto-update on new deploy =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW registration failed:', e));
-  // New SW uses skipWaiting, so controllerchange fires automatically — reload to get fresh content
-  let _swRefreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!_swRefreshing) { _swRefreshing = true; window.location.reload(); }
-  });
 }
 </script>
 </body>
