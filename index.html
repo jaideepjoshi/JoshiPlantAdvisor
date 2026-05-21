@@ -1577,6 +1577,102 @@ function renderCompanionHeight(mainPlant) {
   return `<div style="display:flex;gap:4px;align-items:flex-end;margin-top:10px;padding:12px 4px 0;border-top:1px solid var(--border);background:linear-gradient(180deg,transparent 0%,rgba(74,222,128,.03) 100%);border-radius:0 0 12px 12px">${plants}</div>`;
 }
 
+function getPairingColorMap(names) {
+  const map = {};
+  names.forEach((name, i) => { map[name] = COMP_COLORS[i % COMP_COLORS.length]; });
+  return map;
+}
+
+function renderPairingsBloom(mainPlant, names) {
+  if (!names.length) return '';
+  const colorMap = getPairingColorMap(names);
+  const mainBlooms = new Set(mainPlant.bloomMonths || []);
+  const FOLIAGE_MONTHS = new Set([4,5,6,7,8,9,10]);
+  const compData = names.map(name => {
+    const found = findPlantByName(name);
+    const blooms = new Set(found ? (found.bloomMonths || []) : []);
+    return { name, plant: found, blooms, isFoliageOnly: blooms.size === 0, isCustom: !found };
+  });
+  const above = compData.slice(0, Math.ceil(compData.length / 2));
+  const below = compData.slice(Math.ceil(compData.length / 2));
+
+  function bloomRow(name, blooms, isMain, isFoliageOnly, isCustom) {
+    const cc = colorMap[name];
+    const label = isMain
+      ? `<strong style="color:#4ade80">${escHtml(name)}</strong>`
+      : (function() {
+          const f = findPlantByName(name);
+          if (isCustom || !f) return `<span style="color:${cc.light}">${escHtml(name)}</span>`;
+          return `<a href="#" onclick="event.preventDefault();state.detailId=${f.id};render();window.scrollTo(0,0)" style="color:${cc.light};font-weight:600;text-decoration:none">${escHtml(name)}</a>`;
+        })();
+    const suffix = isFoliageOnly && !isCustom ? ` <span style="font-size:9px;color:var(--text-light);font-weight:400">(foliage)</span>` : (isCustom ? ` <span style="font-size:9px;color:var(--text-light);font-weight:400">(custom)</span>` : '');
+    const activeMonths = isFoliageOnly ? FOLIAGE_MONTHS : blooms;
+    const cells = Array.from({length:8}, (_, i) => {
+      const m = i + 3, on = activeMonths.has(m);
+      let bg;
+      if (isMain) bg = on ? 'background:linear-gradient(135deg,#22c55e,#4ade80)' : 'background:rgba(255,255,255,.05)';
+      else if (isFoliageOnly) bg = on ? `background:linear-gradient(135deg,${cc.dark},${cc.light});opacity:.6` : 'background:rgba(255,255,255,.05)';
+      else bg = on ? `background:linear-gradient(135deg,${cc.dark},${cc.light})` : 'background:rgba(255,255,255,.05)';
+      return `<div style="width:80px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;${bg};${on?'color:#fff':'color:var(--text-light)'}">${MONTHS[i+2]}</div>`;
+    }).join('');
+    return { label: `${label}${suffix}`, cells };
+  }
+
+  const rows = [];
+  above.forEach(c => rows.push(bloomRow(c.name, c.blooms, false, c.isFoliageOnly, c.isCustom)));
+  rows.push(bloomRow(mainPlant.name + ' (this plant)', mainBlooms, true, false, false));
+  below.forEach(c => rows.push(bloomRow(c.name, c.blooms, false, c.isFoliageOnly, c.isCustom)));
+  const tableRows = rows.map(r => `<tr>
+    <td style="font-size:10px;line-height:1.2;white-space:nowrap;padding:2px 8px 2px 0;vertical-align:middle">${r.label}</td>
+    <td style="vertical-align:middle"><div style="display:flex;gap:2px">${r.cells}</div></td>
+  </tr>`).join('');
+  return `<div style="margin-top:8px;overflow-x:auto"><table style="border-collapse:collapse">${tableRows}</table></div>`;
+}
+
+function renderPairingsHeight(mainPlant, names) {
+  if (!names.length) return '';
+  const mainH = parseHeight(mainPlant.height);
+  if (mainH.max === 0) return '';
+  const colorMap = getPairingColorMap(names);
+  const compData = names.map(name => {
+    const found = findPlantByName(name);
+    const h = found ? parseHeight(found.height) : { min: 0, max: 0 };
+    return { name, plant: found, ...h, isCustom: !found };
+  }).filter(c => c.max > 0);
+  if (!compData.length) return '';
+
+  const left = compData.slice(0, Math.ceil(compData.length / 2));
+  const right = compData.slice(Math.ceil(compData.length / 2));
+  const allItems = [...left, { name: mainPlant.name, max: mainH.max, min: mainH.min, isMain: true }, ...right];
+  const globalMax = Math.max(...allItems.map(c => c.max));
+  const chartH = 140;
+
+  const plants = allItems.map(c => {
+    const h = Math.max(Math.round((c.max / globalMax) * chartH), 20);
+    const isMain = c.isMain;
+    const cc = colorMap[c.name];
+    const stemColor = isMain ? '#22804a' : (cc ? cc.dark : '#d4a017');
+    const leafColor = isMain ? '#4ade80' : (cc ? cc.light : '#f5c842');
+    const leafBg = isMain ? 'rgba(74,222,128,.1)' : (cc ? cc.bg : 'rgba(212,160,23,.15)');
+    const found = c.plant || (!isMain && findPlantByName(c.name));
+    const label = isMain
+      ? `<strong style="color:#4ade80;font-size:10px">${escHtml(c.name)}</strong>`
+      : (found ? `<a href="#" onclick="event.preventDefault();state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:${leafColor};font-weight:600;text-decoration:none;font-size:10px">${escHtml(c.name)}</a>`
+               : `<span style="color:${leafColor};font-size:10px">${escHtml(c.name)}</span>`);
+    const svg = `<svg width="50" height="${h}" viewBox="0 0 50 ${h}" fill="none">
+      <rect x="23" y="${h*0.3}" width="4" height="${h*0.7}" rx="2" fill="${stemColor}" opacity="0.7"/>
+      <ellipse cx="25" cy="${h*0.25}" rx="${Math.min(22,10+h*0.1)}" ry="${Math.min(h*0.3,30)}" fill="${leafBg}" stroke="${leafColor}" stroke-width="1.5"/>
+      <ellipse cx="25" cy="${h*0.2}" rx="${Math.min(14,6+h*0.06)}" ry="${Math.min(h*0.18,18)}" fill="${leafBg}" stroke="${stemColor}" stroke-width="1" opacity="0.5"/>
+    </svg>`;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0">
+      <div style="height:${chartH}px;display:flex;align-items:flex-end;justify-content:center">${svg}</div>
+      <div style="font-size:9px;color:${leafColor};font-weight:700;white-space:nowrap">${c.min}-${c.max}"</div>
+      <div style="text-align:center;line-height:1.2;overflow:hidden;width:100%">${label}</div>
+    </div>`;
+  }).join('');
+  return `<div style="display:flex;gap:4px;align-items:flex-end;margin-top:10px;padding:12px 4px 0;border-top:1px solid var(--border);background:linear-gradient(180deg,transparent 0%,rgba(74,222,128,.03) 100%);border-radius:0 0 12px 12px">${plants}</div>`;
+}
+
 function renderDetail() {
   const p = PLANTS.find(x=>x.id===state.detailId);
   if (!p) return '';
@@ -1748,6 +1844,8 @@ function renderDetail() {
         <span onclick="removeMyPairing(${p.id},${idx})" title="Remove" style="cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;padding:0 2px;opacity:.7">&times;</span>
       </span>`;
     }).join('');
+    const bloomChart = myP.length ? renderPairingsBloom(p, myP) : '';
+    const heightChart = myP.length ? renderPairingsHeight(p, myP) : '';
     const myPairingsContent = `
       ${myP.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${chips}</div>` : ''}
       <div style="position:relative">
@@ -1759,7 +1857,9 @@ function renderDetail() {
           style="width:100%;padding:10px 12px;border:1px solid rgba(74,222,128,.25);border-radius:10px;font-size:14px;background:rgba(74,222,128,.05);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif">
         <div id="pairing-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);background:#111c16;border:1px solid rgba(74,222,128,.2);border-radius:10px;overflow:hidden;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
       </div>
-      <p style="font-size:11px;color:var(--text-light);margin-top:8px">${myP.length ? '🌱 = in your garden · tap name to open plant page' : 'Record combinations that work well together. Tap a saved name to open its page.'}</p>`;
+      <p style="font-size:11px;color:var(--text-light);margin-top:8px">${myP.length ? '🌱 = in your garden · tap name to open plant page' : 'Record combinations that work well together. Tap a saved name to open its page.'}</p>
+      ${bloomChart ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px">Bloom &amp; Foliage Timeline</div>${bloomChart}` : ''}
+      ${heightChart ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:18px 0 6px">Height Comparison</div>${heightChart}` : ''}`;
     sections.push(S(pairingIcon, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'My Pairings', myPairingsContent, true));
   }
 
