@@ -2289,7 +2289,15 @@ if ('serviceWorker' in navigator) {
           // A new version is waiting — show the update banner
           const banner = document.createElement('div');
           banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#0b3d2c,#145236);color:#e8ece9;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;font-family:Inter,system-ui,sans-serif;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,.5);border-bottom:1px solid rgba(74,222,128,.3)';
-          banner.innerHTML = '<span style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🌱</span><span>New version available</span></span><button style="background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:1px solid rgba(74,222,128,.3);padding:7px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit" onclick="reg.waiting.postMessage(\'skipWaiting\');this.parentElement.remove()">Update now</button>';
+          const bannerLabel = document.createElement('span');
+          bannerLabel.style.cssText = 'display:flex;align-items:center;gap:8px';
+          bannerLabel.innerHTML = '<span style="font-size:18px">🌱</span><span>New version available</span>';
+          const bannerBtn = document.createElement('button');
+          bannerBtn.textContent = 'Update now';
+          bannerBtn.style.cssText = 'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:1px solid rgba(74,222,128,.3);padding:7px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit';
+          bannerBtn.addEventListener('click', () => { reg.waiting.postMessage('skipWaiting'); banner.remove(); });
+          banner.appendChild(bannerLabel);
+          banner.appendChild(bannerBtn);
           document.body.prepend(banner);
         }
       });
