@@ -43,6 +43,7 @@ if (FIREBASE_CONFIG.apiKey) {
       _fbInitialLoadDone = true; _fbTasksInitDone = true;
       _fbPhotosInitDone = true; _fbNotesInitDone = true;
       _imgCacheReady = true;
+      initSharedPlants();
       initGardenDefaults();
       setTimeout(fetchAllImages, 1000);
     });
@@ -96,6 +97,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 @keyframes slideOutRight{from{transform:translateX(0);opacity:1}to{transform:translateX(72%);opacity:0}}
 @keyframes fadeInUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes pageFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .page-anim{animation:pageFade .2s ease both}
 .detail-hero{position:relative;width:100%;height:300px;overflow:hidden;background:linear-gradient(135deg,#061208,#0b3d2c,#145236);touch-action:pan-y}
 .detail-hero img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .25s ease}
@@ -241,7 +243,17 @@ let state = {
   gardenName: localStorage.getItem("pt_gardenName") || "",
   gardenLocation: localStorage.getItem("pt_gardenLocation") || "",
   showSetup: false,
-  showSettings: false
+  showSettings: false,
+  showAddPlant: false,
+  apStep: 1,
+  apName: '',
+  apLocalMatches: [],
+  apApiResults: [],
+  apChosen: null,
+  apError: '',
+  apLoading: false,
+  apForm: {},
+  perenualKey: localStorage.getItem('pt_perenualKey') || ''
 };
 
 let _fbTasksInitDone = false;
@@ -500,6 +512,20 @@ function initFirebaseSync() {
     _imgCacheReady = true;
     render();
     setTimeout(fetchAllImages, 1000);
+  });
+  initSharedPlants();
+}
+
+const _builtinPlantCount = PLANTS.length;
+
+function initSharedPlants() {
+  if (!_fbDb) return;
+  _fbDb.ref('shared_plants').on('value', snap => {
+    // Trim any previously loaded shared plants then re-add
+    PLANTS.splice(_builtinPlantCount);
+    const shared = snap.val() || {};
+    Object.values(shared).forEach(p => { if (p && p.id) PLANTS.push(p); });
+    render();
   });
 }
 
@@ -1382,7 +1408,12 @@ function renderBrowse() {
   return `
     <div class="filters">${filters.map(([k,l])=>`<div class="chip ${state.filter===k?'active':''}" onclick="state.filter='${k}';render()">${l}</div>`).join("")}${colorFilters.map(([k,l,c])=>`<div class="chip ${state.filter===k?'active':''}" onclick="state.filter='${k}';render()" style="${state.filter===k?'background:'+c+';color:#fff;border-color:'+c:'border-color:'+c+'40;color:'+c}"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px"></span>${l}</div>`).join("")}</div>
     ${statsHtml}
-    <div id="plantCount" style="padding:10px 16px;font-size:12px;color:var(--text-light);letter-spacing:.3px;font-weight:500">${list.length} plant${list.length!==1?'s':''}${state.filter!=='all'?' &middot; filtered':''}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 16px 2px">
+      <span style="font-size:12px;color:var(--text-light);font-weight:500">${list.length} plant${list.length!==1?'s':''}${state.filter!=='all'?' · filtered':''}</span>
+      <button onclick="state.showAddPlant=true;state.apStep=1;state.apName='';state.apError='';state.apLoading=false;state.apLocalMatches=[];state.apApiResults=[];state.apChosen=null;state.apForm={};render()" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;box-shadow:0 2px 12px rgba(74,222,128,.2)">
+        ＋ Add Plant
+      </button>
+    </div>
     <div class="grid" id="plantGrid">${list.map(p=>`
       <div class="card" onclick="state.detailId=${p.id};render()">
         ${plantImage(p)}
@@ -2098,10 +2129,8 @@ function searchUpdate() {
   clearTimeout(_searchTimer);
   _searchTimer = setTimeout(() => {
     const grid = document.getElementById("plantGrid");
-    const count = document.getElementById("plantCount");
-    if (grid && count) {
+    if (grid) {
       const list = getFiltered();
-      count.textContent = `${list.length} plant${list.length!==1?'s':''}${state.filter!=='all'?' · filtered':''}`;
       grid.innerHTML = list.map(p=>`
         <div class="card" onclick="state.detailId=${p.id};render()">
           ${plantImage(p)}
@@ -2140,6 +2169,9 @@ function saveSettings() {
   const name = (document.getElementById('settingsName')||{}).value||'';
   if (name.trim()) state.gardenName = name.trim();
   state.gardenLocation = ((document.getElementById('settingsLocation')||{}).value||'').trim();
+  const pk = (document.getElementById('settingsPerenualKey')||{}).value||'';
+  state.perenualKey = pk.trim();
+  localStorage.setItem('pt_perenualKey', state.perenualKey);
   state.showSettings = false;
   saveProfile();
   render();
@@ -2171,6 +2203,11 @@ function renderSettingsModal() {
       <input id="settingsName" type="text" value="${escHtml(state.gardenName)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone</label>
       <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
+      <div style="margin-bottom:22px">
+        <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Perenual API Key <span style="font-style:italic;text-transform:none;letter-spacing:0;font-weight:400">(for plant lookup)</span></label>
+        <input id="settingsPerenualKey" type="text" value="${escHtml(state.perenualKey)}" placeholder="Get free key at perenual.com" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit">
+        <p style="font-size:11px;color:#4a5a50;margin-top:5px">Free at <a href="https://perenual.com/support/api" target="_blank" style="color:#4ade80">perenual.com/support/api</a> · 100 lookups/day</p>
+      </div>
       <button onclick="saveSettings()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px">Save</button>
       ${uid ? `<p style="font-size:11px;color:#4a5a50;text-align:center">Garden ID: <span style="font-family:monospace;word-break:break-all">${uid}</span></p>` : ''}
     </div>
@@ -2212,6 +2249,380 @@ function closeDetail() {
   const finish = () => { if (done) return; done = true; state.detailId = null; state.prevPlantId = null; render(); };
   el.addEventListener('animationend', finish, { once: true });
   setTimeout(finish, 400); // fallback: animationend can drop on iOS Safari
+}
+
+// ===== ADD PLANT FEATURE =====
+
+function fuzzyMatchPlants(query) {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+  const words = q.split(/\s+/);
+  const scored = PLANTS.slice(0, _builtinPlantCount).map(p => {
+    const nameL = (p.name||'').toLowerCase();
+    const botL = (p.botanical||'').toLowerCase();
+    let score = 0;
+    if (nameL === q || botL === q) score = 100;
+    else if (nameL.startsWith(q) || botL.startsWith(q)) score = 80;
+    else if (nameL.includes(q) || botL.includes(q)) score = 60;
+    else {
+      const matched = words.filter(w => w.length > 2 && (nameL.includes(w) || botL.includes(w)));
+      score = matched.length ? (matched.length / words.length) * 45 : 0;
+    }
+    return { plant: p, score };
+  }).filter(r => r.score >= 30).sort((a,b) => b.score - a.score).slice(0, 4);
+  return scored.map(r => r.plant);
+}
+
+async function apCallPerenual(name) {
+  const key = state.perenualKey;
+  if (!key) return null;
+  try {
+    const resp = await fetch(`https://perenual.com/api/species-list?key=${encodeURIComponent(key)}&q=${encodeURIComponent(name)}&per_page=4`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return Array.isArray(data.data) ? data.data : null;
+  } catch(e) { return null; }
+}
+
+function apSunFromPerenual(sunlight) {
+  if (!Array.isArray(sunlight) || !sunlight.length) return '';
+  const s = sunlight.join(' ').toLowerCase();
+  if (s.includes('full shade')) return 'Full Shade';
+  if (s.includes('full sun') && s.includes('part')) return 'Part Sun to Full Sun';
+  if (s.includes('full sun')) return 'Full Sun';
+  if (s.includes('part shade') || s.includes('part sun')) return 'Part Sun / Part Shade';
+  return sunlight[0];
+}
+
+function apChooseResult(idx) {
+  const r = state.apApiResults[idx];
+  if (!r) return;
+  state.apChosen = r;
+  const sun = apSunFromPerenual(r.sunlight);
+  state.apForm = {
+    name: r.common_name || state.apName,
+    botanical: Array.isArray(r.scientific_name) ? r.scientific_name[0] : (r.scientific_name||''),
+    sun: sun,
+    description: '',
+    height: '',
+    bloomColors: [],
+    bloomMonths: [],
+    apiImgUrl: (r.default_image||{}).regular_url || ''
+  };
+  state.apStep = 4;
+  render();
+}
+
+function apStartManual() {
+  state.apChosen = null;
+  state.apForm = { name: state.apName, botanical: '', sun: '', description: '', height: '', bloomColors: [], bloomMonths: [] };
+  state.apStep = 4;
+  render();
+}
+
+function apToggleBloomMonth(m) {
+  const arr = state.apForm.bloomMonths || [];
+  const idx = arr.indexOf(m);
+  if (idx === -1) arr.push(m);
+  else arr.splice(idx, 1);
+  state.apForm.bloomMonths = arr.slice().sort((a,b)=>a-b);
+  render();
+}
+
+function apReadForm() {
+  const fields = ['apName','apBotanical','apSun','apHeight','apDescription'];
+  const ids = ['apFName','apFBotanical','apFSun','apFHeight','apFDescription'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      const key = id.replace('apF','').charAt(0).toLowerCase() + id.replace('apF','').slice(1);
+      state.apForm[key === 'name' ? 'name' : key === 'botanical' ? 'botanical' : key === 'sun' ? 'sun' : key === 'height' ? 'height' : 'description'] = el.value;
+    }
+  });
+}
+
+async function apDoSearch() {
+  const name = state.apName.trim();
+  if (!name) { state.apError = 'Please enter a plant name.'; render(); return; }
+  state.apError = '';
+
+  // Step 2: local match
+  const local = fuzzyMatchPlants(name);
+  if (local.length) {
+    state.apLocalMatches = local;
+    state.apStep = 2;
+    render();
+    return;
+  }
+
+  // No local match — go straight to API
+  state.apStep = 3;
+  state.apLoading = true;
+  state.apApiResults = [];
+  render();
+  await apFetchFromApi(name);
+}
+
+async function apFetchFromApi(name) {
+  state.apLoading = true;
+  render();
+  const results = await apCallPerenual(name || state.apName);
+  state.apLoading = false;
+  if (!results) {
+    state.apApiResults = [];
+    state.apError = state.perenualKey ? 'Could not reach the Perenual API. Check your API key or try again.' : '';
+    render();
+    return;
+  }
+  state.apApiResults = results;
+  state.apError = '';
+  // If exactly one perfect match and it's perennial + zone 6 → auto-choose
+  if (results.length === 1) {
+    const r = results[0];
+    if ((r.cycle||'').toLowerCase().includes('perennial') && parseInt((r.hardiness||{}).min||99) <= 6) {
+      apChooseResult(0);
+      return;
+    }
+  }
+  render();
+}
+
+async function apSavePlant() {
+  apReadForm();
+  const f = state.apForm;
+  if (!f.name || !f.name.trim()) { state.apError = 'Plant name is required.'; render(); return; }
+  const newId = 10000 + parseInt(Date.now().toString().slice(-6));
+  const plant = {
+    id: newId,
+    name: f.name.trim(),
+    botanical: (f.botanical||'').trim(),
+    type: 'Perennial',
+    sun: (f.sun||'').trim(),
+    height: (f.height||'').trim(),
+    description: (f.description||'').trim(),
+    bloomMonths: f.bloomMonths || [],
+    bloomColors: f.bloomColors || [],
+    deerResistant: false,
+    nativeOhio: false,
+    reblooming: false,
+    _addedBy: _fbUserId || 'anon',
+    _addedAt: Date.now()
+  };
+  if (f.apiImgUrl) plant._imgUrl = f.apiImgUrl;
+
+  // Check for duplicates one more time
+  const dup = PLANTS.find(p => p.name.toLowerCase() === plant.name.toLowerCase() ||
+    (plant.botanical && p.botanical && p.botanical.toLowerCase() === plant.botanical.toLowerCase()));
+  if (dup) {
+    state.apError = `"${dup.name}" already exists in the database.`;
+    render();
+    return;
+  }
+
+  if (_fbDb) {
+    await _fbDb.ref('shared_plants').push(plant);
+  } else {
+    PLANTS.push(plant);
+  }
+  state.apStep = 5;
+  state.apChosen = plant;
+  render();
+}
+
+function renderAddPlantModal() {
+  const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const step = state.apStep;
+  const f = state.apForm;
+  const chosen = state.apChosen;
+
+  let body = '';
+
+  if (step === 1) {
+    body = `
+      <p style="font-size:13px;color:var(--text-mid);margin-bottom:18px">Add a new perennial to the shared plant database. All app users will see it.</p>
+      <label style="display:block;font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Plant Name or Botanical Name</label>
+      <input id="apNameInput" type="text" value="${escHtml(state.apName)}" placeholder="e.g. Rudbeckia fulgida or Black-eyed Susan" autocomplete="off"
+        style="width:100%;padding:12px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#e8ece9;font-size:15px;outline:none;font-family:inherit;margin-bottom:${state.apError?'8px':'18px'}"
+        oninput="state.apName=this.value" onkeydown="if(event.key==='Enter'){state.apName=this.value;apDoSearch()}">
+      ${state.apError ? `<p style="color:#f87171;font-size:12px;margin-bottom:12px">${escHtml(state.apError)}</p>` : ''}
+      <button onclick="state.apName=(document.getElementById('apNameInput')||{}).value||state.apName;apDoSearch()"
+        style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+        Check Plant →
+      </button>
+      ${!state.perenualKey ? `<p style="font-size:11px;color:#4a5a50;text-align:center;margin-top:10px">💡 Add a <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80">Perenual API key in Settings</a> for richer plant data</p>` : ''}
+    `;
+  }
+
+  else if (step === 2) {
+    // Local matches found
+    const matches = state.apLocalMatches;
+    body = `
+      <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px">Found similar plants already in the database. Is one of these what you meant?</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        ${matches.map(p => `
+          <div onclick="state.showAddPlant=false;state.detailId=${p.id};render()"
+            style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:10px;cursor:pointer">
+            <div style="font-size:24px;flex-shrink:0">🌿</div>
+            <div>
+              <div style="font-weight:600;font-size:14px;color:var(--text)">${escHtml(p.name)}</div>
+              <div style="font-size:12px;color:var(--text-light);font-style:italic">${escHtml(p.botanical||p.type||'')}</div>
+            </div>
+            <div style="margin-left:auto;color:#4ade80;font-size:18px">›</div>
+          </div>
+        `).join('')}
+      </div>
+      <button onclick="state.apStep=3;state.apLocalMatches=[];apFetchFromApi(state.apName)"
+        style="width:100%;padding:11px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">
+        None of these — add "${escHtml(state.apName)}" as new →
+      </button>
+    `;
+  }
+
+  else if (step === 3) {
+    if (state.apLoading) {
+      body = `<div style="text-align:center;padding:32px 0">
+        <div style="font-size:32px;animation:spin 1s linear infinite;display:inline-block">🌱</div>
+        <p style="color:var(--text-mid);font-size:14px;margin-top:12px">Checking plant database…</p>
+      </div>`;
+    } else if (!state.perenualKey && !state.apApiResults.length) {
+      body = `
+        <div style="background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.2);border-radius:10px;padding:14px;margin-bottom:16px">
+          <p style="font-size:13px;color:#f5c842;margin:0">No API key set. <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80;font-weight:600">Add your free Perenual key in Settings</a> to auto-verify and fill plant info.</p>
+        </div>
+        <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px">Or enter the plant details manually:</p>
+        <button onclick="apStartManual()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Fill in manually →</button>
+      `;
+    } else if (state.apError) {
+      body = `
+        <p style="color:#f87171;font-size:13px;margin-bottom:16px">${escHtml(state.apError)}</p>
+        <button onclick="apStartManual()" style="width:100%;padding:13px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Enter manually instead →</button>
+      `;
+    } else if (!state.apApiResults.length) {
+      body = `
+        <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:10px;padding:14px;margin-bottom:16px">
+          <p style="font-size:13px;color:#f87171;margin:0">No results found for <strong>"${escHtml(state.apName)}"</strong>. Try a different spelling or the botanical name.</p>
+        </div>
+        <button onclick="state.apStep=1;render()" style="width:100%;padding:11px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-bottom:10px">← Try different name</button>
+        <button onclick="apStartManual()" style="width:100%;padding:11px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Add manually →</button>
+      `;
+    } else {
+      // Show results
+      const results = state.apApiResults;
+      const zone6Results = results.filter(r => parseInt((r.hardiness||{}).min||99) <= 6);
+      const otherResults = results.filter(r => parseInt((r.hardiness||{}).min||99) > 6);
+      const renderResult = (r, idx, dimmed) => {
+        const isPerennial = (r.cycle||'').toLowerCase().includes('perennial');
+        const zoneMin = parseInt((r.hardiness||{}).min||99);
+        const zoneMax = parseInt((r.hardiness||{}).max||0);
+        const zoneOk = zoneMin <= 6;
+        return `<div onclick="${!dimmed ? 'apChooseResult('+idx+')' : ''}"
+          style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:${dimmed?'rgba(255,255,255,.03)':'rgba(74,222,128,.06)'};border:1px solid ${dimmed?'rgba(255,255,255,.06)':'rgba(74,222,128,.15)'};border-radius:10px;cursor:${dimmed?'default':'pointer'};margin-bottom:8px;opacity:${dimmed?'.55':'1'}">
+          ${r.default_image&&r.default_image.thumbnail ? `<img src="${r.default_image.thumbnail}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">` : `<div style="width:44px;height:44px;background:rgba(74,222,128,.1);border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">🌿</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px;color:var(--text)">${escHtml(r.common_name||'Unknown')}</div>
+            <div style="font-size:11px;color:var(--text-light);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml((Array.isArray(r.scientific_name)?r.scientific_name[0]:r.scientific_name)||'')}</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+              <span style="font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;background:${isPerennial?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)'};color:${isPerennial?'#4ade80':'#f87171'};border:1px solid ${isPerennial?'rgba(74,222,128,.2)':'rgba(248,113,113,.2)'}">${r.cycle||'Unknown'}</span>
+              ${(r.hardiness&&r.hardiness.min) ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;background:${zoneOk?'rgba(96,165,250,.1)':'rgba(248,113,113,.1)'};color:${zoneOk?'#93c5fd':'#f87171'};border:1px solid ${zoneOk?'rgba(96,165,250,.2)':'rgba(248,113,113,.2)'}">Zone ${r.hardiness.min}–${r.hardiness.max||'?'} ${zoneOk?'✓ Zone 6':'✗ Zone 6'}</span>` : ''}
+            </div>
+          </div>
+          ${!dimmed?`<div style="color:#4ade80;font-size:18px;margin-left:4px;align-self:center">›</div>`:''}
+        </div>`;
+      };
+      body = `
+        <p style="font-size:13px;color:var(--text-mid);margin-bottom:12px">Select your plant to pre-fill details:</p>
+        ${zone6Results.map((r,i) => renderResult(r, results.indexOf(r), false)).join('')}
+        ${otherResults.length ? `<p style="font-size:11px;color:var(--text-light);margin:10px 0 6px">Not ideal for zone 6a (tap to add anyway):</p>${otherResults.map(r => renderResult(r, results.indexOf(r), false)).join('')}` : ''}
+        <button onclick="apStartManual()" style="width:100%;padding:10px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text-mid);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:4px">None of these — enter manually →</button>
+      `;
+    }
+  }
+
+  else if (step === 4) {
+    const chosen = state.apChosen;
+    const r = chosen;
+    const isPerennial = r ? (r.cycle||'').toLowerCase().includes('perennial') : true;
+    const zoneOk = r ? parseInt((r.hardiness||{}).min||99) <= 6 : true;
+    const warning = (r && (!isPerennial || !zoneOk)) ? `
+      <div style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:10px;padding:12px;margin-bottom:14px">
+        <p style="font-size:12px;color:#fb923c;margin:0">⚠️ ${!isPerennial?'This plant may not be a perennial.':''} ${!zoneOk?'It may not be hardy in Cleveland zone 6a.':''}</p>
+      </div>` : '';
+    const SUN_OPTIONS = ['Full Sun','Part Sun to Full Sun','Part Sun / Part Shade','Part Shade to Full Shade','Full Shade'];
+    const BLOOM_MONTHS = [3,4,5,6,7,8,9,10];
+    body = `
+      ${warning}
+      <div style="display:flex;flex-direction:column;gap:11px">
+        <div>
+          <label style="font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Common Name *</label>
+          <input id="apFName" type="text" value="${escHtml(f.name||state.apName)}" placeholder="e.g. Black-eyed Susan" oninput="state.apForm.name=this.value" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Botanical Name</label>
+          <input id="apFBotanical" type="text" value="${escHtml(f.botanical||'')}" placeholder="e.g. Rudbeckia fulgida" oninput="state.apForm.botanical=this.value" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Sun Requirements</label>
+          <select id="apFSun" oninput="state.apForm.sun=this.value" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit;appearance:none;cursor:pointer">
+            <option value="" ${!f.sun?'selected':''}>Select…</option>
+            ${SUN_OPTIONS.map(o=>`<option value="${o}" ${f.sun===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Height</label>
+          <input id="apFHeight" type="text" value="${escHtml(f.height||'')}" placeholder="e.g. 2–3 ft" oninput="state.apForm.height=this.value" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Bloom Months</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${BLOOM_MONTHS.map(m => `<div onclick="apToggleBloomMonth(${m})" style="padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${(f.bloomMonths||[]).includes(m)?'#22804a':'rgba(255,255,255,.12)'};background:${(f.bloomMonths||[]).includes(m)?'rgba(74,222,128,.15)':'rgba(255,255,255,.05)'};color:${(f.bloomMonths||[]).includes(m)?'#4ade80':'var(--text-light)'}">${MONTH_SHORT[m-1]}</div>`).join('')}
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Description</label>
+          <textarea id="apFDescription" placeholder="Brief description of this plant…" oninput="state.apForm.description=this.value" style="width:100%;min-height:72px;padding:10px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:13px;outline:none;font-family:inherit;resize:vertical;line-height:1.4">${escHtml(f.description||'')}</textarea>
+        </div>
+      </div>
+      ${state.apError ? `<p style="color:#f87171;font-size:12px;margin-top:10px">${escHtml(state.apError)}</p>` : ''}
+      <button onclick="apSavePlant()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:16px">
+        🌿 Save Plant to Database
+      </button>
+    `;
+  }
+
+  else if (step === 5) {
+    const savedName = (state.apForm.name || (state.apChosen||{}).name || state.apName || 'Plant');
+    body = `
+      <div style="text-align:center;padding:16px 0 8px">
+        <div style="font-size:52px;margin-bottom:12px">🌿</div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:20px;background:linear-gradient(135deg,#f5c842,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px">${escHtml(savedName)}</h3>
+        <p style="font-size:14px;color:var(--text-mid);margin-bottom:24px">Successfully added to the shared plant database.<br>All users will see it when they next open the app.</p>
+        <button onclick="const nid=PLANTS.find(p=>p.name.toLowerCase()==='${savedName.toLowerCase().replace(/'/g,"\\'")}');if(nid){state.detailId=nid.id;state.showAddPlant=false;render()}else{state.showAddPlant=false;render()}"
+          style="width:100%;padding:12px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px">View Plant →</button>
+        <button onclick="state.apStep=1;state.apName='';state.apForm={};state.apChosen=null;state.apError='';state.apApiResults=[];render()"
+          style="width:100%;padding:12px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Add Another Plant</button>
+      </div>
+    `;
+  }
+
+  const stepDots = step < 5 ? `<div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px">
+    ${[1,2,3,4].map(s=>`<div style="width:${s===step?'20px':'7px'};height:7px;border-radius:4px;background:${s<=step?'#4ade80':'rgba(255,255,255,.12)'};transition:width .25s,background .25s"></div>`).join('')}
+  </div>` : '';
+
+  return `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0" onclick="if(event.target===this){state.showAddPlant=false;render()}">
+      <div style="background:linear-gradient(160deg,#0c1f18,#0f2d1e);border-radius:20px 20px 0 0;padding:24px 22px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;border-top:1px solid rgba(74,222,128,.15);box-shadow:0 -8px 40px rgba(0,0,0,.6)" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div>
+            ${step > 1 && step < 5 ? `<button onclick="state.apStep=${step-1};state.apError='';render()" style="background:none;border:none;color:var(--text-mid);cursor:pointer;font-size:13px;font-weight:600;padding:0;display:flex;align-items:center;gap:4px">‹ Back</button>` : ''}
+            <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9;margin:${step>1&&step<5?'4px':'0'} 0 0">${step===1?'Add New Plant':step===2?'Similar Plants Found':step===3?'Verify Plant':step===4?'Plant Details':step===5?'Plant Added!':''}</h2>
+          </div>
+          <button onclick="state.showAddPlant=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:4px">×</button>
+        </div>
+        ${stepDots}
+        ${body}
+      </div>
+    </div>
+  `;
 }
 
 let _lastView = null;
@@ -2287,6 +2698,7 @@ function render() {
   // Modals
   if (state.showSetup) content += renderSetupModal();
   if (state.showSettings) content += renderSettingsModal();
+  if (state.showAddPlant) content += renderAddPlantModal();
 
   app.innerHTML = content;
   if (state.view === 'beds' && state.bedView === 'edit') setTimeout(initBedCanvas, 50);
