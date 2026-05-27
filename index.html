@@ -2318,32 +2318,72 @@ async function apCallClaude(name) {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 800,
+        model: 'claude-sonnet-4-5',
+        max_tokens: 2500,
         messages: [{ role: 'user', content:
-          `You are a plant expert. Look up this plant: "${name.replace(/"/g,"'")}"
+`You are a horticultural expert specializing in perennial gardens in Cleveland, Ohio (USDA zone 6a).
+Look up this plant: "${name.replace(/"/g,"'")}"
 
-Respond with ONLY a JSON object — no prose, no markdown, no code fences:
+Return ONLY a single JSON object — no prose, no markdown, no code fences. Use this exact schema:
 {
   "found": true,
-  "common_name": "...",
-  "scientific_name": "...",
+  "common_name": "Balloon Flower",
+  "scientific_name": "Platycodon grandiflorus",
   "cycle": "Perennial",
-  "hardiness_min": 4,
-  "hardiness_max": 9,
+  "hardiness_min": 3,
+  "hardiness_max": 8,
   "zone_6a": true,
-  "sun": "Full Sun",
-  "height": "2-3 ft",
-  "description": "2-3 sentence gardening description.",
-  "bloom_months": [6,7,8],
-  "bloom_colors": ["yellow","orange"],
-  "deer_resistant": false,
-  "native_ohio": false,
+  "type": "Perennial Flower",
+  "height": "18-24 in",
+  "width": "12-18 in",
+  "sun": "Part Sun to Full Sun",
+  "waterReq": "Low-Medium",
+  "ph": "6.0-7.0",
+  "partialShade": true,
+  "deerResistant": true,
+  "rabbitResistant": false,
+  "droughtTolerant": false,
+  "reblooming": false,
+  "rebloomNote": "Deadhead spent flowers to extend bloom",
+  "attracts": ["Bees","Butterflies"],
+  "nativeOhio": false,
+  "gardenStyles": ["Cottage","Border","Pollinator"],
+  "companions": ["Coreopsis","Salvia","Echinacea","Rudbeckia","Ornamental Grasses"],
+  "foliageInterest": "Blue-green lance-shaped leaves provide nice texture spring through fall",
+  "yearRound": "Dried seed pods add subtle winter interest",
+  "cultivars": ["Sentimental Blue (compact 8 in)","Mariesii (dwarf 12 in)","Fuji Pink","Astra series"],
+  "clevelandCultivars": ["Astra Blue","Sentimental Blue"],
+  "bloomMonths": [6,7,8],
+  "bloom_colors": ["blue","purple","white","pink"],
+  "description": "2-3 sentence description focused on garden value and Cleveland growing conditions.",
+  "clevelandLightNote": "Full sun preferred; afternoon shade helps in hot summers.",
+  "fertilizer": "Balanced 10-10-10 in early spring; avoid excess nitrogen",
+  "fertMonth": [4,5],
+  "care": {
+    "3": "Remove old stems; watch for slow emergence — late to appear in spring",
+    "4": "Apply balanced fertilizer; mark location to avoid disturbing roots",
+    "5": "Mulch 2-3 in; stake taller varieties before they flop",
+    "6": "Deadhead spent blooms; water during dry spells",
+    "7": "Continue deadheading; watch for slugs in wet summers",
+    "8": "Reduce deadheading to allow seed set if desired",
+    "9": "Reduce watering; foliage will yellow — this is normal",
+    "10": "Cut back after frost; note location for spring",
+    "11": "Mulch lightly for winter protection"
+  },
+  "whereToBuy": "Proven Winners; local nurseries; online",
+  "whenAvailable": "May-Jun",
+  "video": "https://www.youtube.com/results?search_query=balloon+flower+platycodon+care+perennial",
+  "provenWinners": false,
+  "monrovia": false,
+  "firstEditions": false,
   "suggestions": []
 }
-If plant not found: {"found":false,"suggestions":["similar plant 1","similar plant 2"]}
-Rules: zone_6a = true when hardiness_min <= 6. Use one of these exact sun values:
-Full Sun | Part Sun to Full Sun | Part Sun / Part Shade | Part Shade to Full Shade | Full Shade`
+Rules:
+- zone_6a = true when hardiness_min <= 6
+- sun must be one of: Full Sun | Part Sun to Full Sun | Part Sun / Part Shade | Part Shade to Full Shade | Full Shade
+- care keys are month numbers 3-11 as strings
+- If plant not found: {"found":false,"suggestions":["closest match 1","closest match 2"]}
+- Be specific to Cleveland zone 6a; give practical, actionable care advice`
         }]
       })
     });
@@ -2362,15 +2402,50 @@ Full Sun | Part Sun to Full Sun | Part Sun / Part Shade | Part Shade to Full Sha
 function apUseClaudeResult(r) {
   state.apChosen = r;
   state.apForm = {
+    // Core identity
     name: r.common_name || state.apName,
     botanical: r.scientific_name || '',
+    type: r.type || 'Perennial',
+    // Growing conditions
     sun: r.sun || '',
     height: r.height || '',
-    description: r.description || '',
-    bloomMonths: r.bloom_months || [],
+    width: r.width || '',
+    waterReq: r.waterReq || '',
+    ph: r.ph || '',
+    partialShade: !!r.partialShade,
+    droughtTolerant: !!r.droughtTolerant,
+    // Characteristics
+    deerResistant: !!r.deerResistant || !!r.deer_resistant,
+    rabbitResistant: !!r.rabbitResistant,
+    reblooming: !!r.reblooming,
+    rebloomNote: r.rebloomNote || '',
+    nativeOhio: !!r.nativeOhio || !!r.native_ohio,
+    // Bloom
+    bloomMonths: r.bloomMonths || r.bloom_months || [],
     bloomColors: r.bloom_colors || [],
-    deerResistant: !!r.deer_resistant,
-    nativeOhio: !!r.native_ohio
+    // Interest & design
+    attracts: r.attracts || [],
+    gardenStyles: r.gardenStyles || [],
+    companions: r.companions || [],
+    foliageInterest: r.foliageInterest || '',
+    yearRound: r.yearRound || '',
+    // Cultivars
+    cultivars: r.cultivars || [],
+    clevelandCultivars: r.clevelandCultivars || [],
+    // Care
+    description: r.description || '',
+    clevelandLightNote: r.clevelandLightNote || '',
+    fertilizer: r.fertilizer || '',
+    fertMonth: r.fertMonth || [],
+    care: r.care || {},
+    // Availability
+    whereToBuy: r.whereToBuy || '',
+    whenAvailable: r.whenAvailable || '',
+    video: r.video || '',
+    // Brand flags
+    provenWinners: !!r.provenWinners,
+    monrovia: !!r.monrovia,
+    firstEditions: !!r.firstEditions
   };
   state.apStep = 4;
   render();
@@ -2466,17 +2541,51 @@ async function apSavePlant() {
     const newId = 10000 + parseInt(Date.now().toString().slice(-6));
     const plant = {
       id: newId,
+      // Core
       name: f.name.trim(),
       botanical: (f.botanical||'').trim(),
-      type: 'Perennial',
+      type: f.type || 'Perennial Flower',
+      // Growing
       sun: (f.sun||'').trim(),
       height: (f.height||'').trim(),
-      description: (f.description||'').trim(),
-      bloomMonths: f.bloomMonths || [],
-      bloomColors: f.bloomColors || [],
+      width: (f.width||'').trim(),
+      waterReq: (f.waterReq||'').trim(),
+      ph: (f.ph||'').trim(),
+      partialShade: !!f.partialShade,
+      droughtTolerant: !!f.droughtTolerant,
+      // Traits
       deerResistant: !!f.deerResistant,
+      rabbitResistant: !!f.rabbitResistant,
+      reblooming: !!f.reblooming,
+      rebloomNote: (f.rebloomNote||'').trim(),
       nativeOhio: !!f.nativeOhio,
-      reblooming: false,
+      // Bloom
+      bloomMonths: f.bloomMonths || [],
+      bloomColor: f.bloomColors || [],
+      // Design
+      attracts: f.attracts || [],
+      gardenStyles: f.gardenStyles || [],
+      companions: f.companions || [],
+      foliageInterest: (f.foliageInterest||'').trim(),
+      yearRound: (f.yearRound||'').trim(),
+      // Cultivars
+      cultivars: f.cultivars || [],
+      clevelandCultivars: f.clevelandCultivars || [],
+      // Care
+      description: (f.description||'').trim(),
+      clevelandLightNote: (f.clevelandLightNote||'').trim(),
+      fertilizer: (f.fertilizer||'').trim(),
+      fertMonth: f.fertMonth || [],
+      care: f.care || {},
+      // Availability
+      whereToBuy: (f.whereToBuy||'').trim(),
+      whenAvailable: (f.whenAvailable||'').trim(),
+      video: (f.video||'').trim(),
+      // Brand
+      provenWinners: !!f.provenWinners,
+      monrovia: !!f.monrovia,
+      firstEditions: !!f.firstEditions,
+      // Meta
       _addedBy: _fbUserId || 'anon',
       _addedAt: Date.now()
     };
