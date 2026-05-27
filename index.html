@@ -513,10 +513,34 @@ function initFirebaseSync() {
     render();
     setTimeout(fetchAllImages, 1000);
   });
+  loadSharedClaudeKey();
   initSharedPlants();
 }
 
 const _builtinPlantCount = PLANTS.length;
+let _sharedClaudeKey = '';
+
+function loadSharedClaudeKey() {
+  if (!_fbDb) return;
+  _fbDb.ref('app_config/claudeApiKey').once('value').then(snap => {
+    const key = snap.val();
+    if (key) { _sharedClaudeKey = key; }
+  }).catch(() => {});
+}
+
+function shareClaudeKey() {
+  const key = state.claudeApiKey;
+  if (!key || !_fbDb) return;
+  _fbDb.ref('app_config/claudeApiKey').set(key).then(() => {
+    _sharedClaudeKey = key;
+    state._shareKeyMsg = 'Key shared — all users will use it automatically.';
+    render();
+    setTimeout(() => { state._shareKeyMsg = ''; render(); }, 3500);
+  }).catch(e => {
+    state._shareKeyMsg = 'Error: ' + e.message;
+    render();
+  });
+}
 
 function initSharedPlants() {
   if (!_fbDb) return;
@@ -2203,10 +2227,18 @@ function renderSettingsModal() {
       <input id="settingsName" type="text" value="${escHtml(state.gardenName)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone</label>
       <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
-      <div style="margin-bottom:22px">
+      <div style="margin-bottom:18px">
         <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Anthropic API Key <span style="font-style:italic;text-transform:none;letter-spacing:0;font-weight:400">(for plant lookup)</span></label>
-        <input id="settingsPerenualKey" type="password" value="${escHtml(state.claudeApiKey)}" placeholder="sk-ant-…" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit">
-        <p style="font-size:11px;color:#4a5a50;margin-top:5px">Get a key at <a href="https://console.anthropic.com/keys" target="_blank" style="color:#4ade80">console.anthropic.com/keys</a> · used only for adding plants</p>
+        <input id="settingsPerenualKey" type="password" value="${escHtml(state.claudeApiKey)}" placeholder="${_sharedClaudeKey ? '🔑 Shared key active — leave blank to use it' : 'sk-ant-…'}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit;margin-bottom:6px">
+        ${_sharedClaudeKey && !state.claudeApiKey
+          ? `<p style="font-size:12px;color:#4ade80;margin:0 0 6px">✓ Using shared key — plant lookup ready for all users</p>`
+          : `<p style="font-size:11px;color:#4a5a50;margin:0 0 6px">Get a key at <a href="https://console.anthropic.com/keys" target="_blank" style="color:#4ade80">console.anthropic.com/keys</a></p>`}
+        ${state.claudeApiKey ? `
+          <button onclick="shareClaudeKey()" style="width:100%;padding:9px;background:rgba(74,222,128,.1);border:1.5px solid rgba(74,222,128,.25);border-radius:8px;color:#4ade80;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+            🔑 Share with all users
+          </button>
+          ${state._shareKeyMsg ? `<p style="font-size:12px;color:#4ade80;margin:6px 0 0;text-align:center">${escHtml(state._shareKeyMsg)}</p>` : ''}
+        ` : ''}
       </div>
       <button onclick="saveSettings()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px">Save</button>
       ${uid ? `<p style="font-size:11px;color:#4a5a50;text-align:center">Garden ID: <span style="font-family:monospace;word-break:break-all">${uid}</span></p>` : ''}
@@ -2274,7 +2306,7 @@ function fuzzyMatchPlants(query) {
 }
 
 async function apCallClaude(name) {
-  const key = state.claudeApiKey;
+  const key = state.claudeApiKey || _sharedClaudeKey;
   if (!key) return null;
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -2399,7 +2431,7 @@ async function apFetchFromApi(name) {
   state.apApiResults = [];
   state.apError = '';
   render();
-  if (!state.claudeApiKey) {
+  if (!state.claudeApiKey && !_sharedClaudeKey) {
     state.apLoading = false;
     render();
     return;
@@ -2478,7 +2510,7 @@ function renderAddPlantModal() {
         style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
         Check Plant →
       </button>
-      ${!state.claudeApiKey ? `<p style="font-size:11px;color:#4a5a50;text-align:center;margin-top:10px">💡 Add an <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80">Anthropic API key in Settings</a> to auto-verify and fill plant details</p>` : ''}
+      ${!(state.claudeApiKey || _sharedClaudeKey) ? `<p style="font-size:11px;color:#4a5a50;text-align:center;margin-top:10px">💡 Add an <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80">Anthropic API key in Settings</a> to auto-verify and fill plant details</p>` : ''}
     `;
   }
 
@@ -2514,7 +2546,7 @@ function renderAddPlantModal() {
           <div style="font-size:36px;animation:spin 1.2s linear infinite;display:inline-block;margin-bottom:14px">🌱</div>
           <p style="color:var(--text-mid);font-size:14px">Asking Claude about <em>"${escHtml(state.apName)}"</em>…</p>
         </div>`;
-    } else if (!state.claudeApiKey && !state.apApiResults.length) {
+    } else if (!state.claudeApiKey && !_sharedClaudeKey && !state.apApiResults.length) {
       body = `
         <div style="background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.2);border-radius:12px;padding:16px;margin-bottom:16px">
           <p style="font-size:14px;font-weight:600;color:#f5c842;margin:0 0 6px">No Anthropic API key set</p>
