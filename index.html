@@ -2453,40 +2453,46 @@ async function apSavePlant() {
   apReadForm();
   const f = state.apForm;
   if (!f.name || !f.name.trim()) { state.apError = 'Plant name is required.'; render(); return; }
-  const newId = 10000 + parseInt(Date.now().toString().slice(-6));
-  const plant = {
-    id: newId,
-    name: f.name.trim(),
-    botanical: (f.botanical||'').trim(),
-    type: 'Perennial',
-    sun: (f.sun||'').trim(),
-    height: (f.height||'').trim(),
-    description: (f.description||'').trim(),
-    bloomMonths: f.bloomMonths || [],
-    bloomColors: f.bloomColors || [],
-    deerResistant: !!f.deerResistant,
-    nativeOhio: !!f.nativeOhio,
-    reblooming: false,
-    _addedBy: _fbUserId || 'anon',
-    _addedAt: Date.now()
-  };
 
-  // Check for duplicates one more time
-  const dup = PLANTS.find(p => p.name.toLowerCase() === plant.name.toLowerCase() ||
-    (plant.botanical && p.botanical && p.botanical.toLowerCase() === plant.botanical.toLowerCase()));
-  if (dup) {
-    state.apError = `"${dup.name}" already exists in the database.`;
-    render();
-    return;
-  }
+  const dup = PLANTS.find(p => p.name.toLowerCase() === f.name.trim().toLowerCase() ||
+    (f.botanical && p.botanical && p.botanical.toLowerCase() === f.botanical.trim().toLowerCase()));
+  if (dup) { state.apError = `"${dup.name}" already exists in the database.`; render(); return; }
 
-  if (_fbDb) {
-    await _fbDb.ref('shared_plants').push(plant);
-  } else {
-    PLANTS.push(plant);
+  state.apLoading = true;
+  state.apError = '';
+  render();
+
+  try {
+    const newId = 10000 + parseInt(Date.now().toString().slice(-6));
+    const plant = {
+      id: newId,
+      name: f.name.trim(),
+      botanical: (f.botanical||'').trim(),
+      type: 'Perennial',
+      sun: (f.sun||'').trim(),
+      height: (f.height||'').trim(),
+      description: (f.description||'').trim(),
+      bloomMonths: f.bloomMonths || [],
+      bloomColors: f.bloomColors || [],
+      deerResistant: !!f.deerResistant,
+      nativeOhio: !!f.nativeOhio,
+      reblooming: false,
+      _addedBy: _fbUserId || 'anon',
+      _addedAt: Date.now()
+    };
+    if (_fbDb) {
+      await _fbDb.ref('shared_plants').push(plant);
+    } else {
+      PLANTS.push(plant);
+    }
+    state.apLoading = false;
+    state.apStep = 5;
+    state.apChosen = plant;
+  } catch(e) {
+    state.apLoading = false;
+    state.apError = 'Save failed: ' + (e.message||'unknown error') +
+      '. Make sure your Firebase rules allow writes to shared_plants.';
   }
-  state.apStep = 5;
-  state.apChosen = plant;
   render();
 }
 
@@ -2642,7 +2648,7 @@ function renderAddPlantModal() {
         </div>
         <div>
           <label style="font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Sun Requirements</label>
-          <select id="apFSun" oninput="state.apForm.sun=this.value" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit;appearance:none;cursor:pointer">
+          <select id="apFSun" onchange="state.apForm.sun=this.value" style="width:100%;padding:10px 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit;appearance:none;cursor:pointer">
             <option value="" ${!f.sun?'selected':''}>Select…</option>
             ${SUN_OPTIONS.map(o=>`<option value="${o}" ${f.sun===o?'selected':''}>${o}</option>`).join('')}
           </select>
@@ -2663,8 +2669,8 @@ function renderAddPlantModal() {
         </div>
       </div>
       ${state.apError ? `<p style="color:#f87171;font-size:12px;margin-top:10px">${escHtml(state.apError)}</p>` : ''}
-      <button onclick="apSavePlant()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:16px">
-        🌿 Save Plant to Database
+      <button onclick="apSavePlant()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:16px" ${state.apLoading?'disabled':''}>
+        ${state.apLoading ? '⏳ Saving…' : '🌿 Add Plant'}
       </button>
     `;
   }
