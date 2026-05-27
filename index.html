@@ -545,12 +545,32 @@ function shareClaudeKey() {
 function initSharedPlants() {
   if (!_fbDb) return;
   _fbDb.ref('shared_plants').on('value', snap => {
-    // Trim any previously loaded shared plants then re-add
     PLANTS.splice(_builtinPlantCount);
     const shared = snap.val() || {};
-    Object.values(shared).forEach(p => { if (p && p.id) PLANTS.push(p); });
+    // Store the Firebase push key as _fbKey so we can delete later
+    Object.entries(shared).forEach(([fbKey, p]) => {
+      if (p && p.id) PLANTS.push({ ...p, _fbKey: fbKey });
+    });
     render();
   });
+}
+
+async function deleteSharedPlant(id) {
+  const plant = PLANTS.find(p => p.id === id);
+  if (!plant || !plant._fbKey) return;
+  if (!confirm(`Delete "${plant.name}" from the shared database?\nThis cannot be undone — all users will lose it.`)) return;
+  try {
+    if (_fbDb) await _fbDb.ref('shared_plants/' + plant._fbKey).remove();
+    // Remove from local array immediately
+    const idx = PLANTS.findIndex(p => p.id === id);
+    if (idx !== -1) PLANTS.splice(idx, 1);
+  } catch(e) {
+    alert('Delete failed: ' + (e.message || 'Check Firebase rules allow deletes on shared_plants.'));
+    return;
+  }
+  state.detailId = null;
+  state.prevPlantId = null;
+  render();
 }
 
 // ===== BED DESIGNER FUNCTIONS =====
@@ -2081,6 +2101,15 @@ function renderDetail() {
         ${gardenCard}
         ${notesCard}
         ${sections.join('')}
+        ${p._fbKey ? `
+          <div style="padding-top:4px">
+            <button onclick="deleteSharedPlant(${p.id})"
+              style="width:100%;padding:13px;background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.2);border-radius:12px;color:#f87171;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+              Delete Plant
+            </button>
+          </div>
+        ` : ''}
       </div>
       <div style="height:80px"></div>
     </div>
