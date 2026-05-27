@@ -253,7 +253,7 @@ let state = {
   apError: '',
   apLoading: false,
   apForm: {},
-  perenualKey: localStorage.getItem('pt_perenualKey') || ''
+  claudeApiKey: localStorage.getItem('pt_claudeApiKey') || ''
 };
 
 let _fbTasksInitDone = false;
@@ -2170,8 +2170,8 @@ function saveSettings() {
   if (name.trim()) state.gardenName = name.trim();
   state.gardenLocation = ((document.getElementById('settingsLocation')||{}).value||'').trim();
   const pk = (document.getElementById('settingsPerenualKey')||{}).value||'';
-  state.perenualKey = pk.trim();
-  localStorage.setItem('pt_perenualKey', state.perenualKey);
+  state.claudeApiKey = pk.trim();
+  localStorage.setItem('pt_claudeApiKey', state.claudeApiKey);
   state.showSettings = false;
   saveProfile();
   render();
@@ -2204,9 +2204,9 @@ function renderSettingsModal() {
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone</label>
       <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
       <div style="margin-bottom:22px">
-        <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Perenual API Key <span style="font-style:italic;text-transform:none;letter-spacing:0;font-weight:400">(for plant lookup)</span></label>
-        <input id="settingsPerenualKey" type="text" value="${escHtml(state.perenualKey)}" placeholder="Get free key at perenual.com" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit">
-        <p style="font-size:11px;color:#4a5a50;margin-top:5px">Free at <a href="https://perenual.com/support/api" target="_blank" style="color:#4ade80">perenual.com/support/api</a> · 100 lookups/day</p>
+        <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Anthropic API Key <span style="font-style:italic;text-transform:none;letter-spacing:0;font-weight:400">(for plant lookup)</span></label>
+        <input id="settingsPerenualKey" type="password" value="${escHtml(state.claudeApiKey)}" placeholder="sk-ant-…" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit">
+        <p style="font-size:11px;color:#4a5a50;margin-top:5px">Get a key at <a href="https://console.anthropic.com/keys" target="_blank" style="color:#4ade80">console.anthropic.com/keys</a> · used only for adding plants</p>
       </div>
       <button onclick="saveSettings()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px">Save</button>
       ${uid ? `<p style="font-size:11px;color:#4a5a50;text-align:center">Garden ID: <span style="font-family:monospace;word-break:break-all">${uid}</span></p>` : ''}
@@ -2273,41 +2273,72 @@ function fuzzyMatchPlants(query) {
   return scored.map(r => r.plant);
 }
 
-async function apCallPerenual(name) {
-  const key = state.perenualKey;
+async function apCallClaude(name) {
+  const key = state.claudeApiKey;
   if (!key) return null;
   try {
-    const resp = await fetch(`https://perenual.com/api/species-list?key=${encodeURIComponent(key)}&q=${encodeURIComponent(name)}&per_page=4`);
-    if (!resp.ok) return null;
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 800,
+        messages: [{ role: 'user', content:
+          `You are a plant expert. Look up this plant: "${name.replace(/"/g,"'")}"
+
+Respond with ONLY a JSON object — no prose, no markdown, no code fences:
+{
+  "found": true,
+  "common_name": "...",
+  "scientific_name": "...",
+  "cycle": "Perennial",
+  "hardiness_min": 4,
+  "hardiness_max": 9,
+  "zone_6a": true,
+  "sun": "Full Sun",
+  "height": "2-3 ft",
+  "description": "2-3 sentence gardening description.",
+  "bloom_months": [6,7,8],
+  "bloom_colors": ["yellow","orange"],
+  "deer_resistant": false,
+  "native_ohio": false,
+  "suggestions": []
+}
+If plant not found: {"found":false,"suggestions":["similar plant 1","similar plant 2"]}
+Rules: zone_6a = true when hardiness_min <= 6. Use one of these exact sun values:
+Full Sun | Part Sun to Full Sun | Part Sun / Part Shade | Part Shade to Full Shade | Full Shade`
+        }]
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({}));
+      return { error: (err.error||{}).message || `HTTP ${resp.status}` };
+    }
     const data = await resp.json();
-    return Array.isArray(data.data) ? data.data : null;
-  } catch(e) { return null; }
+    const text = ((data.content||[])[0]||{}).text || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return { error: 'Unexpected response format' };
+    return JSON.parse(match[0]);
+  } catch(e) { return { error: e.message }; }
 }
 
-function apSunFromPerenual(sunlight) {
-  if (!Array.isArray(sunlight) || !sunlight.length) return '';
-  const s = sunlight.join(' ').toLowerCase();
-  if (s.includes('full shade')) return 'Full Shade';
-  if (s.includes('full sun') && s.includes('part')) return 'Part Sun to Full Sun';
-  if (s.includes('full sun')) return 'Full Sun';
-  if (s.includes('part shade') || s.includes('part sun')) return 'Part Sun / Part Shade';
-  return sunlight[0];
-}
-
-function apChooseResult(idx) {
-  const r = state.apApiResults[idx];
-  if (!r) return;
+function apUseClaudeResult(r) {
   state.apChosen = r;
-  const sun = apSunFromPerenual(r.sunlight);
   state.apForm = {
     name: r.common_name || state.apName,
-    botanical: Array.isArray(r.scientific_name) ? r.scientific_name[0] : (r.scientific_name||''),
-    sun: sun,
-    description: '',
-    height: '',
-    bloomColors: [],
-    bloomMonths: [],
-    apiImgUrl: (r.default_image||{}).regular_url || ''
+    botanical: r.scientific_name || '',
+    sun: r.sun || '',
+    height: r.height || '',
+    description: r.description || '',
+    bloomMonths: r.bloom_months || [],
+    bloomColors: r.bloom_colors || [],
+    deerResistant: !!r.deer_resistant,
+    nativeOhio: !!r.native_ohio
   };
   state.apStep = 4;
   render();
@@ -2365,24 +2396,23 @@ async function apDoSearch() {
 
 async function apFetchFromApi(name) {
   state.apLoading = true;
+  state.apApiResults = [];
+  state.apError = '';
   render();
-  const results = await apCallPerenual(name || state.apName);
-  state.apLoading = false;
-  if (!results) {
-    state.apApiResults = [];
-    state.apError = state.perenualKey ? 'Could not reach the Perenual API. Check your API key or try again.' : '';
+  if (!state.claudeApiKey) {
+    state.apLoading = false;
     render();
     return;
   }
-  state.apApiResults = results;
-  state.apError = '';
-  // If exactly one perfect match and it's perennial + zone 6 → auto-choose
-  if (results.length === 1) {
-    const r = results[0];
-    if ((r.cycle||'').toLowerCase().includes('perennial') && parseInt((r.hardiness||{}).min||99) <= 6) {
-      apChooseResult(0);
-      return;
-    }
+  const result = await apCallClaude(name || state.apName);
+  state.apLoading = false;
+  if (!result) { state.apApiResults = []; render(); return; }
+  if (result.error) { state.apError = result.error; render(); return; }
+  state.apApiResults = [result];
+  // Auto-advance if it's a clean perennial/zone6 hit
+  if (result.found && result.cycle === 'Perennial' && result.zone_6a) {
+    apUseClaudeResult(result);
+    return;
   }
   render();
 }
@@ -2402,13 +2432,12 @@ async function apSavePlant() {
     description: (f.description||'').trim(),
     bloomMonths: f.bloomMonths || [],
     bloomColors: f.bloomColors || [],
-    deerResistant: false,
-    nativeOhio: false,
+    deerResistant: !!f.deerResistant,
+    nativeOhio: !!f.nativeOhio,
     reblooming: false,
     _addedBy: _fbUserId || 'anon',
     _addedAt: Date.now()
   };
-  if (f.apiImgUrl) plant._imgUrl = f.apiImgUrl;
 
   // Check for duplicates one more time
   const dup = PLANTS.find(p => p.name.toLowerCase() === plant.name.toLowerCase() ||
@@ -2449,7 +2478,7 @@ function renderAddPlantModal() {
         style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
         Check Plant →
       </button>
-      ${!state.perenualKey ? `<p style="font-size:11px;color:#4a5a50;text-align:center;margin-top:10px">💡 Add a <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80">Perenual API key in Settings</a> for richer plant data</p>` : ''}
+      ${!state.claudeApiKey ? `<p style="font-size:11px;color:#4a5a50;text-align:center;margin-top:10px">💡 Add an <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80">Anthropic API key in Settings</a> to auto-verify and fill plant details</p>` : ''}
     `;
   }
 
@@ -2480,69 +2509,88 @@ function renderAddPlantModal() {
 
   else if (step === 3) {
     if (state.apLoading) {
-      body = `<div style="text-align:center;padding:32px 0">
-        <div style="font-size:32px;animation:spin 1s linear infinite;display:inline-block">🌱</div>
-        <p style="color:var(--text-mid);font-size:14px;margin-top:12px">Checking plant database…</p>
-      </div>`;
-    } else if (!state.perenualKey && !state.apApiResults.length) {
       body = `
-        <div style="background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.2);border-radius:10px;padding:14px;margin-bottom:16px">
-          <p style="font-size:13px;color:#f5c842;margin:0">No API key set. <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80;font-weight:600">Add your free Perenual key in Settings</a> to auto-verify and fill plant info.</p>
+        <div style="text-align:center;padding:40px 0">
+          <div style="font-size:36px;animation:spin 1.2s linear infinite;display:inline-block;margin-bottom:14px">🌱</div>
+          <p style="color:var(--text-mid);font-size:14px">Asking Claude about <em>"${escHtml(state.apName)}"</em>…</p>
+        </div>`;
+    } else if (!state.claudeApiKey && !state.apApiResults.length) {
+      body = `
+        <div style="background:rgba(212,160,23,.08);border:1px solid rgba(212,160,23,.2);border-radius:12px;padding:16px;margin-bottom:16px">
+          <p style="font-size:14px;font-weight:600;color:#f5c842;margin:0 0 6px">No Anthropic API key set</p>
+          <p style="font-size:13px;color:var(--text-mid);margin:0">Add your key in <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80;font-weight:600">Settings</a> to let Claude verify the plant and fill in all the details automatically.</p>
         </div>
-        <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px">Or enter the plant details manually:</p>
         <button onclick="apStartManual()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Fill in manually →</button>
       `;
     } else if (state.apError) {
       body = `
-        <p style="color:#f87171;font-size:13px;margin-bottom:16px">${escHtml(state.apError)}</p>
-        <button onclick="apStartManual()" style="width:100%;padding:13px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Enter manually instead →</button>
+        <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:12px;padding:14px;margin-bottom:16px">
+          <p style="font-size:13px;color:#f87171;margin:0">⚠️ ${escHtml(state.apError)}</p>
+        </div>
+        <button onclick="state.apStep=1;render()" style="width:100%;padding:11px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-bottom:10px">← Try different name</button>
+        <button onclick="apStartManual()" style="width:100%;padding:11px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Add manually →</button>
       `;
     } else if (!state.apApiResults.length) {
       body = `
-        <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:10px;padding:14px;margin-bottom:16px">
-          <p style="font-size:13px;color:#f87171;margin:0">No results found for <strong>"${escHtml(state.apName)}"</strong>. Try a different spelling or the botanical name.</p>
+        <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:12px;padding:14px;margin-bottom:16px">
+          <p style="font-size:13px;color:#f87171;margin:0">Could not find <strong>"${escHtml(state.apName)}"</strong>. Try a different spelling or the botanical name.</p>
         </div>
         <button onclick="state.apStep=1;render()" style="width:100%;padding:11px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-bottom:10px">← Try different name</button>
         <button onclick="apStartManual()" style="width:100%;padding:11px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Add manually →</button>
       `;
     } else {
-      // Show results
-      const results = state.apApiResults;
-      const zone6Results = results.filter(r => parseInt((r.hardiness||{}).min||99) <= 6);
-      const otherResults = results.filter(r => parseInt((r.hardiness||{}).min||99) > 6);
-      const renderResult = (r, idx, dimmed) => {
-        const isPerennial = (r.cycle||'').toLowerCase().includes('perennial');
-        const zoneMin = parseInt((r.hardiness||{}).min||99);
-        const zoneMax = parseInt((r.hardiness||{}).max||0);
-        const zoneOk = zoneMin <= 6;
-        return `<div onclick="${!dimmed ? 'apChooseResult('+idx+')' : ''}"
-          style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:${dimmed?'rgba(255,255,255,.03)':'rgba(74,222,128,.06)'};border:1px solid ${dimmed?'rgba(255,255,255,.06)':'rgba(74,222,128,.15)'};border-radius:10px;cursor:${dimmed?'default':'pointer'};margin-bottom:8px;opacity:${dimmed?'.55':'1'}">
-          ${r.default_image&&r.default_image.thumbnail ? `<img src="${r.default_image.thumbnail}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0">` : `<div style="width:44px;height:44px;background:rgba(74,222,128,.1);border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">🌿</div>`}
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:13px;color:var(--text)">${escHtml(r.common_name||'Unknown')}</div>
-            <div style="font-size:11px;color:var(--text-light);font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml((Array.isArray(r.scientific_name)?r.scientific_name[0]:r.scientific_name)||'')}</div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
-              <span style="font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;background:${isPerennial?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)'};color:${isPerennial?'#4ade80':'#f87171'};border:1px solid ${isPerennial?'rgba(74,222,128,.2)':'rgba(248,113,113,.2)'}">${r.cycle||'Unknown'}</span>
-              ${(r.hardiness&&r.hardiness.min) ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;background:${zoneOk?'rgba(96,165,250,.1)':'rgba(248,113,113,.1)'};color:${zoneOk?'#93c5fd':'#f87171'};border:1px solid ${zoneOk?'rgba(96,165,250,.2)':'rgba(248,113,113,.2)'}">Zone ${r.hardiness.min}–${r.hardiness.max||'?'} ${zoneOk?'✓ Zone 6':'✗ Zone 6'}</span>` : ''}
-            </div>
+      // Claude returned a result — show verification card
+      const r = state.apApiResults[0];
+      if (!r.found) {
+        const suggestions = r.suggestions || [];
+        body = `
+          <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:12px;padding:14px;margin-bottom:16px">
+            <p style="font-size:13px;color:#f87171;margin:0 0 ${suggestions.length?'10px':'0'}">Claude couldn't identify <strong>"${escHtml(state.apName)}"</strong> as a known plant.</p>
+            ${suggestions.length ? `<p style="font-size:12px;color:var(--text-mid);margin:0">Did you mean: ${suggestions.map(s=>`<strong style="color:var(--text)">${escHtml(s)}</strong>`).join(', ')}?</p>` : ''}
           </div>
-          ${!dimmed?`<div style="color:#4ade80;font-size:18px;margin-left:4px;align-self:center">›</div>`:''}
-        </div>`;
-      };
-      body = `
-        <p style="font-size:13px;color:var(--text-mid);margin-bottom:12px">Select your plant to pre-fill details:</p>
-        ${zone6Results.map((r,i) => renderResult(r, results.indexOf(r), false)).join('')}
-        ${otherResults.length ? `<p style="font-size:11px;color:var(--text-light);margin:10px 0 6px">Not ideal for zone 6a (tap to add anyway):</p>${otherResults.map(r => renderResult(r, results.indexOf(r), false)).join('')}` : ''}
-        <button onclick="apStartManual()" style="width:100%;padding:10px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text-mid);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:4px">None of these — enter manually →</button>
-      `;
+          <button onclick="state.apStep=1;render()" style="width:100%;padding:11px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-bottom:10px">← Try different name</button>
+          <button onclick="apStartManual()" style="width:100%;padding:11px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Add manually →</button>
+        `;
+      } else {
+        // Found — show verification card
+        const isPerennial = (r.cycle||'') === 'Perennial';
+        const zone6Ok = !!r.zone_6a;
+        const allGood = isPerennial && zone6Ok;
+        body = `
+          <div style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,${allGood?'.2':'.08'});border-radius:14px;padding:16px;margin-bottom:16px">
+            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+              <div style="font-size:32px;line-height:1">🌿</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:2px">${escHtml(r.common_name||state.apName)}</div>
+                <div style="font-size:12px;color:var(--text-light);font-style:italic;margin-bottom:8px">${escHtml(r.scientific_name||'')}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px">
+                  <span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600;background:${isPerennial?'rgba(74,222,128,.12)':'rgba(248,113,113,.12)'};color:${isPerennial?'#4ade80':'#f87171'};border:1px solid ${isPerennial?'rgba(74,222,128,.25)':'rgba(248,113,113,.25)'}">${isPerennial?'✓ Perennial':'✗ Not perennial'}</span>
+                  <span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600;background:${zone6Ok?'rgba(96,165,250,.1)':'rgba(248,113,113,.12)'};color:${zone6Ok?'#93c5fd':'#f87171'};border:1px solid ${zone6Ok?'rgba(96,165,250,.2)':'rgba(248,113,113,.25)'}">${zone6Ok?'✓ Zone 6a':'✗ Zone 6a'} (zones ${r.hardiness_min||'?'}–${r.hardiness_max||'?'})</span>
+                  ${r.sun ? `<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600;background:rgba(212,160,23,.1);color:#f5c842;border:1px solid rgba(212,160,23,.2)">☀ ${escHtml(r.sun)}</span>` : ''}
+                  ${r.deer_resistant ? `<span style="font-size:11px;padding:3px 9px;border-radius:10px;font-weight:600;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)">🦌 Deer safe</span>` : ''}
+                </div>
+              </div>
+            </div>
+            ${r.description ? `<p style="font-size:12px;color:var(--text-mid);line-height:1.5;margin:0;border-top:1px solid rgba(255,255,255,.06);padding-top:10px">${escHtml(r.description)}</p>` : ''}
+          </div>
+          ${!allGood ? `
+            <div style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:10px;padding:12px;margin-bottom:14px">
+              <p style="font-size:12px;color:#fb923c;margin:0">⚠️ ${!isPerennial?'This plant is not a perennial.':''} ${!zone6Ok?'It may not survive Cleveland winters (zone 6a).':''} You can still add it.</p>
+            </div>` : ''}
+          <button onclick="apUseClaudeResult(state.apApiResults[0])" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px">
+            ${allGood ? '✓ Looks right — Continue →' : 'Add anyway →'}
+          </button>
+          <button onclick="state.apStep=1;render()" style="width:100%;padding:10px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text-mid);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">← Different plant</button>
+        `;
+      }
     }
   }
 
   else if (step === 4) {
     const chosen = state.apChosen;
     const r = chosen;
-    const isPerennial = r ? (r.cycle||'').toLowerCase().includes('perennial') : true;
-    const zoneOk = r ? parseInt((r.hardiness||{}).min||99) <= 6 : true;
+    const isPerennial = r ? r.cycle === 'Perennial' : true;
+    const zoneOk = r ? !!r.zone_6a : true;
     const warning = (r && (!isPerennial || !zoneOk)) ? `
       <div style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:10px;padding:12px;margin-bottom:14px">
         <p style="font-size:12px;color:#fb923c;margin:0">⚠️ ${!isPerennial?'This plant may not be a perennial.':''} ${!zoneOk?'It may not be hardy in Cleveland zone 6a.':''}</p>
