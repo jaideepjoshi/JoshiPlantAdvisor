@@ -2482,9 +2482,10 @@ async function apSavePlant() {
     };
     if (_fbDb) {
       await _fbDb.ref('shared_plants').push(plant);
-    } else {
-      PLANTS.push(plant);
     }
+    // Add to local PLANTS immediately so detail view works without waiting
+    // for the Firebase listener to re-sync
+    if (!PLANTS.find(p => p.id === plant.id)) PLANTS.push(plant);
     state.apLoading = false;
     state.apStep = 5;
     state.apChosen = plant;
@@ -2682,7 +2683,7 @@ function renderAddPlantModal() {
         <div style="font-size:52px;margin-bottom:12px">🌿</div>
         <h3 style="font-family:'Playfair Display',serif;font-size:20px;background:linear-gradient(135deg,#f5c842,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px">${escHtml(savedName)}</h3>
         <p style="font-size:14px;color:var(--text-mid);margin-bottom:24px">Successfully added to the shared plant database.<br>All users will see it when they next open the app.</p>
-        <button onclick="const nid=PLANTS.find(p=>p.name.toLowerCase()==='${savedName.toLowerCase().replace(/'/g,"\\'")}');if(nid){state.detailId=nid.id;state.showAddPlant=false;render()}else{state.showAddPlant=false;render()}"
+        <button onclick="state.detailId=state.apChosen.id;state.showAddPlant=false;render()"
           style="width:100%;padding:12px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px">View Plant →</button>
         <button onclick="state.apStep=1;state.apName='';state.apForm={};state.apChosen=null;state.apError='';state.apApiResults=[];render()"
           style="width:100%;padding:12px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Add Another Plant</button>
