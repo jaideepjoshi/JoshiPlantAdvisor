@@ -557,11 +557,24 @@ function initSharedPlants() {
 
 async function deleteSharedPlant(id) {
   const plant = PLANTS.find(p => p.id === id);
-  if (!plant || !plant._fbKey) return;
+  if (!plant) return;
   if (!confirm(`Delete "${plant.name}" from the shared database?\nThis cannot be undone — all users will lose it.`)) return;
+
+  // _fbKey may be missing for plants added before the key-tracking fix —
+  // query Firebase by child value to find the right push key
+  let fbKey = plant._fbKey;
+  if (!fbKey && _fbDb) {
+    try {
+      const snap = await _fbDb.ref('shared_plants').orderByChild('id').equalTo(id).once('value');
+      const data = snap.val() || {};
+      fbKey = Object.keys(data)[0];
+    } catch(e) {}
+  }
+
+  if (!fbKey) { alert('Could not locate this plant in the database.'); return; }
+
   try {
-    if (_fbDb) await _fbDb.ref('shared_plants/' + plant._fbKey).remove();
-    // Remove from local array immediately
+    if (_fbDb) await _fbDb.ref('shared_plants/' + fbKey).remove();
     const idx = PLANTS.findIndex(p => p.id === id);
     if (idx !== -1) PLANTS.splice(idx, 1);
   } catch(e) {
@@ -2101,7 +2114,7 @@ function renderDetail() {
         ${gardenCard}
         ${notesCard}
         ${sections.join('')}
-        ${p._fbKey ? `
+        ${p.id >= 10000 ? `
           <div style="padding-top:4px">
             <button onclick="deleteSharedPlant(${p.id})"
               style="width:100%;padding:13px;background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.2);border-radius:12px;color:#f87171;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
