@@ -1241,26 +1241,45 @@ async function cultivarScanAnalyze() {
           content: [
             ...imgBlocks,
             { type: 'text', text:
-`This is a plant nursery tag or information card for a cultivar of ${plantName}. Read ALL text visible on the tag (both sides if shown).
+`This is a plant nursery tag or information card for a cultivar of ${plantName}. Read ALL text AND interpret ALL icons/symbols visible on the tag — front and back.
 
 Return ONLY a JSON object — no prose, no markdown, no code fences:
 {
   "cultivar_name": "Walker's Low",
-  "source": "Proven Winners",
+  "grower": "Proven Winners",
+  "grower_website": "provenwinners.com",
   "height": "18-24 in",
   "spread": "24-36 in",
   "bloom_color": "lavender-blue",
-  "bloom_season": "Jun-Sep",
+  "bloom_months": "Jun, Jul, Aug, Sep",
   "hardiness_zones": "4-8",
   "sun": "Full Sun to Part Shade",
-  "notes": "Any other key info from the tag — special features, awards, care tips"
+  "water": "Low to Medium",
+  "soil": "Well-drained",
+  "deer_resistant": true,
+  "rabbit_resistant": false,
+  "attracts": "Bees, Butterflies",
+  "fragrant": false,
+  "award": "AAS Winner 2022",
+  "care_tip": "Deadhead spent blooms to encourage rebloom",
+  "sku": "12345",
+  "notes": "Any remaining text or features not captured above"
 }
 
 Rules:
-- cultivar_name: just the cultivar part, e.g. "Walker's Low" not "Nepeta Walker's Low"
-- source: brand name if visible (Proven Winners, First Editions, Monrovia, etc.) — empty string if not shown
-- Leave any field as empty string "" if not visible on the tag
-- notes: capture any remaining text worth keeping (awards, fragrance, deer resistance, etc.)`
+- cultivar_name: cultivar portion only — e.g. "Walker's Low", not "Nepeta Walker's Low"
+- grower: the brand/nursery name printed or shown (Proven Winners, First Editions, Monrovia, Spring Meadow, Walters Gardens, Terra Nova, etc.)
+- grower_website: website if printed on tag, else ""
+- bloom_months: list months shown by icons or text (e.g. "Jun, Jul, Aug")
+- sun: interpret sun/shade icons — Full Sun, Part Sun to Full Sun, Part Sun / Part Shade, Part Shade to Full Shade, Full Shade
+- water: interpret water-drop icons or text — Low, Medium, High, or range
+- deer_resistant / rabbit_resistant: true if shown by icon or text, false if shown as not resistant, null if not mentioned
+- attracts: comma-separated list if shown (Bees, Butterflies, Hummingbirds, Birds)
+- fragrant: true/false/null
+- award: any award text or badge shown (AAS Winner, Plant of the Year, etc.) — "" if none
+- care_tip: most important care instruction from the tag
+- sku: item/SKU number if visible, else ""
+- Leave any field as "" or null if not visible on the tag`
             }
           ]
         }]
@@ -1293,12 +1312,21 @@ function cultivarScanUse() {
   state.garden[id].wishlist = false;
   if (!state.garden[id].entries) state.garden[id].entries = getEntries(id);
 
-  // Build a rich cultivar name string and notes string
   const cultivarName = r.cultivar_name || '';
   const parts = [];
   if (r.height) parts.push(r.height);
+  if (r.spread) parts.push('spread ' + r.spread);
   if (r.bloom_color) parts.push(r.bloom_color + ' blooms');
-  if (r.bloom_season) parts.push(r.bloom_season);
+  if (r.bloom_months) parts.push(r.bloom_months);
+  if (r.sun) parts.push(r.sun);
+  if (r.water) parts.push('Water: ' + r.water);
+  if (r.hardiness_zones) parts.push('Zones ' + r.hardiness_zones);
+  if (r.deer_resistant === true) parts.push('Deer resistant');
+  if (r.rabbit_resistant === true) parts.push('Rabbit resistant');
+  if (r.fragrant === true) parts.push('Fragrant');
+  if (r.attracts) parts.push('Attracts: ' + r.attracts);
+  if (r.award) parts.push(r.award);
+  if (r.care_tip) parts.push(r.care_tip);
   if (r.notes) parts.push(r.notes);
   const notes = parts.join(' · ');
 
@@ -1795,32 +1823,43 @@ function renderCultivarScanModal() {
       </div>`;
 
   } else if (result) {
-    const rows = [
-      ['Cultivar', result.cultivar_name],
-      ['Source / Brand', result.source],
-      ['Height', result.height],
-      ['Spread', result.spread],
-      ['Bloom color', result.bloom_color],
-      ['Bloom season', result.bloom_season],
-      ['Hardiness zones', result.hardiness_zones],
-      ['Sun', result.sun],
-      ['Notes', result.notes],
-    ].filter(([,v]) => v);
+    const r2 = result;
+    const detailRows = [
+      ['Height', r2.height],
+      ['Spread', r2.spread],
+      ['Bloom color', r2.bloom_color],
+      ['Bloom months', r2.bloom_months],
+      ['Hardiness zones', r2.hardiness_zones],
+      ['Sun', r2.sun],
+      ['Water', r2.water],
+      ['Soil', r2.soil],
+      ['Attracts', r2.attracts],
+      ['Care tip', r2.care_tip],
+      ['Award', r2.award],
+      ['SKU', r2.sku],
+      ['Notes', r2.notes],
+    ].filter(([,v]) => v && v !== 'null' && v !== 'false');
+    const badges = [
+      r2.deer_resistant === true ? '🦌 Deer resistant' : (r2.deer_resistant === false ? '' : ''),
+      r2.rabbit_resistant === true ? '🐰 Rabbit resistant' : '',
+      r2.fragrant === true ? '🌸 Fragrant' : '',
+    ].filter(Boolean);
 
     body = `
       <div style="margin-bottom:14px;display:flex;gap:8px">
-        ${imgs.map(src => `<img src="${src}" style="flex:1;height:100px;object-fit:cover;border-radius:10px;border:1px solid rgba(96,165,250,.2)">`).join('')}
+        ${imgs.map(src => `<img src="${src}" style="flex:1;height:90px;object-fit:cover;border-radius:10px;border:1px solid rgba(96,165,250,.2)">`).join('')}
       </div>
       <div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.15);border-radius:14px;padding:14px;margin-bottom:16px">
-        <div style="font-size:16px;font-weight:700;color:#e8ece9;margin-bottom:12px;font-family:'Playfair Display',serif">
-          ${escHtml(result.cultivar_name || 'Unknown cultivar')}
-          ${result.source ? `<span style="font-size:12px;font-weight:500;color:#93c5fd;margin-left:8px">${escHtml(result.source)}</span>` : ''}
+        <div style="margin-bottom:10px">
+          <div style="font-size:17px;font-weight:700;color:#e8ece9;font-family:'Playfair Display',serif">${escHtml(r2.cultivar_name || 'Unknown cultivar')}</div>
+          ${r2.grower ? `<div style="font-size:12px;color:#93c5fd;font-weight:600;margin-top:2px">${escHtml(r2.grower)}${r2.grower_website ? ` · <span style="font-weight:400;opacity:.7">${escHtml(r2.grower_website)}</span>` : ''}</div>` : ''}
+          ${badges.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">${badges.map(b=>`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);font-weight:600">${b}</span>`).join('')}</div>` : ''}
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          ${rows.filter(([k]) => k !== 'Cultivar' && k !== 'Source / Brand').map(([k,v]) => `
+        <div style="display:flex;flex-direction:column;gap:5px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px">
+          ${detailRows.map(([k,v]) => `
             <div style="display:flex;gap:8px;font-size:13px">
-              <span style="color:var(--text-light);min-width:100px;flex-shrink:0">${k}</span>
-              <span style="color:var(--text)">${escHtml(v)}</span>
+              <span style="color:var(--text-light);min-width:96px;flex-shrink:0">${k}</span>
+              <span style="color:var(--text);line-height:1.4">${escHtml(String(v))}</span>
             </div>`).join('')}
         </div>
       </div>
