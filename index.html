@@ -257,6 +257,11 @@ let state = {
   apIsEditing: false,    // true when editing an existing plant
   apEditId: null,        // id of plant being edited
   apEditFbKey: null,     // Firebase key of plant being edited
+  showBedScan: false,    // bed photo scanner modal open
+  bedScanImage: null,    // base64 data URL of uploaded bed photo
+  bedScanLoading: false,
+  bedScanResults: [],    // [{name, botanical, confidence, visual_cues, matchedId}]
+  bedScanError: '',
   claudeApiKey: localStorage.getItem('pt_claudeApiKey') || ''
 };
 
@@ -1496,17 +1501,320 @@ function renderBrowse() {
   `;
 }
 
+function bedScanHandlePhoto(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.bedScanImage = e.target.result;
+    state.bedScanResults = [];
+    state.bedScanError = '';
+    render();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function bedScanAnalyze() {
+  if (!state.bedScanImage) return;
+  const key = state.claudeApiKey || _sharedClaudeKey;
+  if (!key) { state.bedScanError = 'No API key — add one in Settings.'; render(); return; }
+  state.bedScanLoading = true;
+  state.bedScanError = '';
+  state.bedScanResults = [];
+  render();
+
+  const [meta, b64] = state.bedScanImage.split(',');
+  const mediaType = (meta.match(/:(.*?);/) || [])[1] || 'image/jpeg';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+            { type: 'text', text:
+`You are an expert botanist and garden designer. Examine this garden bed photo carefully — it may be an elevation view (looking at the bed from the side) or a plan/overhead view.
+
+Identify every distinct plant species you can see. For each plant, provide your best identification based on visible features: leaf shape, texture, color, growth habit, flowers, stems, or any other visible cues.
+
+Return ONLY a JSON array — no prose, no markdown, no code fences:
+[
+  {
+    "name": "Black-eyed Susan",
+    "botanical": "Rudbeckia fulgida",
+    "confidence": "high",
+    "visual_cues": "Yellow daisy-like flowers with dark brown center cone, lance-shaped rough-textured leaves"
+  },
+  {
+    "name": "Purple Coneflower",
+    "botanical": "Echinacea purpurea",
+    "confidence": "medium",
+    "visual_cues": "Drooping pink-purple ray petals around a spiky orange-brown cone, coarse alternate leaves"
+  }
+]
+
+Rules:
+- confidence must be "high", "medium", or "low"
+- Include every distinct plant you can identify, even partially visible ones
+- If you cannot identify a plant but can see one, include it with name "Unknown plant", botanical "", confidence "low", and describe what you see in visual_cues
+- If the image contains no identifiable plants, return []
+- Be conservative: only include plants you can genuinely see, not ones you infer from context`
+            }
+          ]
+        }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error((err.error || {}).message || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    const text = ((data.content || [])[0] || {}).text || '';
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Unexpected response format');
+    const identified = JSON.parse(match[0]);
+
+    // Fuzzy-match each identified plant against the DB
+    const results = identified.map(item => {
+      const q = (item.name + ' ' + (item.botanical || '')).toLowerCase().trim();
+      // Try exact botanical first, then common name, then fuzzy
+      let matched = PLANTS.find(p => item.botanical && p.botanical && p.botanical.toLowerCase() === item.botanical.toLowerCase());
+      if (!matched) matched = PLANTS.find(p => p.name.toLowerCase() === item.name.toLowerCase());
+      if (!matched) {
+        const words = q.split(/\s+/).filter(w => w.length > 2);
+        const scored = PLANTS.map(p => {
+          const nl = p.name.toLowerCase(), bl = (p.botanical || '').toLowerCase();
+          let score = 0;
+          if (nl === item.name.toLowerCase()) score = 100;
+          else if (nl.includes(item.name.toLowerCase()) || item.name.toLowerCase().includes(nl)) score = 70;
+          else {
+            const hits = words.filter(w => nl.includes(w) || bl.includes(w));
+            score = hits.length ? (hits.length / words.length) * 50 : 0;
+          }
+          return { p, score };
+        }).filter(r => r.score >= 40).sort((a, b) => b.score - a.score);
+        if (scored.length) matched = scored[0].p;
+      }
+      return { ...item, matchedId: matched ? matched.id : null };
+    });
+
+    state.bedScanResults = results;
+  } catch(e) {
+    state.bedScanError = e.message || 'Analysis failed';
+  }
+  state.bedScanLoading = false;
+  render();
+}
+
+function bedScanMarkPlanted(plantId) {
+  if (!state.garden[plantId]) state.garden[plantId] = { planted: false, wishlist: false, name: '', where: '' };
+  state.garden[plantId].planted = true;
+  state.garden[plantId].wishlist = false;
+  saveGarden();
+  render();
+}
+
+function bedScanAddUnknown(item) {
+  // Pre-fill the Add Plant modal with the identified name and open it
+  state.showBedScan = false;
+  state.showAddPlant = true;
+  state.apIsEditing = false;
+  state.apEditId = null;
+  state.apEditFbKey = null;
+  state.apStep = 1;
+  state.apName = item.botanical || item.name || '';
+  state.apError = '';
+  state.apLoading = false;
+  state.apLocalMatches = [];
+  state.apApiResults = [];
+  state.apTagImages = [];
+  state.apChosen = null;
+  state.apForm = {};
+  render();
+}
+
+function renderBedScanModal() {
+  const img = state.bedScanImage;
+  const results = state.bedScanResults;
+  const loading = state.bedScanLoading;
+  const err = state.bedScanError;
+
+  const matched = results.filter(r => r.matchedId !== null);
+  const unmatched = results.filter(r => r.matchedId === null && r.name !== 'Unknown plant');
+  const unknown = results.filter(r => r.name === 'Unknown plant');
+
+  const confColor = c => c === 'high' ? '#4ade80' : c === 'medium' ? '#f5c842' : '#94a3b8';
+  const confBg   = c => c === 'high' ? 'rgba(74,222,128,.1)' : c === 'medium' ? 'rgba(245,200,66,.1)' : 'rgba(148,163,184,.1)';
+  const confBorder = c => c === 'high' ? 'rgba(74,222,128,.25)' : c === 'medium' ? 'rgba(245,200,66,.25)' : 'rgba(148,163,184,.2)';
+
+  let body = '';
+
+  if (!img) {
+    // Step 1: upload photo
+    body = `
+      <p style="font-size:13px;color:var(--text-mid);margin-bottom:20px;line-height:1.5">Upload a photo of your garden bed — elevation (side view) or plan (overhead) — and Claude will identify the plants and match them to the database.</p>
+      <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px 20px;border:2px dashed rgba(96,165,250,.3);border-radius:14px;cursor:pointer;background:rgba(96,165,250,.04);transition:background .2s">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <div style="text-align:center">
+          <div style="font-size:14px;font-weight:600;color:#93c5fd;margin-bottom:4px">Tap to upload bed photo</div>
+          <div style="font-size:12px;color:var(--text-light)">Elevation or overhead — JPG, PNG, HEIC</div>
+        </div>
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="bedScanHandlePhoto(event)">
+      </label>
+    `;
+  } else if (loading) {
+    body = `
+      <div style="margin-bottom:16px;border-radius:12px;overflow:hidden;max-height:200px">
+        <img src="${img}" style="width:100%;object-fit:cover;opacity:.6">
+      </div>
+      <div style="text-align:center;padding:24px 0">
+        <div style="font-size:36px;animation:spin 1.2s linear infinite;display:inline-block;margin-bottom:14px">🔍</div>
+        <p style="color:var(--text-mid);font-size:14px;line-height:1.5">Claude is analyzing your bed photo…<br><span style="font-size:12px;color:var(--text-light)">Identifying plants and matching to the database</span></p>
+      </div>
+    `;
+  } else if (err) {
+    body = `
+      <div style="margin-bottom:14px;border-radius:12px;overflow:hidden;max-height:180px">
+        <img src="${img}" style="width:100%;object-fit:cover;opacity:.5">
+      </div>
+      <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:12px;padding:14px;margin-bottom:16px">
+        <p style="font-size:13px;color:#f87171;margin:0">⚠️ ${escHtml(err)}</p>
+      </div>
+      <button onclick="state.bedScanImage=null;state.bedScanError='';render()" style="width:100%;padding:12px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">← Try a different photo</button>
+    `;
+  } else if (results.length === 0 && img) {
+    // Photo uploaded, not yet analysed
+    body = `
+      <div style="margin-bottom:16px;border-radius:12px;overflow:hidden;max-height:220px;position:relative">
+        <img src="${img}" style="width:100%;object-fit:cover">
+        <div onclick="state.bedScanImage=null;render()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;background:rgba(0,0,0,.6);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#fff">×</div>
+      </div>
+      <button onclick="bedScanAnalyze()" style="width:100%;padding:14px;background:linear-gradient(135deg,#1e3a5f,#1d4ed8);color:#93c5fd;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Identify Plants →
+      </button>
+    `;
+  } else {
+    // Results view
+    const allInGarden = matched.filter(r => isPlanted(r.matchedId)).length;
+    body = `
+      <!-- Photo thumbnail -->
+      <div style="margin-bottom:14px;border-radius:10px;overflow:hidden;max-height:160px;position:relative">
+        <img src="${img}" style="width:100%;object-fit:cover">
+        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:8px 12px">
+          <span style="font-size:12px;font-weight:600;color:#fff">${results.length} plant${results.length!==1?'s':''} identified</span>
+        </div>
+      </div>
+
+      ${matched.length ? `
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;color:#4ade80;text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:8px">✓ In Database (${matched.length})</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${matched.map(r => {
+            const p = PLANTS.find(pl => pl.id === r.matchedId);
+            const planted = isPlanted(r.matchedId);
+            return `<div style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15);border-radius:12px;padding:11px 13px;display:flex;align-items:flex-start;gap:10px">
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+                  <span style="font-weight:600;font-size:14px;color:var(--text)">${escHtml(p ? p.name : r.name)}</span>
+                  <span style="font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;background:${confBg(r.confidence)};color:${confColor(r.confidence)};border:1px solid ${confBorder(r.confidence)}">${r.confidence}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-light);font-style:italic;margin-bottom:5px">${escHtml(r.botanical||'')}</div>
+                <div style="font-size:11px;color:var(--text-mid);line-height:1.4">${escHtml(r.visual_cues||'')}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+                ${planted
+                  ? `<span style="font-size:11px;padding:5px 9px;border-radius:8px;background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25);font-weight:600;white-space:nowrap">✓ In Garden</span>`
+                  : `<button onclick="bedScanMarkPlanted(${r.matchedId})" style="font-size:11px;padding:5px 9px;border-radius:8px;background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.25);font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Garden</button>`
+                }
+                <button onclick="state.showBedScan=false;state.detailId=${r.matchedId};render()" style="font-size:11px;padding:5px 9px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--text-light);border:1px solid rgba(255,255,255,.1);font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">View →</button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
+      ${unmatched.length ? `
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;color:#f5c842;text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:8px">⚠ Not in Database (${unmatched.length})</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${unmatched.map(r => `
+            <div style="background:rgba(245,200,66,.05);border:1px solid rgba(245,200,66,.2);border-radius:12px;padding:11px 13px;display:flex;align-items:flex-start;gap:10px">
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+                  <span style="font-weight:600;font-size:14px;color:var(--text)">${escHtml(r.name)}</span>
+                  <span style="font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;background:${confBg(r.confidence)};color:${confColor(r.confidence)};border:1px solid ${confBorder(r.confidence)}">${r.confidence}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-light);font-style:italic;margin-bottom:5px">${escHtml(r.botanical||'')}</div>
+                <div style="font-size:11px;color:var(--text-mid);line-height:1.4">${escHtml(r.visual_cues||'')}</div>
+              </div>
+              <button onclick="bedScanAddUnknown(state.bedScanResults.find(x=>x.name===${JSON.stringify(r.name)}&&x.botanical===${JSON.stringify(r.botanical||'')}))" style="flex-shrink:0;font-size:11px;padding:5px 9px;border-radius:8px;background:rgba(245,200,66,.1);color:#f5c842;border:1px solid rgba(245,200,66,.25);font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add to DB</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+
+      ${unknown.length ? `
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:8px">? Unidentified (${unknown.length})</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${unknown.map(r => `
+            <div style="background:rgba(148,163,184,.05);border:1px solid rgba(148,163,184,.15);border-radius:12px;padding:11px 13px">
+              <div style="font-size:12px;color:var(--text-mid);line-height:1.4">${escHtml(r.visual_cues||'Could not identify this plant')}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+
+      <button onclick="state.bedScanImage=null;state.bedScanResults=[];render()" style="width:100%;padding:11px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:var(--text-mid);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">← Scan another photo</button>
+    `;
+  }
+
+  return `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0" onclick="if(event.target===this){state.showBedScan=false;render()}">
+      <div style="background:linear-gradient(160deg,#0c1a2e,#0f2340);border-radius:20px 20px 0 0;padding:24px 22px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border-top:1px solid rgba(96,165,250,.2);box-shadow:0 -8px 40px rgba(0,0,0,.6)" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9;margin:0">
+              ${results.length ? `Bed Scan Results` : img && !loading ? 'Ready to Scan' : loading ? 'Scanning…' : 'Scan Garden Bed'}
+            </h2>
+            ${!results.length && !loading ? `<p style="font-size:12px;color:var(--text-light);margin:3px 0 0">Identify plants from a photo</p>` : ''}
+          </div>
+          <button onclick="state.showBedScan=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:4px">×</button>
+        </div>
+        ${body}
+      </div>
+    </div>
+  `;
+}
+
 function renderGarden() {
   const myPlants = PLANTS.filter(p => isPlanted(p.id)).sort((a,b) => a.name.localeCompare(b.name));
   const bloomingNow = myPlants.filter(p => (p.bloomMonths||[]).includes(state.currentMonth));
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const activeTab = state.gardenTab || 'plants';
 
-  const subNav = `<div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);display:flex;justify-content:center">
+  const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
+  const subNav = `<div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
     <div style="display:inline-flex;background:rgba(0,0,0,.25);border-radius:12px;padding:3px;gap:2px">
       <div onclick="state.gardenTab='plants';render()" style="padding:7px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab==='plants'?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">My Plants</div>
       <div onclick="state.gardenTab='calendar';render()" style="padding:7px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab==='calendar'?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">Calendar</div>
     </div>
+    ${hasKey ? `<button onclick="state.showBedScan=true;state.bedScanImage=null;state.bedScanResults=[];state.bedScanError='';state.bedScanLoading=false;render()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);border-radius:20px;color:#93c5fd;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Scan Bed
+    </button>` : ''}
   </div>`;
 
   if (activeTab === 'calendar') return subNav + renderCalendar();
@@ -3184,6 +3492,7 @@ function render() {
   if (state.showSetup) content += renderSetupModal();
   if (state.showSettings) content += renderSettingsModal();
   if (state.showAddPlant) content += renderAddPlantModal();
+  if (state.showBedScan) content += renderBedScanModal();
 
   app.innerHTML = content;
   if (state.view === 'beds' && state.bedView === 'edit') setTimeout(initBedCanvas, 50);
