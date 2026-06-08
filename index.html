@@ -1363,10 +1363,17 @@ Rules:
   render();
 }
 
+function showToast(msg, color) {
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:${color||'#166534'};color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.4);pointer-events:none;opacity:1;transition:opacity .5s`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 500); }, 2500);
+}
+
 function cultivarScanUse() {
   const r = state.cultivarScanResult;
-  console.log('[cultivarScanUse] r=', r, 'plantId=', state.cultivarScanPlantId, 'cultivars before=', JSON.stringify(state.cultivars));
-  if (!r) { console.warn('[cultivarScanUse] no result, aborting'); return; }
+  if (!r) return;
   const id = state.cultivarScanPlantId;
   if (!state.cultivars[id]) state.cultivars[id] = [];
 
@@ -1402,6 +1409,12 @@ function cultivarScanUse() {
   saveCultivars();
   state.showCultivarScan = false;
   render();
+  showToast('✓ Cultivar saved');
+  // Scroll to Cultivars section
+  setTimeout(() => {
+    const el = Array.from(document.querySelectorAll('h3')).find(h => h.textContent.trim() === 'Cultivars');
+    if (el) el.closest('.ds, div')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
 function addCultivar(id) {
