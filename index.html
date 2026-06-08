@@ -1408,13 +1408,22 @@ function cultivarScanUse() {
   });
   saveCultivars();
   state.showCultivarScan = false;
-  render();
-  showToast('✓ Cultivar saved');
-  // Scroll to Cultivars section
+  try {
+    render();
+  } catch(e) {
+    // render() threw — force-close modal by rebuilding minimal UI
+    const app = document.getElementById('app');
+    if (app) {
+      // Remove all fixed overlays
+      app.querySelectorAll('[style*="position:fixed"]').forEach(el => el.remove());
+    }
+    console.error('render() threw after cultivarScanUse:', e);
+  }
+  showToast('✓ Cultivar saved — scroll down to Cultivars');
   setTimeout(() => {
     const el = Array.from(document.querySelectorAll('h3')).find(h => h.textContent.trim() === 'Cultivars');
-    if (el) el.closest('.ds, div')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
+    if (el) el.closest('div')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 150);
 }
 
 function addCultivar(id) {
