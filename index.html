@@ -1287,7 +1287,10 @@ function cultivarScanUse() {
   const r = state.cultivarScanResult;
   if (!r) return;
   const id = state.cultivarScanPlantId;
-  if (!state.garden[id]) state.garden[id] = { planted: true, name: '', where: '' };
+  if (!state.garden[id]) state.garden[id] = { planted: true, wishlist: false, name: '', where: '' };
+  // Auto-mark as planted — you're recording a cultivar you own
+  state.garden[id].planted = true;
+  state.garden[id].wishlist = false;
   if (!state.garden[id].entries) state.garden[id].entries = getEntries(id);
 
   // Build a rich cultivar name string and notes string
@@ -2641,9 +2644,12 @@ function renderDetail() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         </div>
         <div style="position:absolute;top:14px;right:14px;display:flex;gap:8px;z-index:5">
-          <div onclick="apOpenEdit(${p.id})" style="width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer" title="Edit plant">
+          <div onclick="apOpenEdit(${p.id})" style="width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer" title="Edit plant data">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </div>
+          ${(state.claudeApiKey||_sharedClaudeKey) ? `<div onclick="openCultivarScan(${p.id})" style="width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(96,165,250,.4);display:flex;align-items:center;justify-content:center;cursor:pointer" title="Scan cultivar tag">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>` : ''}
           <div onclick="triggerPhotoUpload(${p.id})" style="width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer" title="Add photo">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </div>
