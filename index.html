@@ -253,6 +253,10 @@ let state = {
   apError: '',
   apLoading: false,
   apForm: {},
+  apTagImages: [],       // base64 data URLs for scanned tag photos
+  apIsEditing: false,    // true when editing an existing plant
+  apEditId: null,        // id of plant being edited
+  apEditFbKey: null,     // Firebase key of plant being edited
   claudeApiKey: localStorage.getItem('pt_claudeApiKey') || ''
 };
 
@@ -1467,7 +1471,7 @@ function renderBrowse() {
     ${statsHtml}
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 16px 2px">
       <span style="font-size:12px;color:var(--text-light);font-weight:500">${list.length} plant${list.length!==1?'s':''}${state.filter!=='all'?' · filtered':''}</span>
-      <button onclick="state.showAddPlant=true;state.apStep=1;state.apName='';state.apError='';state.apLoading=false;state.apLocalMatches=[];state.apApiResults=[];state.apChosen=null;state.apForm={};render()" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;box-shadow:0 2px 12px rgba(74,222,128,.2)">
+      <button onclick="state.showAddPlant=true;state.apStep=1;state.apName='';state.apError='';state.apLoading=false;state.apLocalMatches=[];state.apApiResults=[];state.apChosen=null;state.apForm={};state.apTagImages=[];state.apIsEditing=false;state.apEditId=null;state.apEditFbKey=null;render()" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;box-shadow:0 2px 12px rgba(74,222,128,.2)">
         ＋ Add Plant
       </button>
     </div>
@@ -2115,7 +2119,12 @@ function renderDetail() {
         ${notesCard}
         ${sections.join('')}
         ${p.id >= 10000 ? `
-          <div style="padding-top:4px">
+          <div style="padding-top:4px;display:flex;flex-direction:column;gap:10px">
+            <button onclick="apOpenEdit(${p.id})"
+              style="width:100%;padding:13px;background:rgba(74,222,128,.07);border:1.5px solid rgba(74,222,128,.2);border-radius:12px;color:#4ade80;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Plant
+            </button>
             <button onclick="deleteSharedPlant(${p.id})"
               style="width:100%;padding:13px;background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.2);border-radius:12px;color:#f87171;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
@@ -2347,25 +2356,12 @@ function fuzzyMatchPlants(query) {
   return scored.map(r => r.plant);
 }
 
-async function apCallClaude(name) {
+// images: optional array of base64 data-URL strings (e.g. "data:image/jpeg;base64,...")
+async function apCallClaude(name, images) {
   const key = state.claudeApiKey || _sharedClaudeKey;
   if (!key) return null;
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 2500,
-        messages: [{ role: 'user', content:
-`You are a horticultural expert specializing in perennial gardens in Cleveland, Ohio (USDA zone 6a).
-Look up this plant: "${name.replace(/"/g,"'")}"
-
+    const schema = `
 Return ONLY a single JSON object — no prose, no markdown, no code fences. Use this exact schema:
 {
   "found": true,
@@ -2425,8 +2421,41 @@ Rules:
 - sun must be one of: Full Sun | Part Sun to Full Sun | Part Sun / Part Shade | Part Shade to Full Shade | Full Shade
 - care keys are month numbers 3-11 as strings
 - If plant not found: {"found":false,"suggestions":["closest match 1","closest match 2"]}
-- Be specific to Cleveland zone 6a; give practical, actionable care advice`
-        }]
+- Be specific to Cleveland zone 6a; give practical, actionable care advice`;
+
+    const promptText = images && images.length
+      ? `You are a horticultural expert specializing in perennial gardens in Cleveland, Ohio (USDA zone 6a).
+The user has photographed a plant information tag or card. Read ALL text visible in the image(s) — both sides — to identify the plant. Extract the plant name, botanical name, and any other details shown on the tag.
+${schema}`
+      : `You are a horticultural expert specializing in perennial gardens in Cleveland, Ohio (USDA zone 6a).
+Look up this plant: "${(name||'').replace(/"/g,"'")}"\n${schema}`;
+
+    let userContent;
+    if (images && images.length) {
+      userContent = [
+        ...images.map(dataUrl => {
+          const [meta, b64] = dataUrl.split(',');
+          const mediaType = (meta.match(/:(.*?);/) || [])[1] || 'image/jpeg';
+          return { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } };
+        }),
+        { type: 'text', text: promptText }
+      ];
+    } else {
+      userContent = promptText;
+    }
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 2500,
+        messages: [{ role: 'user', content: userContent }]
       })
     });
     if (!resp.ok) {
@@ -2440,6 +2469,7 @@ Rules:
     return JSON.parse(match[0]);
   } catch(e) { return { error: e.message }; }
 }
+
 
 function apUseClaudeResult(r) {
   state.apChosen = r;
@@ -2521,18 +2551,193 @@ function apReadForm() {
   });
 }
 
+function apOpenEdit(plantId) {
+  const p = PLANTS.find(pl => pl.id === plantId);
+  if (!p) return;
+  state.showAddPlant = true;
+  state.apIsEditing = true;
+  state.apEditId = plantId;
+  state.apEditFbKey = p._fbKey || null;
+  state.apStep = 1;
+  state.apName = p.name || '';
+  state.apError = '';
+  state.apLoading = false;
+  state.apLocalMatches = [];
+  state.apApiResults = [];
+  state.apTagImages = [];
+  state.apChosen = p;
+  // Pre-populate form with existing plant data
+  state.apForm = {
+    name: p.name || '',
+    botanical: p.botanical || '',
+    type: p.type || 'Perennial Flower',
+    sun: p.sun || '',
+    height: p.height || '',
+    width: p.width || '',
+    waterReq: p.waterReq || '',
+    ph: p.ph || '',
+    partialShade: !!p.partialShade,
+    droughtTolerant: !!p.droughtTolerant,
+    deerResistant: !!p.deerResistant,
+    rabbitResistant: !!p.rabbitResistant,
+    reblooming: !!p.reblooming,
+    rebloomNote: p.rebloomNote || '',
+    nativeOhio: !!p.nativeOhio,
+    bloomMonths: p.bloomMonths || [],
+    bloomColors: p.bloomColor || [],
+    attracts: p.attracts || [],
+    gardenStyles: p.gardenStyles || [],
+    companions: p.companions || [],
+    foliageInterest: p.foliageInterest || '',
+    yearRound: p.yearRound || '',
+    cultivars: p.cultivars || [],
+    clevelandCultivars: p.clevelandCultivars || [],
+    description: p.description || '',
+    clevelandLightNote: p.clevelandLightNote || '',
+    fertilizer: p.fertilizer || '',
+    fertMonth: p.fertMonth || [],
+    care: p.care || {},
+    whereToBuy: p.whereToBuy || '',
+    whenAvailable: p.whenAvailable || '',
+    video: p.video || '',
+    provenWinners: !!p.provenWinners,
+    monrovia: !!p.monrovia,
+    firstEditions: !!p.firstEditions
+  };
+  // Skip straight to the form (step 4) — user can use step 1 to re-fetch via Claude if desired
+  state.apStep = 4;
+  render();
+}
+
+async function apUpdatePlant() {
+  apReadForm();
+  const f = state.apForm;
+  if (!f.name || !f.name.trim()) { state.apError = 'Plant name is required.'; render(); return; }
+
+  const plantId = state.apEditId;
+  const existing = PLANTS.find(p => p.id === plantId);
+  if (!existing) { state.apError = 'Plant not found.'; render(); return; }
+
+  state.apLoading = true;
+  state.apError = '';
+  render();
+
+  try {
+    const updated = {
+      ...existing,
+      name: f.name.trim(),
+      botanical: (f.botanical||'').trim(),
+      type: f.type || existing.type || 'Perennial Flower',
+      sun: (f.sun||'').trim(),
+      height: (f.height||'').trim(),
+      width: (f.width||'').trim(),
+      waterReq: (f.waterReq||'').trim(),
+      ph: (f.ph||'').trim(),
+      partialShade: !!f.partialShade,
+      droughtTolerant: !!f.droughtTolerant,
+      deerResistant: !!f.deerResistant,
+      rabbitResistant: !!f.rabbitResistant,
+      reblooming: !!f.reblooming,
+      rebloomNote: (f.rebloomNote||'').trim(),
+      nativeOhio: !!f.nativeOhio,
+      bloomMonths: f.bloomMonths || [],
+      bloomColor: f.bloomColors || [],
+      attracts: f.attracts || [],
+      gardenStyles: f.gardenStyles || [],
+      companions: f.companions || [],
+      foliageInterest: (f.foliageInterest||'').trim(),
+      yearRound: (f.yearRound||'').trim(),
+      cultivars: f.cultivars || [],
+      clevelandCultivars: f.clevelandCultivars || [],
+      description: (f.description||'').trim(),
+      clevelandLightNote: (f.clevelandLightNote||'').trim(),
+      fertilizer: (f.fertilizer||'').trim(),
+      fertMonth: f.fertMonth || [],
+      care: f.care || {},
+      whereToBuy: (f.whereToBuy||'').trim(),
+      whenAvailable: (f.whenAvailable||'').trim(),
+      video: (f.video||'').trim(),
+      provenWinners: !!f.provenWinners,
+      monrovia: !!f.monrovia,
+      firstEditions: !!f.firstEditions,
+      _updatedBy: _fbUserId || 'anon',
+      _updatedAt: Date.now()
+    };
+
+    if (_fbDb) {
+      let fbKey = state.apEditFbKey;
+      // If we don't have the key cached, look it up from Firebase
+      if (!fbKey) {
+        const snap = await _fbDb.ref('shared_plants').orderByChild('id').equalTo(plantId).once('value');
+        snap.forEach(child => { fbKey = child.key; });
+      }
+      if (!fbKey) throw new Error('Could not find Firebase key for this plant.');
+      await _fbDb.ref('shared_plants/' + fbKey).update(updated);
+    }
+
+    // Update local PLANTS array immediately
+    const idx = PLANTS.findIndex(p => p.id === plantId);
+    if (idx !== -1) PLANTS[idx] = { ...updated, _fbKey: state.apEditFbKey };
+
+    state.apLoading = false;
+    state.apStep = 5;
+    state.apChosen = updated;
+  } catch(e) {
+    state.apLoading = false;
+    state.apError = 'Update failed: ' + (e.message||'unknown error');
+  }
+  render();
+}
+
+function apHandleTagPhoto(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.apTagImages = state.apTagImages || [];
+    if (state.apTagImages.length < 2) state.apTagImages.push(e.target.result);
+    render();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function apScanTagPhotos() {
+  const images = state.apTagImages || [];
+  if (!images.length) return;
+  const key = state.claudeApiKey || _sharedClaudeKey;
+  if (!key) { state.apError = 'No API key set — add one in Settings.'; render(); return; }
+  state.apStep = 3;
+  state.apLoading = true;
+  state.apError = '';
+  state.apApiResults = [];
+  render();
+  const result = await apCallClaude('', images);
+  state.apLoading = false;
+  if (!result) { state.apError = 'No response from Claude.'; render(); return; }
+  if (result.error) { state.apError = result.error; render(); return; }
+  if (result.found && result.common_name) state.apName = result.common_name;
+  state.apApiResults = [result];
+  if (result.found && result.cycle === 'Perennial' && result.zone_6a) {
+    apUseClaudeResult(result);
+    return;
+  }
+  render();
+}
+
 async function apDoSearch() {
   const name = state.apName.trim();
   if (!name) { state.apError = 'Please enter a plant name.'; render(); return; }
   state.apError = '';
 
-  // Step 2: local match
-  const local = fuzzyMatchPlants(name);
-  if (local.length) {
-    state.apLocalMatches = local;
-    state.apStep = 2;
-    render();
-    return;
+  // Step 2: local match (skip in edit mode — we're refreshing an existing plant)
+  if (!state.apIsEditing) {
+    const local = fuzzyMatchPlants(name);
+    if (local.length) {
+      state.apLocalMatches = local;
+      state.apStep = 2;
+      render();
+      return;
+    }
   }
 
   // No local match — go straight to API
@@ -2657,18 +2862,53 @@ function renderAddPlantModal() {
   let body = '';
 
   if (step === 1) {
+    const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
+    const tagImgs = state.apTagImages || [];
     body = `
-      <p style="font-size:13px;color:var(--text-mid);margin-bottom:18px">Add a new perennial to the shared plant database. All app users will see it.</p>
+      <p style="font-size:13px;color:var(--text-mid);margin-bottom:18px">${state.apIsEditing ? 'Update this plant\'s details using Claude or by entering a name.' : 'Add a new perennial to the shared plant database. All app users will see it.'}</p>
+
+      ${hasKey ? `
+      <!-- Photo scan section -->
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📷 Scan Plant Tag (optional)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          ${tagImgs.map((src,i) => `
+            <div style="position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid rgba(74,222,128,.3)">
+              <img src="${src}" style="width:100%;height:100%;object-fit:cover">
+              <div onclick="state.apTagImages.splice(${i},1);render()" style="position:absolute;top:2px;right:2px;width:18px;height:18px;background:rgba(0,0,0,.7);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;line-height:1">×</div>
+            </div>
+          `).join('')}
+          ${tagImgs.length < 2 ? `
+            <label style="width:80px;height:80px;border-radius:8px;border:1.5px dashed rgba(74,222,128,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;background:rgba(74,222,128,.04)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span style="font-size:10px;color:#4ade80;font-weight:600">${tagImgs.length === 0 ? 'Front' : 'Back'}</span>
+              <input type="file" accept="image/*" capture="environment" style="display:none" onchange="apHandleTagPhoto(event)">
+            </label>
+          ` : ''}
+        </div>
+        ${tagImgs.length > 0 ? `
+          <button onclick="apScanTagPhotos()" style="width:100%;padding:11px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:12px">
+            🔍 Read Tag with Claude →
+          </button>
+        ` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>
+        <span style="font-size:11px;color:#4a5a50;font-weight:600">OR TYPE NAME</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>
+      </div>
+      ` : ''}
+
       <label style="display:block;font-size:11px;color:#7a8a80;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Plant Name or Botanical Name</label>
       <input id="apNameInput" type="text" value="${escHtml(state.apName)}" placeholder="e.g. Rudbeckia fulgida or Black-eyed Susan" autocomplete="off"
         style="width:100%;padding:12px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#e8ece9;font-size:15px;outline:none;font-family:inherit;margin-bottom:${state.apError?'8px':'18px'}"
         oninput="state.apName=this.value" onkeydown="if(event.key==='Enter'){state.apName=this.value;apDoSearch()}">
       ${state.apError ? `<p style="color:#f87171;font-size:12px;margin-bottom:12px">${escHtml(state.apError)}</p>` : ''}
       <button onclick="state.apName=(document.getElementById('apNameInput')||{}).value||state.apName;apDoSearch()"
-        style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+        style="width:100%;padding:13px;background:${hasKey?'rgba(255,255,255,.07)':'linear-gradient(135deg,#14532d,#166534)'};color:${hasKey?'var(--text)':'#4ade80'};border:${hasKey?'1.5px solid rgba(255,255,255,.12)':'none'};border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
         Check Plant →
       </button>
-      ${!(state.claudeApiKey || _sharedClaudeKey) ? `<p style="font-size:11px;color:#4a5a50;text-align:center;margin-top:10px">💡 Add an <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80">Anthropic API key in Settings</a> to auto-verify and fill plant details</p>` : ''}
+      ${!hasKey ? `<p style="font-size:11px;color:#4a5a50;text-align:center;margin-top:10px">💡 Add an <a href="#" onclick="event.preventDefault();state.showAddPlant=false;state.showSettings=true;render()" style="color:#4ade80">Anthropic API key in Settings</a> to scan tag photos and auto-fill details</p>` : ''}
     `;
   }
 
@@ -2821,40 +3061,47 @@ function renderAddPlantModal() {
         </div>
       </div>
       ${state.apError ? `<p style="color:#f87171;font-size:12px;margin-top:10px">${escHtml(state.apError)}</p>` : ''}
-      <button onclick="apSavePlant()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:16px" ${state.apLoading?'disabled':''}>
-        ${state.apLoading ? '⏳ Saving…' : '🌿 Add Plant'}
+      <button onclick="${state.apIsEditing ? 'apUpdatePlant()' : 'apSavePlant()'}" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:16px" ${state.apLoading?'disabled':''}>
+        ${state.apLoading ? (state.apIsEditing ? '⏳ Updating…' : '⏳ Saving…') : (state.apIsEditing ? '✏️ Save Changes' : '🌿 Add Plant')}
       </button>
     `;
   }
 
   else if (step === 5) {
     const savedName = (state.apForm.name || (state.apChosen||{}).name || state.apName || 'Plant');
+    const isEditing = state.apIsEditing;
     body = `
       <div style="text-align:center;padding:16px 0 8px">
         <div style="font-size:52px;margin-bottom:12px">🌿</div>
         <h3 style="font-family:'Playfair Display',serif;font-size:20px;background:linear-gradient(135deg,#f5c842,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px">${escHtml(savedName)}</h3>
-        <p style="font-size:14px;color:var(--text-mid);margin-bottom:24px">Successfully added to the shared plant database.<br>All users will see it when they next open the app.</p>
-        <button onclick="state.detailId=state.apChosen.id;state.showAddPlant=false;render()"
+        <p style="font-size:14px;color:var(--text-mid);margin-bottom:24px">${isEditing ? 'Plant updated successfully.<br>Changes are live for all users.' : 'Successfully added to the shared plant database.<br>All users will see it when they next open the app.'}</p>
+        <button onclick="state.detailId=state.apChosen.id;state.showAddPlant=false;state.apIsEditing=false;render()"
           style="width:100%;padding:12px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px">View Plant →</button>
-        <button onclick="state.apStep=1;state.apName='';state.apForm={};state.apChosen=null;state.apError='';state.apApiResults=[];render()"
-          style="width:100%;padding:12px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Add Another Plant</button>
+        ${!isEditing ? `<button onclick="state.apStep=1;state.apName='';state.apForm={};state.apChosen=null;state.apError='';state.apApiResults=[];state.apIsEditing=false;render()"
+          style="width:100%;padding:12px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Add Another Plant</button>` : ''}
       </div>
     `;
   }
 
-  const stepDots = step < 5 ? `<div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px">
+  const isEditing = state.apIsEditing;
+  // In edit mode opened at step 4, show a single dot; otherwise show the 4-step progress
+  const stepDots = step < 5 ? (isEditing && step === 4 ? '' : `<div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px">
     ${[1,2,3,4].map(s=>`<div style="width:${s===step?'20px':'7px'};height:7px;border-radius:4px;background:${s<=step?'#4ade80':'rgba(255,255,255,.12)'};transition:width .25s,background .25s"></div>`).join('')}
-  </div>` : '';
+  </div>`) : '';
+
+  const titleMap = {1: isEditing?'Edit Plant':'Add New Plant', 2:'Similar Plants Found', 3:'Verify Plant', 4: isEditing?'Edit Details':'Plant Details', 5: isEditing?'Plant Updated!':'Plant Added!'};
+  // Back button: in edit mode at step 4 there's no prior step to go back to in the modal
+  const showBack = step > 1 && step < 5 && !(isEditing && step === 4);
 
   return `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0" onclick="if(event.target===this){state.showAddPlant=false;render()}">
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0" onclick="if(event.target===this){state.showAddPlant=false;state.apIsEditing=false;render()}">
       <div style="background:linear-gradient(160deg,#0c1f18,#0f2d1e);border-radius:20px 20px 0 0;padding:24px 22px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;border-top:1px solid rgba(74,222,128,.15);box-shadow:0 -8px 40px rgba(0,0,0,.6)" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
           <div>
-            ${step > 1 && step < 5 ? `<button onclick="state.apStep=${step-1};state.apError='';render()" style="background:none;border:none;color:var(--text-mid);cursor:pointer;font-size:13px;font-weight:600;padding:0;display:flex;align-items:center;gap:4px">‹ Back</button>` : ''}
-            <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9;margin:${step>1&&step<5?'4px':'0'} 0 0">${step===1?'Add New Plant':step===2?'Similar Plants Found':step===3?'Verify Plant':step===4?'Plant Details':step===5?'Plant Added!':''}</h2>
+            ${showBack ? `<button onclick="state.apStep=${step-1};state.apError='';render()" style="background:none;border:none;color:var(--text-mid);cursor:pointer;font-size:13px;font-weight:600;padding:0;display:flex;align-items:center;gap:4px">‹ Back</button>` : ''}
+            <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9;margin:${showBack?'4px':'0'} 0 0">${titleMap[step]||''}</h2>
           </div>
-          <button onclick="state.showAddPlant=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:4px">×</button>
+          <button onclick="state.showAddPlant=false;state.apIsEditing=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:4px">×</button>
         </div>
         ${stepDots}
         ${body}
