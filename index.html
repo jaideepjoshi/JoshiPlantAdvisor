@@ -500,17 +500,26 @@ function initFirebaseSync() {
   });
 
   // Cultivars sync
-  userRef('cultivars').on('value', snap => {
+  userRef('cultivars').once('value').then(snap => {
     const data = snap.val();
-    if (!_fbCultivarsInitDone) {
-      if (data) { const local = state.cultivars; state.cultivars = Object.assign({}, data); Object.keys(local).forEach(id => { if (!state.cultivars[id]) state.cultivars[id] = local[id]; }); }
-      _fbCultivarsInitDone = true;
-      localStorage.setItem('pt_cultivars', JSON.stringify(state.cultivars));
-      saveCultivars();
-    } else if (data && JSON.stringify(data) !== JSON.stringify(state.cultivars)) {
-      state.cultivars = data; localStorage.setItem('pt_cultivars', JSON.stringify(data)); render();
+    if (data) {
+      // Deep merge: for each plant ID, combine Firebase + local arrays by cultivar name
+      const local = state.cultivars;
+      state.cultivars = Object.assign({}, data);
+      Object.keys(local).forEach(id => {
+        if (!state.cultivars[id]) {
+          state.cultivars[id] = local[id];
+        } else {
+          // Append local cultivars not already in Firebase (match by name)
+          const fbNames = state.cultivars[id].map(c => c.name);
+          local[id].forEach(c => { if (!fbNames.includes(c.name)) state.cultivars[id].push(c); });
+        }
+      });
     }
-  });
+    _fbCultivarsInitDone = true;
+    localStorage.setItem('pt_cultivars', JSON.stringify(state.cultivars));
+    saveCultivars();
+  }).catch(() => { _fbCultivarsInitDone = true; });
 
   // Garden + beds sync — with one-time migration from old global path
   _fbRef.once('value').then(userSnap => {
