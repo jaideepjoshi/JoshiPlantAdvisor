@@ -1363,6 +1363,21 @@ Rules:
   render();
 }
 
+function pickImageFor(target) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.style.display = 'none';
+  inp.onchange = e => {
+    if (target === 'cultivarScan') cultivarScanHandlePhoto(e);
+    else if (target === 'bedScan') bedScanHandlePhoto(e);
+    else if (target === 'apTag') apHandleTagPhoto(e);
+    document.body.removeChild(inp);
+  };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
 function showToast(msg, color) {
   const t = document.createElement('div');
   t.style.cssText = `position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:${color||'#166534'};color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.4);pointer-events:none;opacity:1;transition:opacity .5s`;
@@ -2024,11 +2039,10 @@ function renderCultivarScanModal() {
             <div style="text-align:center;font-size:11px;color:#93c5fd;margin-top:4px;font-weight:600">${i===0?'Front':'Back'}</div>
           </div>`).join('')}
         ${imgs.length < 2 ? `
-          <label style="flex:1;height:110px;border-radius:10px;border:2px dashed rgba(96,165,250,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(96,165,250,.04)">
+          <div onclick="pickImageFor('cultivarScan')" style="flex:1;height:110px;border-radius:10px;border:2px dashed rgba(96,165,250,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(96,165,250,.04)">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             <span style="font-size:11px;color:#93c5fd;font-weight:600">${imgs.length === 0 ? 'Front of tag' : 'Back of tag'}</span>
-            <input type="file" accept="image/*" style="display:none" onchange="cultivarScanHandlePhoto(event)">
-          </label>` : ''}
+          </div>` : ''}
       </div>
       ${err ? `<p style="color:#f87171;font-size:12px;margin-bottom:12px">${escHtml(err)}</p>` : ''}
       ${imgs.length > 0 ? `
@@ -2075,14 +2089,13 @@ function renderBedScanModal() {
     // Step 1: upload photo
     body = `
       <p style="font-size:13px;color:var(--text-mid);margin-bottom:20px;line-height:1.5">Upload a photo of your garden bed — elevation (side view) or plan (overhead) — and Claude will identify the plants and match them to the database.</p>
-      <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px 20px;border:2px dashed rgba(96,165,250,.3);border-radius:14px;cursor:pointer;background:rgba(96,165,250,.04);transition:background .2s">
+      <div onclick="pickImageFor('bedScan')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:32px 20px;border:2px dashed rgba(96,165,250,.3);border-radius:14px;cursor:pointer;background:rgba(96,165,250,.04);transition:background .2s">
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <div style="text-align:center">
           <div style="font-size:14px;font-weight:600;color:#93c5fd;margin-bottom:4px">Tap to upload bed photo</div>
           <div style="font-size:12px;color:var(--text-light)">Elevation or overhead — JPG, PNG, HEIC</div>
         </div>
-        <input type="file" accept="image/*" style="display:none" onchange="bedScanHandlePhoto(event)">
-      </label>
+      </div>
     `;
   } else if (loading) {
     body = `
@@ -3651,11 +3664,10 @@ function renderAddPlantModal() {
             </div>
           `).join('')}
           ${tagImgs.length < 2 ? `
-            <label style="width:80px;height:80px;border-radius:8px;border:1.5px dashed rgba(74,222,128,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;background:rgba(74,222,128,.04)">
+            <div onclick="pickImageFor('apTag')" style="width:80px;height:80px;border-radius:8px;border:1.5px dashed rgba(74,222,128,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;background:rgba(74,222,128,.04)">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               <span style="font-size:10px;color:#4ade80;font-weight:600">${tagImgs.length === 0 ? 'Front' : 'Back'}</span>
-              <input type="file" accept="image/*" style="display:none" onchange="apHandleTagPhoto(event)">
-            </label>
+            </div>
           ` : ''}
         </div>
         ${tagImgs.length > 0 ? `
