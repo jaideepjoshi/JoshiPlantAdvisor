@@ -268,7 +268,8 @@ let state = {
   cultivarScanLoading: false,
   cultivarScanResult: null,  // {cultivar_name, source, notes, characteristics}
   cultivarScanError: '',
-  claudeApiKey: localStorage.getItem('pt_claudeApiKey') || ''
+  claudeApiKey: localStorage.getItem('pt_claudeApiKey') || '',
+  cultivars: JSON.parse(localStorage.getItem('pt_cultivars') || '{}'),
 };
 
 let _fbTasksInitDone = false;
@@ -387,6 +388,43 @@ function saveGarden() {
   }
 }
 
+let _fbCultivarsInitDone = false;
+function saveCultivars() {
+  localStorage.setItem('pt_cultivars', JSON.stringify(state.cultivars));
+  if (_fbReady && _fbUserId && _fbCultivarsInitDone) {
+    userRef('cultivars').set(state.cultivars).catch(e => console.warn('Firebase cultivars write failed:', e));
+  }
+}
+
+function migrateToCultivars() {
+  let changed = false;
+  Object.entries(state.garden).forEach(([id, g]) => {
+    if (g.entries && g.entries.length) {
+      if (!state.cultivars[id]) state.cultivars[id] = [];
+      g.entries.forEach(e => {
+        if (e.cultivar || e.tagImages) {
+          const exists = state.cultivars[id].some(c => c.name === e.cultivar);
+          if (!exists) {
+            state.cultivars[id].push({
+              name: e.cultivar || '',
+              source: e.source || '',
+              notes: e.notes || '',
+              tagImages: e.tagImages || [],
+              scannedData: e.scannedData || null,
+              dateAdded: new Date().toISOString()
+            });
+            changed = true;
+          }
+        }
+      });
+      // Clear migrated entries from garden
+      delete g.entries;
+      delete g.name;
+    }
+  });
+  if (changed) { saveCultivars(); saveGarden(); }
+}
+
 // Initialize garden entries from pre-existing planted data (called after Firebase initial load)
 function initGardenDefaults() {
   let changed = false;
@@ -397,6 +435,7 @@ function initGardenDefaults() {
     }
   });
   if (changed) saveGarden();
+  migrateToCultivars();
 }
 
 function saveProfile() {
@@ -457,6 +496,19 @@ function initFirebaseSync() {
       localStorage.setItem("pt_notes", JSON.stringify(state.notes));
     } else if (data && JSON.stringify(data) !== JSON.stringify(state.notes)) {
       state.notes = data; localStorage.setItem("pt_notes", JSON.stringify(data));
+    }
+  });
+
+  // Cultivars sync
+  userRef('cultivars').on('value', snap => {
+    const data = snap.val();
+    if (!_fbCultivarsInitDone) {
+      if (data) { const local = state.cultivars; state.cultivars = Object.assign({}, data); Object.keys(local).forEach(id => { if (!state.cultivars[id]) state.cultivars[id] = local[id]; }); }
+      _fbCultivarsInitDone = true;
+      localStorage.setItem('pt_cultivars', JSON.stringify(state.cultivars));
+      saveCultivars();
+    } else if (data && JSON.stringify(data) !== JSON.stringify(state.cultivars)) {
+      state.cultivars = data; localStorage.setItem('pt_cultivars', JSON.stringify(data)); render();
     }
   });
 
@@ -1306,11 +1358,7 @@ function cultivarScanUse() {
   const r = state.cultivarScanResult;
   if (!r) return;
   const id = state.cultivarScanPlantId;
-  if (!state.garden[id]) state.garden[id] = { planted: true, wishlist: false, name: '', where: '' };
-  // Auto-mark as planted — you're recording a cultivar you own
-  state.garden[id].planted = true;
-  state.garden[id].wishlist = false;
-  if (!state.garden[id].entries) state.garden[id].entries = getEntries(id);
+  if (!state.cultivars[id]) state.cultivars[id] = [];
 
   const cultivarName = r.cultivar_name || '';
   const parts = [];
@@ -1328,39 +1376,72 @@ function cultivarScanUse() {
   if (r.award) parts.push(r.award);
   if (r.care_tip) parts.push(r.care_tip);
   if (r.notes) parts.push(r.notes);
-  const notes = parts.join(' · ');
 
-  state.garden[id].entries.push({ cultivar: cultivarName, source: r.source || '', notes });
-  state.garden[id].name = state.garden[id].entries.map(e => e.cultivar).filter(Boolean).join(', ');
-  saveGarden();
+  state.cultivars[id].push({
+    name: cultivarName,
+    source: r.grower || '',
+    notes: parts.join(' · '),
+    tagImages: state.cultivarScanImages.slice(),
+    scannedData: r,
+    dateAdded: new Date().toISOString()
+  });
+  saveCultivars();
   state.showCultivarScan = false;
   render();
 }
 
-function addGardenEntry(id) {
-  if (!state.garden[id]) state.garden[id] = { planted: true, name: "", where: "" };
-  if (!state.garden[id].entries) {
-    state.garden[id].entries = getEntries(id);
+function addCultivar(id) {
+  if (!state.cultivars[id]) state.cultivars[id] = [];
+  state.cultivars[id].push({ name: '', source: '', notes: '', tagImages: [], scannedData: null, dateAdded: new Date().toISOString() });
+  saveCultivars();
+  render();
+}
+
+function updateCultivar(id, idx, field, value) {
+  if (!state.cultivars[id] || !state.cultivars[id][idx]) return;
+  state.cultivars[id][idx][field] = value;
+  saveCultivars();
+}
+
+function removeCultivar(id, idx) {
+  if (!state.cultivars[id]) return;
+  state.cultivars[id].splice(idx, 1);
+  saveCultivars();
+  render();
+}
+
+function plantCultivar(plantId, cultivarIdx) {
+  const c = (state.cultivars[plantId] || [])[cultivarIdx];
+  if (!state.garden[plantId]) state.garden[plantId] = { planted: false, wishlist: false, where: '' };
+  state.garden[plantId].planted = true;
+  state.garden[plantId].wishlist = false;
+  if (!state.garden[plantId].plantings) state.garden[plantId].plantings = [];
+  // Avoid duplicate plantings of same cultivar
+  const already = state.garden[plantId].plantings.some(pl => pl.cultivarIdx === cultivarIdx);
+  if (!already) {
+    state.garden[plantId].plantings.push({
+      cultivarIdx,
+      cultivarName: c ? c.name : '',
+      datePlanted: new Date().toISOString().split('T')[0],
+      notes: ''
+    });
   }
-  state.garden[id].entries.push({ cultivar: '', source: '' });
   saveGarden();
   render();
 }
 
-function updateGardenEntry(id, idx, field, value) {
-  if (!state.garden[id] || !state.garden[id].entries) return;
-  state.garden[id].entries[idx][field] = value;
-  // Keep legacy name field in sync
-  state.garden[id].name = state.garden[id].entries.map(e => e.cultivar).filter(Boolean).join(', ');
-  saveGarden();
-}
-
-function removeGardenEntry(id, idx) {
-  if (!state.garden[id] || !state.garden[id].entries) return;
-  state.garden[id].entries.splice(idx, 1);
-  state.garden[id].name = state.garden[id].entries.map(e => e.cultivar).filter(Boolean).join(', ');
-  saveGarden();
-  render();
+function showTagLightbox(plantId, cultivarIdx, imgIdx) {
+  const src = state.cultivars[plantId] && state.cultivars[plantId][cultivarIdx] && state.cultivars[plantId][cultivarIdx].tagImages[imgIdx];
+  if (!src) return;
+  const lb = document.createElement('div');
+  lb.id = 'tagLightbox';
+  lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  lb.onclick = () => lb.remove();
+  const img = document.createElement('img');
+  img.src = src;
+  img.style.cssText = 'max-width:96vw;max-height:92vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.6);object-fit:contain';
+  lb.appendChild(img);
+  document.body.appendChild(lb);
 }
 
 function startEditName(id, currentName) {
@@ -2472,30 +2553,51 @@ function renderDetail() {
         <div class="task-check ${g.wishlist?'done':''}" onclick="toggleGardenWishlist(${p.id})" style="width:26px;height:26px;border-radius:8px;border-color:rgba(251,146,60,.4)">${g.wishlist?'★':''}</div>
         <span style="font-size:14px;font-weight:600;color:#fb923c">On my wishlist</span>
       </div>
-      ${g.planted?(function(){
-        const entries = getEntries(p.id);
+      ${g.planted ? `<div style="margin-top:10px"><label style="font-size:11px;color:var(--green-mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;font-weight:600">Where planted</label><input type="text" value="${(g.where||'').replace(/"/g,'&quot;')}" placeholder="e.g. Front bed, Side garden" oninput="updateGardenField(${p.id},'where',this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif"></div>` : ''}
+      ${(function(){
+        const cultivars = state.cultivars[p.id] || [];
         const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
-        const entryRows = entries.map((e, i) => `<div style="padding:8px 10px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid var(--border)">
-          <div style="display:flex;gap:8px;align-items:flex-start">
-            <div style="flex:1;min-width:0">
-              <input type="text" value="${(e.cultivar||'').replace(/"/g,'&quot;')}" placeholder="Cultivar name" oninput="updateGardenEntry(${p.id},${i},'cultivar',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif;margin-bottom:4px">
-              <input type="text" value="${(e.source||'').replace(/"/g,'&quot;')}" placeholder="Source (e.g. Proven Winners, Petitti)" oninput="updateGardenEntry(${p.id},${i},'source',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:rgba(255,255,255,.04);color:var(--text-mid);outline:none;font-family:'Inter',system-ui,sans-serif">
+        const planted = state.garden[p.id] && state.garden[p.id].planted;
+        const plantings = (state.garden[p.id] || {}).plantings || [];
+        const cultivarCards = cultivars.map((c, i) => {
+          const isPlantedCultivar = plantings.some(pl => pl.cultivarIdx === i);
+          const sd = c.scannedData || {};
+          const badges = [
+            sd.sun ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(212,160,23,.12);color:#f5c842;border:1px solid rgba(212,160,23,.2)">${sd.sun}</span>` : '',
+            sd.bloom_months ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(244,114,182,.1);color:#f472b6;border:1px solid rgba(244,114,182,.2)">${sd.bloom_months}</span>` : '',
+            sd.height ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)">${sd.height}</span>` : '',
+            sd.deer_resistant === true ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)">🦌 Deer safe</span>` : '',
+            sd.award ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.2)">🏆 ${sd.award}</span>` : '',
+          ].filter(Boolean).join('');
+          return `<div style="padding:10px 12px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid ${isPlantedCultivar?'rgba(74,222,128,.3)':'var(--border)'}">
+            <div style="display:flex;gap:8px;align-items:flex-start">
+              <div style="flex:1;min-width:0">
+                <input type="text" value="${(c.name||'').replace(/"/g,'&quot;')}" placeholder="Cultivar name" oninput="updateCultivar(${p.id},${i},'name',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif;margin-bottom:4px">
+                <input type="text" value="${(c.source||'').replace(/"/g,'&quot;')}" placeholder="Source / grower" oninput="updateCultivar(${p.id},${i},'source',this.value)" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-size:11px;background:rgba(255,255,255,.03);color:var(--text-mid);outline:none;font-family:'Inter',system-ui,sans-serif">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;align-items:center;flex-shrink:0">
+                <div onclick="removeCultivar(${p.id},${i})" style="width:26px;height:26px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#f87171;font-size:13px">×</div>
+                ${isPlantedCultivar ? `<div style="font-size:10px;color:#4ade80;font-weight:700;text-align:center">✓ Planted</div>` : `<div onclick="plantCultivar(${p.id},${i})" style="font-size:10px;padding:4px 6px;border-radius:8px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);color:#4ade80;cursor:pointer;font-weight:600;text-align:center;white-space:nowrap">🌱 Plant</div>`}
+              </div>
             </div>
-            <div onclick="removeGardenEntry(${p.id},${i})" style="width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:#f87171;font-size:14px;margin-top:2px">×</div>
+            ${badges ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${badges}</div>` : ''}
+            ${(c.tagImages && c.tagImages.length) ? `
+              <div style="display:flex;gap:6px;margin-top:7px;align-items:flex-end">
+                ${c.tagImages.map((src, ti) => `<img src="${src}" onclick="showTagLightbox(${p.id},${i},${ti})" style="height:60px;width:auto;max-width:90px;border-radius:7px;border:1px solid rgba(96,165,250,.25);cursor:pointer;object-fit:cover" title="Tag photo ${ti+1}">`).join('')}
+                <div style="font-size:10px;color:#93c5fd;font-weight:600;padding-bottom:2px">📷 Tag</div>
+              </div>` : ''}
+            ${c.notes ? `<div style="margin-top:6px;font-size:11px;color:var(--text-light);line-height:1.4;padding:4px 6px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid rgba(96,165,250,.2)">${escHtml(c.notes)}</div>` : ''}
+          </div>`;
+        }).join('');
+        return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <label style="font-size:11px;color:#93c5fd;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:block;margin-bottom:8px">My Cultivars</label>
+          ${cultivars.length ? `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">${cultivarCards}</div>` : `<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;text-align:center">No cultivars saved yet — scan a tag or add manually</div>`}
+          <div style="display:flex;gap:8px">
+            <div onclick="addCultivar(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:12px;font-weight:500" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'">+ Add cultivar</div>
+            ${hasKey ? `<div onclick="openCultivarScan(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:12px;font-weight:500" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scan tag</div>` : ''}
           </div>
-          ${e.notes ? `<div style="margin-top:5px;font-size:11px;color:var(--text-light);line-height:1.4;padding:4px 6px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid rgba(74,222,128,.2)">${escHtml(e.notes)}</div>` : ''}
-        </div>`).join('');
-        return `<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
-        <label style="font-size:11px;color:var(--green-mid);text-transform:uppercase;letter-spacing:.5px;font-weight:600">My Cultivars</label>
-        ${entryRows}
-        <div style="display:flex;gap:8px">
-          <div onclick="addGardenEntry(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:10px;border:1px dashed rgba(74,222,128,.3);cursor:pointer;color:var(--green-accent);font-size:13px;font-weight:500;transition:background .2s" onmouseover="this.style.background='rgba(74,222,128,.06)'" onmouseout="this.style.background='transparent'">+ Add cultivar</div>
-          ${hasKey ? `<div onclick="openCultivarScan(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:13px;font-weight:500;transition:background .2s" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scan tag</div>` : ''}
-        </div>
-        <div><label style="font-size:11px;color:var(--green-mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;font-weight:600">Where</label>
-        <input type="text" value="${(g.where||'').replace(/"/g,'&quot;')}" placeholder="e.g. Front bed, Side garden" oninput="updateGardenField(${p.id},'where',this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif"></div>
-      </div>`;
-      })():''}
+        </div>`;
+      })()}
       ${g.wishlist&&!g.planted?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
         <div><label style="font-size:11px;color:#fb923c;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;font-weight:600">Where would I plant it?</label>
         <input type="text" value="${(g.wishWhere||'').replace(/"/g,'&quot;')}" placeholder="e.g. Back fence, Shady corner" oninput="updateGardenField(${p.id},'wishWhere',this.value)" style="width:100%;padding:10px 12px;border:1px solid rgba(251,146,60,.3);border-radius:10px;font-size:14px;background:rgba(251,146,60,.05);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif"></div>
