@@ -1365,7 +1365,8 @@ Rules:
 
 function cultivarScanUse() {
   const r = state.cultivarScanResult;
-  if (!r) return;
+  console.log('[cultivarScanUse] r=', r, 'plantId=', state.cultivarScanPlantId, 'cultivars before=', JSON.stringify(state.cultivars));
+  if (!r) { console.warn('[cultivarScanUse] no result, aborting'); return; }
   const id = state.cultivarScanPlantId;
   if (!state.cultivars[id]) state.cultivars[id] = [];
 
@@ -1392,7 +1393,11 @@ function cultivarScanUse() {
     notes: parts.join(' · '),
     tagImages: state.cultivarScanImages.slice(),
     scannedData: r,
-    dateAdded: new Date().toISOString()
+    dateAdded: new Date().toISOString(),
+    planted: false,
+    wishlist: false,
+    where: '',
+    cultivarNotes: ''
   });
   saveCultivars();
   state.showCultivarScan = false;
@@ -1401,7 +1406,7 @@ function cultivarScanUse() {
 
 function addCultivar(id) {
   if (!state.cultivars[id]) state.cultivars[id] = [];
-  state.cultivars[id].push({ name: '', source: '', notes: '', tagImages: [], scannedData: null, dateAdded: new Date().toISOString() });
+  state.cultivars[id].push({ name: '', source: '', notes: '', tagImages: [], scannedData: null, dateAdded: new Date().toISOString(), planted: false, wishlist: false, where: '', cultivarNotes: '' });
   saveCultivars();
   render();
 }
@@ -1419,25 +1424,44 @@ function removeCultivar(id, idx) {
   render();
 }
 
-function plantCultivar(plantId, cultivarIdx) {
-  const c = (state.cultivars[plantId] || [])[cultivarIdx];
-  if (!state.garden[plantId]) state.garden[plantId] = { planted: false, wishlist: false, where: '' };
-  state.garden[plantId].planted = true;
-  state.garden[plantId].wishlist = false;
-  if (!state.garden[plantId].plantings) state.garden[plantId].plantings = [];
-  // Avoid duplicate plantings of same cultivar
-  const already = state.garden[plantId].plantings.some(pl => pl.cultivarIdx === cultivarIdx);
-  if (!already) {
-    state.garden[plantId].plantings.push({
-      cultivarIdx,
-      cultivarName: c ? c.name : '',
-      datePlanted: new Date().toISOString().split('T')[0],
-      notes: ''
-    });
-  }
+function toggleCultivarPlanted(plantId, idx) {
+  const c = (state.cultivars[plantId] || [])[idx];
+  if (!c) return;
+  c.planted = !c.planted;
+  if (c.planted) { c.wishlist = false; }
+  if (!state.garden[plantId]) state.garden[plantId] = { planted: false, wishlist: false };
+  state.garden[plantId].planted = (state.cultivars[plantId] || []).some(x => x.planted);
+  saveCultivars();
   saveGarden();
   render();
 }
+
+function toggleCultivarWishlist(plantId, idx) {
+  const c = (state.cultivars[plantId] || [])[idx];
+  if (!c) return;
+  c.wishlist = !c.wishlist;
+  if (c.wishlist) { c.planted = false; }
+  if (!state.garden[plantId]) state.garden[plantId] = { planted: false, wishlist: false };
+  state.garden[plantId].wishlist = (state.cultivars[plantId] || []).some(x => x.wishlist);
+  saveCultivars();
+  saveGarden();
+  render();
+}
+
+function updateCultivarWhere(plantId, idx, val) {
+  const c = (state.cultivars[plantId] || [])[idx];
+  if (!c) return;
+  c.where = val;
+  saveCultivars();
+}
+
+function updateCultivarNotes(plantId, idx, val) {
+  const c = (state.cultivars[plantId] || [])[idx];
+  if (!c) return;
+  c.cultivarNotes = val;
+  saveCultivars();
+}
+
 
 function showTagLightbox(plantId, cultivarIdx, imgIdx) {
   const src = state.cultivars[plantId] && state.cultivars[plantId][cultivarIdx] && state.cultivars[plantId][cultivarIdx].tagImages[imgIdx];
@@ -2550,69 +2574,79 @@ function renderDetail() {
   // GARDEN section (always open, not collapsible)
   const gardenCard = `<div class="ds" style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15)">
     <div style="padding:16px 18px">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="ds-icon" style="background:linear-gradient(135deg,#2d6a4f,#40916c);color:#fff">${IC.garden}</div>
-        <h3 style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:700;color:var(--green);margin:0">My Garden</h3>
+        <h3 style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:700;color:#4ade80;margin:0">My Garden</h3>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <div class="task-check ${g.planted?'done':''}" onclick="toggleGardenPlanted(${p.id})" style="width:26px;height:26px;border-radius:8px">${g.planted?'✓':''}</div>
-        <span style="font-size:14px;font-weight:600;color:var(--green)">Planted in my garden</span>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="task-check ${g.planted?'done':''}" onclick="toggleGardenPlanted(${p.id})" style="width:26px;height:26px;border-radius:8px">${g.planted?'✓':''}</div>
+          <span style="font-size:14px;font-weight:600;color:#4ade80">Planted in my garden</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="task-check ${g.wishlist?'done':''}" onclick="toggleGardenWishlist(${p.id})" style="width:26px;height:26px;border-radius:8px;border-color:rgba(251,146,60,.4)">${g.wishlist?'★':''}</div>
+          <span style="font-size:14px;font-weight:600;color:#fb923c">On my wishlist</span>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:${g.planted?'14px':'0'}">
-        <div class="task-check ${g.wishlist?'done':''}" onclick="toggleGardenWishlist(${p.id})" style="width:26px;height:26px;border-radius:8px;border-color:rgba(251,146,60,.4)">${g.wishlist?'★':''}</div>
-        <span style="font-size:14px;font-weight:600;color:#fb923c">On my wishlist</span>
-      </div>
-      ${g.planted ? `<div style="margin-top:10px"><label style="font-size:11px;color:var(--green-mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;font-weight:600">Where planted</label><input type="text" value="${(g.where||'').replace(/"/g,'&quot;')}" placeholder="e.g. Front bed, Side garden" oninput="updateGardenField(${p.id},'where',this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif"></div>` : ''}
-      ${(function(){
-        const cultivars = state.cultivars[p.id] || [];
-        const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
-        const planted = state.garden[p.id] && state.garden[p.id].planted;
-        const plantings = (state.garden[p.id] || {}).plantings || [];
-        const cultivarCards = cultivars.map((c, i) => {
-          const isPlantedCultivar = plantings.some(pl => pl.cultivarIdx === i);
-          const sd = c.scannedData || {};
-          const badges = [
-            sd.sun ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(212,160,23,.12);color:#f5c842;border:1px solid rgba(212,160,23,.2)">${sd.sun}</span>` : '',
-            sd.bloom_months ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(244,114,182,.1);color:#f472b6;border:1px solid rgba(244,114,182,.2)">${sd.bloom_months}</span>` : '',
-            sd.height ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)">${sd.height}</span>` : '',
-            sd.deer_resistant === true ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)">🦌 Deer safe</span>` : '',
-            sd.award ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.2)">🏆 ${sd.award}</span>` : '',
-          ].filter(Boolean).join('');
-          return `<div style="padding:10px 12px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid ${isPlantedCultivar?'rgba(74,222,128,.3)':'var(--border)'}">
-            <div style="display:flex;gap:8px;align-items:flex-start">
-              <div style="flex:1;min-width:0">
-                <input type="text" value="${(c.name||'').replace(/"/g,'&quot;')}" placeholder="Cultivar name" oninput="updateCultivar(${p.id},${i},'name',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif;margin-bottom:4px">
-                <input type="text" value="${(c.source||'').replace(/"/g,'&quot;')}" placeholder="Source / grower" oninput="updateCultivar(${p.id},${i},'source',this.value)" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-size:11px;background:rgba(255,255,255,.03);color:var(--text-mid);outline:none;font-family:'Inter',system-ui,sans-serif">
-              </div>
-              <div style="display:flex;flex-direction:column;gap:5px;align-items:center;flex-shrink:0">
-                <div onclick="removeCultivar(${p.id},${i})" style="width:26px;height:26px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#f87171;font-size:13px">×</div>
-                ${isPlantedCultivar ? `<div style="font-size:10px;color:#4ade80;font-weight:700;text-align:center">✓ Planted</div>` : `<div onclick="plantCultivar(${p.id},${i})" style="font-size:10px;padding:4px 6px;border-radius:8px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);color:#4ade80;cursor:pointer;font-weight:600;text-align:center;white-space:nowrap">🌱 Plant</div>`}
-              </div>
-            </div>
-            ${badges ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${badges}</div>` : ''}
-            ${(c.tagImages && c.tagImages.length) ? `
-              <div style="display:flex;gap:6px;margin-top:7px;align-items:flex-end">
-                ${c.tagImages.map((src, ti) => `<img src="${src}" onclick="showTagLightbox(${p.id},${i},${ti})" style="height:60px;width:auto;max-width:90px;border-radius:7px;border:1px solid rgba(96,165,250,.25);cursor:pointer;object-fit:cover" title="Tag photo ${ti+1}">`).join('')}
-                <div style="font-size:10px;color:#93c5fd;font-weight:600;padding-bottom:2px">📷 Tag</div>
-              </div>` : ''}
-            ${c.notes ? `<div style="margin-top:6px;font-size:11px;color:var(--text-light);line-height:1.4;padding:4px 6px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid rgba(96,165,250,.2)">${escHtml(c.notes)}</div>` : ''}
-          </div>`;
-        }).join('');
-        return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-          <label style="font-size:11px;color:#93c5fd;text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:block;margin-bottom:8px">My Cultivars</label>
-          ${cultivars.length ? `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">${cultivarCards}</div>` : `<div style="font-size:12px;color:var(--text-light);margin-bottom:8px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;text-align:center">No cultivars saved yet — scan a tag or add manually</div>`}
-          <div style="display:flex;gap:8px">
-            <div onclick="addCultivar(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:12px;font-weight:500" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'">+ Add cultivar</div>
-            ${hasKey ? `<div onclick="openCultivarScan(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:12px;font-weight:500" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scan tag</div>` : ''}
-          </div>
-        </div>`;
-      })()}
-      ${g.wishlist&&!g.planted?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
-        <div><label style="font-size:11px;color:#fb923c;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;font-weight:600">Where would I plant it?</label>
-        <input type="text" value="${(g.wishWhere||'').replace(/"/g,'&quot;')}" placeholder="e.g. Back fence, Shady corner" oninput="updateGardenField(${p.id},'wishWhere',this.value)" style="width:100%;padding:10px 12px;border:1px solid rgba(251,146,60,.3);border-radius:10px;font-size:14px;background:rgba(251,146,60,.05);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif"></div>
-      </div>`:''}
     </div>
   </div>`;
+
+  // CULTIVARS section
+  const cultivarsCard = (() => {
+    const cultivars = state.cultivars[p.id] || [];
+    const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
+    const cards = cultivars.map((c, i) => {
+      const sd = c.scannedData || {};
+      const badges = [
+        sd.sun ? `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(212,160,23,.12);color:#f5c842;border:1px solid rgba(212,160,23,.2)">${sd.sun}</span>` : '',
+        sd.bloom_months ? `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(244,114,182,.1);color:#f472b6;border:1px solid rgba(244,114,182,.2)">${sd.bloom_months}</span>` : '',
+        sd.height ? `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)">${sd.height}</span>` : '',
+        sd.deer_resistant === true ? `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)">🦌 Deer safe</span>` : '',
+        sd.award ? `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.2)">🏆 ${sd.award}</span>` : '',
+      ].filter(Boolean).join('');
+      return `<div style="padding:12px 14px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid ${c.planted?'rgba(74,222,128,.3)':c.wishlist?'rgba(251,146,60,.25)':'var(--border)'}">
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px">
+          <div style="flex:1;min-width:0">
+            <input type="text" value="${(c.name||'').replace(/"/g,'&quot;')}" placeholder="Cultivar name" oninput="updateCultivar(${p.id},${i},'name',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif;margin-bottom:4px">
+            <input type="text" value="${(c.source||'').replace(/"/g,'&quot;')}" placeholder="Grower / source" oninput="updateCultivar(${p.id},${i},'source',this.value)" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-size:11px;background:rgba(255,255,255,.03);color:var(--text-mid);outline:none;font-family:'Inter',system-ui,sans-serif">
+          </div>
+          <div onclick="removeCultivar(${p.id},${i})" style="width:26px;height:26px;border-radius:50%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:#f87171;font-size:13px;margin-top:2px">×</div>
+        </div>
+        ${badges ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${badges}</div>` : ''}
+        ${(c.tagImages && c.tagImages.length) ? `<div style="display:flex;gap:6px;margin-bottom:8px;align-items:flex-end">${c.tagImages.map((src,ti)=>`<img src="${src}" onclick="showTagLightbox(${p.id},${i},${ti})" style="height:56px;width:auto;max-width:80px;border-radius:7px;border:1px solid rgba(96,165,250,.25);cursor:pointer;object-fit:cover">`).join('')}<span style="font-size:10px;color:#93c5fd;font-weight:600;padding-bottom:2px">📷 Tag</span></div>` : ''}
+        ${c.notes ? `<div style="font-size:11px;color:var(--text-light);line-height:1.4;padding:5px 7px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid rgba(96,165,250,.2);margin-bottom:8px">${escHtml(c.notes)}</div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="task-check ${c.planted?'done':''}" onclick="toggleCultivarPlanted(${p.id},${i})" style="width:22px;height:22px;border-radius:6px;flex-shrink:0">${c.planted?'✓':''}</div>
+            <span style="font-size:13px;font-weight:600;color:var(--green)">Planted in my garden</span>
+          </div>
+          ${c.planted ? `
+            <div style="padding-left:30px;display:flex;flex-direction:column;gap:6px">
+              <input type="text" value="${(c.where||'').replace(/"/g,'&quot;')}" placeholder="Where (e.g. Front bed)" oninput="updateCultivarWhere(${p.id},${i},this.value)" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif">
+              <textarea placeholder="Notes about this cultivar..." oninput="updateCultivarNotes(${p.id},${i},this.value)" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif;resize:vertical;min-height:60px;box-sizing:border-box">${escHtml(c.cultivarNotes||'')}</textarea>
+            </div>` : ''}
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="task-check ${c.wishlist?'done':''}" onclick="toggleCultivarWishlist(${p.id},${i})" style="width:22px;height:22px;border-radius:6px;flex-shrink:0;border-color:rgba(251,146,60,.4)">${c.wishlist?'★':''}</div>
+            <span style="font-size:13px;font-weight:600;color:#fb923c">On my wishlist</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="ds" style="background:rgba(96,165,250,.04);border:1px solid rgba(96,165,250,.12);margin-top:0">
+      <div style="padding:16px 18px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div class="ds-icon" style="background:linear-gradient(135deg,#1e3a5f,#1d4ed8);color:#93c5fd"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12c0-2.76 1.12-5.26 2.93-7.07"/><path d="M12 6v6l4 2"/></svg></div>
+          <h3 style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:700;color:#93c5fd;margin:0">Cultivars</h3>
+        </div>
+        ${cultivars.length ? `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">${cards}</div>` : `<p style="font-size:13px;color:var(--text-light);margin-bottom:12px;text-align:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px">No cultivars yet — add one manually or scan a tag</p>`}
+        <div style="display:flex;gap:8px">
+          <div onclick="addCultivar(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:12px;font-weight:500;transition:background .2s" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'">+ Add cultivar</div>
+          ${hasKey ? `<div onclick="openCultivarScan(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:12px;font-weight:500;transition:background .2s" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scan tag</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  })();
 
   // Notes / Journal card
   const noteVal = (state.notes[String(p.id)]||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -2825,6 +2859,7 @@ function renderDetail() {
       ${thumbStrip}
       <div class="detail-body">
         ${gardenCard}
+        ${cultivarsCard}
         ${notesCard}
         ${sections.join('')}
         <div style="padding-top:4px;display:flex;flex-direction:column;gap:10px">
