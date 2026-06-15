@@ -270,6 +270,13 @@ let state = {
   cultivarScanError: '',
   claudeApiKey: localStorage.getItem('pt_claudeApiKey') || '',
   cultivars: JSON.parse(localStorage.getItem('pt_cultivars') || '{}'),
+  // Natural-language Ask interface
+  showAsk: false,
+  askQuestion: '',
+  askLoading: false,
+  askError: '',
+  askResults: null,     // { plants:[ids], spec:{...}, message:'...' }
+  askHistory: JSON.parse(localStorage.getItem('pt_askHistory') || '[]'),
 };
 
 let _fbTasksInitDone = false;
@@ -3894,6 +3901,312 @@ function renderAddPlantModal() {
   `;
 }
 
+// ===== NATURAL-LANGUAGE ASK INTERFACE =====
+function _askParseSize(str) {
+  if (!str) return null;
+  const s = String(str).toLowerCase();
+  let m = s.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*(in|ft)/);
+  if (m) {
+    const mult = m[3] === 'ft' ? 12 : 1;
+    return { min: parseFloat(m[1]) * mult, max: parseFloat(m[2]) * mult };
+  }
+  m = s.match(/(\d+(?:\.\d+)?)\s*(in|ft)/);
+  if (m) {
+    const mult = m[2] === 'ft' ? 12 : 1;
+    const n = parseFloat(m[1]) * mult;
+    return { min: n, max: n };
+  }
+  return null;
+}
+
+function _askSunCategories(p) {
+  const s = (p.sun || '').toLowerCase();
+  if (s === 'full sun') return ['full-sun'];
+  if (s === 'full sun to part shade') return ['full-sun', 'part-sun', 'part-shade'];
+  if (s === 'part sun to full sun') return ['full-sun', 'part-sun'];
+  if (s === 'part shade to part sun') return ['part-sun', 'part-shade'];
+  if (s === 'shade to part shade') return ['shade', 'part-shade'];
+  if (s === 'part shade to full shade') return ['shade', 'part-shade'];
+  return [];
+}
+
+function applyAskFilter(spec) {
+  spec = spec || {};
+  const f = spec.filters || {};
+  let list = PLANTS.slice();
+  const scope = spec.scope || 'all';
+  if (scope === 'garden') list = list.filter(p => isPlanted(p.id));
+  else if (scope === 'wishlist') list = list.filter(p => isWishlisted(p.id));
+
+  if (f.blooming != null && f.blooming !== false) {
+    if (f.blooming === 'any' || f.blooming === true) list = list.filter(p => (p.bloomMonths || []).length > 0);
+    else if (f.blooming === 'now') list = list.filter(p => (p.bloomMonths || []).includes(state.currentMonth));
+    else if (typeof f.blooming === 'number') list = list.filter(p => (p.bloomMonths || []).includes(f.blooming));
+  }
+  if (Array.isArray(f.bloomColors) && f.bloomColors.length) {
+    const cs = f.bloomColors.map(c => String(c).toLowerCase());
+    list = list.filter(p => p.bloomColor && cs.includes(String(p.bloomColor).toLowerCase()));
+  }
+  if (typeof f.minHeightIn === 'number') list = list.filter(p => { const r = _askParseSize(p.height); return r && r.max >= f.minHeightIn; });
+  if (typeof f.maxHeightIn === 'number') list = list.filter(p => { const r = _askParseSize(p.height); return r && r.min <= f.maxHeightIn; });
+  if (typeof f.minWidthIn === 'number') list = list.filter(p => { const r = _askParseSize(p.width); return r && r.max >= f.minWidthIn; });
+  if (typeof f.maxWidthIn === 'number') list = list.filter(p => { const r = _askParseSize(p.width); return r && r.min <= f.maxWidthIn; });
+  if (Array.isArray(f.sunCategories) && f.sunCategories.length) {
+    const want = new Set(f.sunCategories.map(c => String(c).toLowerCase()));
+    list = list.filter(p => _askSunCategories(p).some(c => want.has(c)));
+  }
+  if (f.deerResistant === true) list = list.filter(p => p.deerResistant);
+  if (f.rabbitResistant === true) list = list.filter(p => p.rabbitResistant);
+  if (f.droughtTolerant === true) list = list.filter(p => p.droughtTolerant);
+  if (f.nativeOhio === true) list = list.filter(p => p.nativeOhio);
+  if (f.reblooming === true) list = list.filter(p => p.reblooming);
+  if (f.evergreen === true) list = list.filter(p => /evergreen/i.test(p.type || ''));
+  if (Array.isArray(f.attracts) && f.attracts.length) {
+    const want = f.attracts.map(a => String(a).toLowerCase());
+    list = list.filter(p => (p.attracts || []).some(a => want.some(w => String(a).toLowerCase().includes(w))));
+  }
+  if (Array.isArray(f.gardenStyles) && f.gardenStyles.length) {
+    const want = f.gardenStyles.map(g => String(g).toLowerCase());
+    list = list.filter(p => (p.gardenStyles || []).some(g => want.includes(String(g).toLowerCase())));
+  }
+  if (Array.isArray(f.types) && f.types.length) {
+    const want = f.types.map(t => String(t).toLowerCase());
+    list = list.filter(p => want.some(w => String(p.type || '').toLowerCase().includes(w)));
+  }
+  if (f.nameContains) {
+    const q = String(f.nameContains).toLowerCase();
+    list = list.filter(p => p.name.toLowerCase().includes(q) || String(p.botanical || '').toLowerCase().includes(q));
+  }
+  if (f.provenWinners === true) list = list.filter(p => p.provenWinners);
+  if (f.monrovia === true) list = list.filter(p => p.monrovia);
+  if (f.firstEditions === true) list = list.filter(p => p.firstEditions);
+
+  if (spec.sort === 'height-desc') list.sort((a, b) => ((_askParseSize(b.height) || {}).max || 0) - ((_askParseSize(a.height) || {}).max || 0));
+  else if (spec.sort === 'height-asc') list.sort((a, b) => ((_askParseSize(a.height) || {}).min || 9999) - ((_askParseSize(b.height) || {}).min || 9999));
+  else if (spec.sort === 'bloom-month') list.sort((a, b) => ((a.bloomMonths || [])[0] || 13) - ((b.bloomMonths || [])[0] || 13));
+  else if (spec.sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
+
+  if (typeof spec.limit === 'number' && spec.limit > 0) list = list.slice(0, spec.limit);
+  return list;
+}
+
+function openAsk() {
+  state.showAsk = true;
+  state.askQuestion = '';
+  state.askResults = null;
+  state.askError = '';
+  state.askLoading = false;
+  render();
+  setTimeout(() => { const i = document.getElementById('askInput'); if (i) i.focus(); }, 80);
+}
+
+function setAskFromSuggestion(el) {
+  const q = el.getAttribute('data-q') || '';
+  state.askQuestion = q;
+  askPlantBuddy();
+}
+
+async function askPlantBuddy() {
+  const q = (state.askQuestion || '').trim();
+  if (!q) return;
+  const key = state.claudeApiKey || _sharedClaudeKey;
+  if (!key) { state.askError = 'No API key — add one in Settings.'; render(); return; }
+  state.askLoading = true;
+  state.askError = '';
+  state.askResults = null;
+  render();
+
+  const gardenCount = PLANTS.filter(p => isPlanted(p.id)).length;
+  const wishCount = PLANTS.filter(p => isWishlisted(p.id)).length;
+  const monthName = MONTHS[state.currentMonth - 1];
+
+  const systemPrompt = `You are the Plant Buddy natural-language search interface. The user has a perennial plant database with ${PLANTS.length} plants. They have ${gardenCount} marked as planted in their garden, and ${wishCount} on their wishlist. Today is ${monthName} (month ${state.currentMonth}).
+
+Convert the user's question into a JSON filter spec. Return ONLY the JSON object — no prose, no markdown, no code fences.
+
+Schema (omit any field the user did not ask about):
+{
+  "scope": "all" | "garden" | "wishlist",
+  "filters": {
+    "blooming": "any" | "now" | <month 1-12>,
+    "bloomColors": ["purple","pink","blue","white","yellow","red","orange","green","lavender","mixed"],
+    "minHeightIn": <number>,
+    "maxHeightIn": <number>,
+    "minWidthIn": <number>,
+    "maxWidthIn": <number>,
+    "sunCategories": ["full-sun","part-sun","part-shade","shade"],
+    "deerResistant": true,
+    "rabbitResistant": true,
+    "droughtTolerant": true,
+    "nativeOhio": true,
+    "reblooming": true,
+    "evergreen": true,
+    "attracts": ["butterflies","bees","birds","hummingbirds"],
+    "gardenStyles": ["cottage","pollinator","prairie","border","woodland","modern","cutting","english","japanese","mediterranean","rock","tropical"],
+    "types": ["shrub","grass","perennial","fern","groundcover","vine","bulb"],
+    "nameContains": <string>,
+    "provenWinners": true,
+    "monrovia": true,
+    "firstEditions": true
+  },
+  "sort": "default" | "height-asc" | "height-desc" | "bloom-month" | "name",
+  "limit": <number, only if user gave one>,
+  "intent": "<short human-readable phrase describing what was searched, e.g. 'tall plants for the back of the border'>"
+}
+
+Mapping rules:
+- "shade-loving" / "for shade" → sunCategories ["shade","part-shade"]
+- "sun-loving" / "for full sun" → sunCategories ["full-sun"]
+- "part sun" → sunCategories ["part-sun"]
+- "tall" / "back of the border" / "back of border" → minHeightIn 24, sort "height-desc"
+- "short" / "low" / "front of the border" → maxHeightIn 12, sort "height-asc"
+- "edging" / "for edging" → maxHeightIn 10
+- "flowering" / "blooming" / "in flower" with no time qualifier → blooming "any"
+- "blooming now" / "currently flowering" / "in bloom" → blooming "now"
+- "blooming in <month>" → blooming as month number 1-12
+- "my garden" / "I planted" / "show me my plants" → scope "garden"
+- "wishlist" / "want to plant" / "saved" → scope "wishlist"
+- "for pollinators" → attracts ["butterflies","bees","hummingbirds"]
+- "for butterflies"/"for bees"/"for hummingbirds"/"for birds" → attracts with just that one
+- "deer resistant" → deerResistant true
+- "rabbit resistant" → rabbitResistant true
+- "drought tolerant" / "for dry soil" / "xeric" → droughtTolerant true
+- "native" / "ohio native" → nativeOhio true
+- Convert feet to inches (1 ft = 12 in). Heights are in inches.
+- If user asks for "N <something>", set limit to N.
+- If user just says "what's in my garden" / "show me my plants" with no other filter, return scope "garden" with empty filters.
+- Always include a short "intent" phrase for display.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 600,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: q }]
+      })
+    });
+    if (!resp.ok) {
+      const t = await resp.text();
+      throw new Error('API error ' + resp.status + ': ' + t.slice(0, 200));
+    }
+    const data = await resp.json();
+    const text = (data.content && data.content[0] && data.content[0].text) || '';
+    let spec;
+    try {
+      const m = text.match(/\{[\s\S]*\}/);
+      spec = JSON.parse(m ? m[0] : text);
+    } catch (e) {
+      throw new Error('Could not parse response: ' + text.slice(0, 200));
+    }
+    const matched = applyAskFilter(spec);
+    state.askResults = {
+      plants: matched.map(p => p.id),
+      spec,
+      message: spec.intent || ''
+    };
+    const entry = { q, intent: spec.intent || '', count: matched.length, ts: Date.now() };
+    state.askHistory.unshift(entry);
+    state.askHistory = state.askHistory.slice(0, 10);
+    try { localStorage.setItem('pt_askHistory', JSON.stringify(state.askHistory)); } catch (e) {}
+  } catch (e) {
+    state.askError = (e && e.message) || String(e);
+  } finally {
+    state.askLoading = false;
+    render();
+  }
+}
+
+function renderAskModal() {
+  const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
+  const suggestions = [
+    'Show me 5 shade loving plants',
+    'Plants taller than 24in for the back of the border',
+    'My flowering plants',
+    'Deer resistant plants for pollinators',
+    'Plants on my wishlist',
+    'Native Ohio plants blooming in July'
+  ];
+
+  let resultsHtml = '';
+  if (state.askLoading) {
+    resultsHtml = `<div style="padding:34px 0;text-align:center;color:var(--text-mid);font-size:13px"><div style="display:inline-block;width:26px;height:26px;border:2px solid rgba(74,222,128,.25);border-top-color:#4ade80;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:10px"></div><div>Thinking…</div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+  } else if (state.askError) {
+    resultsHtml = `<div style="padding:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;color:#fca5a5;font-size:13px;margin-top:14px">${escHtml(state.askError)}</div>`;
+  } else if (state.askResults) {
+    const ids = state.askResults.plants;
+    const intent = state.askResults.message;
+    if (!ids.length) {
+      resultsHtml = `<div style="padding:30px 18px;text-align:center;color:var(--text-mid);font-size:14px;margin-top:14px"><div style="font-size:42px;opacity:.35;margin-bottom:10px">🌿</div>No plants matched. Try rephrasing or broadening your question.</div>`;
+    } else {
+      const plants = ids.map(id => PLANTS.find(p => p.id === id)).filter(Boolean);
+      const intentLine = intent ? `<div style="padding:14px 2px 4px;font-size:13px;color:#cde2d6;font-style:italic">${escHtml(intent)}</div>` : '';
+      const countLine = `<div style="padding:2px 2px 8px;font-size:11px;color:var(--text-light);font-weight:600;letter-spacing:.4px;text-transform:uppercase">${plants.length} match${plants.length !== 1 ? 'es' : ''}</div>`;
+      resultsHtml = intentLine + countLine + `<div style="display:flex;flex-direction:column;gap:8px">${plants.map(p => `
+        <div onclick="state.showAsk=false;state.detailId=${p.id};render()" style="display:flex;align-items:center;gap:11px;padding:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">
+          <div style="width:64px;height:64px;border-radius:9px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.05)">${plantImage(p)}</div>
+          <div style="min-width:0;flex:1">
+            <div style="font-family:'Playfair Display',serif;font-size:14px;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(displayName(p))}</div>
+            <div style="font-size:11px;color:var(--text-light);font-style:italic;margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(p.botanical || '')}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;font-size:10px">
+              ${p.height ? `<span style="background:rgba(255,255,255,.06);color:var(--text-mid);padding:2px 6px;border-radius:6px">↕ ${escHtml(p.height)}</span>` : ''}
+              ${p.sun ? `<span style="background:rgba(234,179,8,.08);color:#fbbf24;padding:2px 6px;border-radius:6px">${escHtml(p.sun)}</span>` : ''}
+              ${p.bloomMonths && p.bloomMonths.length ? `<span style="background:rgba(244,114,182,.12);color:#f472b6;padding:2px 6px;border-radius:6px">${p.bloomMonths.map(m => MONTHS[m - 1]).join('-')}</span>` : ''}
+              ${p.deerResistant ? '<span style="background:rgba(255,255,255,.06);color:var(--text-mid);padding:2px 6px;border-radius:6px">🦌</span>' : ''}
+              ${isPlanted(p.id) ? '<span style="background:rgba(74,222,128,.12);color:#4ade80;padding:2px 6px;border-radius:6px">✓ Garden</span>' : ''}
+              ${isWishlisted(p.id) ? '<span style="background:rgba(251,146,60,.1);color:#fb923c;padding:2px 6px;border-radius:6px">★ Wishlist</span>' : ''}
+            </div>
+          </div>
+          <div style="color:var(--text-light);font-size:18px;flex-shrink:0">›</div>
+        </div>`).join('')}</div>`;
+    }
+  } else {
+    const recent = (state.askHistory || []).slice(0, 4);
+    const recentHtml = recent.length ? `<div style="margin-top:18px">
+        <div style="font-size:11px;color:var(--text-light);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px">Recent</div>
+        <div style="display:flex;flex-direction:column;gap:5px">${recent.map(h => `<div onclick="setAskFromSuggestion(this)" data-q="${escHtml(h.q)}" style="padding:8px 11px;border-radius:9px;background:rgba(255,255,255,.04);color:var(--text-mid);font-size:12px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">↻ ${escHtml(h.q)}</div>`).join('')}</div>
+      </div>` : '';
+    resultsHtml = `<div style="margin-top:18px">
+        <div style="font-size:11px;color:var(--text-light);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px">Try asking…</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${suggestions.map(s => `<div onclick="setAskFromSuggestion(this)" data-q="${escHtml(s)}" style="padding:8px 12px;border-radius:18px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80;font-size:12px;cursor:pointer">${escHtml(s)}</div>`).join('')}</div>
+      </div>${recentHtml}`;
+  }
+
+  const headerRow = state.askResults ? `
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+      <button onclick="state.askResults=null;state.askError='';render();setTimeout(()=>{const i=document.getElementById('askInput');if(i)i.focus()},50)" style="padding:7px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--text-mid);font-size:12px;font-weight:600;cursor:pointer">＋ Ask another</button>
+    </div>` : '';
+
+  return `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:600;display:flex;align-items:flex-end;justify-content:center;padding:0" onclick="if(event.target===this){state.showAsk=false;render()}">
+      <div style="background:linear-gradient(160deg,#0c1f18,#0f2d1e);border-radius:20px 20px 0 0;padding:22px 20px 28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;border-top:1px solid rgba(74,222,128,.18);box-shadow:0 -8px 40px rgba(0,0,0,.6)" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">✨</span>
+            <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9;margin:0">Ask Plant Buddy</h2>
+          </div>
+          <button onclick="state.showAsk=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:4px">×</button>
+        </div>
+        ${!hasKey ? `<div style="padding:11px 13px;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.22);border-radius:10px;color:#fbbf24;font-size:12px;margin-bottom:14px">⚠ Add your Claude API key in Settings to use natural-language search.</div>` : ''}
+        <p style="font-size:13px;color:var(--text-mid);margin:0 0 12px;line-height:1.5">Ask in plain English about plants in the database, your garden, or your wishlist.</p>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <input id="askInput" type="text" value="${escHtml(state.askQuestion)}" placeholder="e.g. show me 5 shade loving plants" oninput="state.askQuestion=this.value" onkeydown="if(event.key==='Enter'){askPlantBuddy()}" style="flex:1;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit">
+          <button onclick="askPlantBuddy()" ${state.askLoading || !hasKey ? 'disabled' : ''} style="padding:0 18px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:${state.askLoading || !hasKey ? 'not-allowed' : 'pointer'};opacity:${state.askLoading || !hasKey ? '.5' : '1'}">Ask</button>
+        </div>
+        ${headerRow}
+        ${resultsHtml}
+      </div>
+    </div>
+  `;
+}
+
 let _lastView = null;
 function render() {
   const app = document.getElementById("app");
@@ -3909,9 +4222,14 @@ function render() {
           <h1 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(_displayName)}</h1>
           <p>${_displayLoc}Over 200 Perennials &middot; Year-Round Care</p>
         </div>
-        <button onclick="state.showSettings=true;render()" title="Settings" style="flex-shrink:0;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;cursor:pointer;color:rgba(255,255,255,.75);padding:7px 8px;display:flex;align-items:center;margin-top:2px;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </button>
+        <div style="display:flex;gap:6px;flex-shrink:0;margin-top:2px">
+          <button onclick="openAsk()" title="Ask Plant Buddy" style="background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(74,222,128,.08));border:1px solid rgba(74,222,128,.35);border-radius:8px;cursor:pointer;color:#4ade80;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;transition:background .2s" onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+            <span style="font-size:13px">✨</span><span>Ask</span>
+          </button>
+          <button onclick="state.showSettings=true;render()" title="Settings" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;cursor:pointer;color:rgba(255,255,255,.75);padding:7px 8px;display:flex;align-items:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
       </div>
       ${state.view==='browse'?`
         <div class="search-bar">
@@ -3970,6 +4288,7 @@ function render() {
   if (state.showAddPlant) content += renderAddPlantModal();
   if (state.showBedScan) content += renderBedScanModal();
   if (state.showCultivarScan) content += renderCultivarScanModal();
+  if (state.showAsk) content += renderAskModal();
 
   app.innerHTML = content;
   if (state.view === 'beds' && state.bedView === 'edit') setTimeout(initBedCanvas, 50);
