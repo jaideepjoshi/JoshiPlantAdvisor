@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Plant Buddy">
+<meta name="apple-mobile-web-app-title" content="PlantBuddy">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#0b3d2c">
 <link rel="manifest" href="manifest.json">
-<title>Plant Buddy</title>
+<title>PlantBuddy</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -26,30 +26,52 @@ const FIREBASE_CONFIG = {
 };
 let _fbDb = null, _fbRef = null, _fbReady = false, _fbUserId = null;
 let _fbSyncing = false, _fbInitialLoadDone = false;
+let _authInitDone = false, _authUser = null;
 if (FIREBASE_CONFIG.apiKey) {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     _fbDb = firebase.database();
     firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        _fbUserId = user.uid;
-        _fbRef = _fbDb.ref('users/' + _fbUserId + '/garden');
-        _fbReady = true;
-        if (_publicViewId) {
-          loadPublicGarden(_publicViewId);
+      _authUser = user;
+      if (!_authInitDone) {
+        _authInitDone = true;
+        if (user) {
+          _fbUserId = user.uid;
+          _fbRef = _fbDb.ref('users/' + _fbUserId + '/garden');
+          _fbReady = true;
+          if (_publicViewId) {
+            loadPublicGarden(_publicViewId);
+          } else {
+            initFirebaseSync();
+          }
         } else {
-          initFirebaseSync();
+          // No session yet — first check if we're coming back from a Google redirect.
+          firebase.auth().getRedirectResult().then(result => {
+            if (result && result.user) {
+              // Auth listener will fire again with the user — reload to reinit cleanly
+              window.location.reload();
+              return;
+            }
+            // Truly no user — sign in anonymously so app works for first-time visitors
+            firebase.auth().signInAnonymously().catch(e => {
+              console.warn('Anonymous auth failed, running offline:', e);
+              _fbInitialLoadDone = true; _fbTasksInitDone = true;
+              _fbPhotosInitDone = true; _fbNotesInitDone = true;
+              _imgCacheReady = true;
+              if (typeof initSharedPlants === 'function') initSharedPlants();
+              if (typeof initGardenDefaults === 'function') initGardenDefaults();
+              setTimeout(() => { if (typeof fetchAllImages === 'function') fetchAllImages(); }, 1000);
+            });
+          }).catch(e => {
+            console.warn('Google redirect result error:', e && e.code, e && e.message);
+            // Surface the error via the auth modal on next render
+            try { sessionStorage.setItem('pt_authRedirectErr', (e && e.code) || 'unknown'); } catch(_) {}
+            firebase.auth().signInAnonymously().catch(() => {});
+          });
         }
       }
-    });
-    firebase.auth().signInAnonymously().catch(e => {
-      console.warn('Anonymous auth failed, running offline:', e);
-      _fbInitialLoadDone = true; _fbTasksInitDone = true;
-      _fbPhotosInitDone = true; _fbNotesInitDone = true;
-      _imgCacheReady = true;
-      initSharedPlants();
-      initGardenDefaults();
-      setTimeout(fetchAllImages, 1000);
+      // Subsequent state changes (sign in / sign up / sign out via UI) trigger a full reload
+      // via the UI handlers, so we don't need to handle them here.
     });
   } catch(e) { console.warn('Firebase init failed:', e); }
 }
@@ -257,6 +279,17 @@ let state = {
   bedDragging: null,
   gardenName: localStorage.getItem("pt_gardenName") || "",
   gardenLocation: localStorage.getItem("pt_gardenLocation") || "",
+  phoneNumber: localStorage.getItem("pt_phoneNumber") || "",
+  // Auth state
+  authUser: null,           // { uid, email, isAnonymous } once auth resolves
+  showAuth: false,          // controls auth modal visibility
+  authMode: 'signin',       // 'signin' | 'signup' | 'reset'
+  authEmail: '',
+  authPassword: '',
+  authPasswordConfirm: '',
+  authError: '',
+  authMsg: '',
+  authLoading: false,
   showSetup: false,
   showSettings: false,
   showAddPlant: false,
@@ -470,11 +503,16 @@ function saveProfile() {
   if (isViewing()) return;
   localStorage.setItem("pt_gardenName", state.gardenName || "");
   localStorage.setItem("pt_gardenLocation", state.gardenLocation || "");
+  localStorage.setItem("pt_phoneNumber", state.phoneNumber || "");
   if (_fbReady && _fbUserId) {
-    userRef('profile').set({ gardenName: state.gardenName, gardenLocation: state.gardenLocation })
-      .catch(e => console.warn('Firebase profile write failed:', e));
+    userRef('profile').set({
+      gardenName: state.gardenName || '',
+      gardenLocation: state.gardenLocation || '',
+      phoneNumber: state.phoneNumber || '',
+      email: (state.authUser && state.authUser.email) || ''
+    }).catch(e => console.warn('Firebase profile write failed:', e));
   }
-  document.title = state.gardenName || 'Plant Buddy';
+  document.title = state.gardenName || 'PlantBuddy';
 }
 
 // ===== PUBLIC GARDEN SHARING =====
@@ -610,6 +648,242 @@ function loadPublishedId() {
   }).catch(() => {});
 }
 
+// ===== AUTHENTICATION =====
+// Email/password auth on top of Firebase Anonymous. First sign-up while anonymous
+// uses linkWithCredential to preserve the UID and keep all garden data.
+
+function openAuth(mode) {
+  state.showAuth = true;
+  state.authMode = mode || 'signin';
+  state.authError = '';
+  state.authMsg = '';
+  state.authEmail = (state.authUser && state.authUser.email) || state.authEmail || '';
+  state.authPassword = '';
+  state.authPasswordConfirm = '';
+  state.authLoading = false;
+  render();
+}
+function closeAuth() {
+  state.showAuth = false;
+  state.authError = '';
+  state.authMsg = '';
+  state.authPassword = '';
+  state.authPasswordConfirm = '';
+  render();
+}
+function setAuthField(field, value) {
+  state[field] = value;
+  // Don't re-render on every keystroke — input keeps its own DOM value.
+}
+
+function _authErrMsg(e) {
+  const code = e && e.code || '';
+  const map = {
+    'auth/email-already-in-use': 'An account with this email already exists. Try signing in instead.',
+    'auth/invalid-email': 'That email address doesn’t look right.',
+    'auth/weak-password': 'Password should be at least 6 characters.',
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/user-not-found': 'No account found with that email.',
+    'auth/too-many-requests': 'Too many attempts. Try again in a few minutes.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+    'auth/operation-not-allowed': 'Email/Password sign-in is not enabled in Firebase. Enable it in Firebase Console → Authentication → Sign-in method.',
+    'auth/credential-already-in-use': 'That email is already linked to another account.',
+    'auth/provider-already-linked': 'This account already has an email/password linked.',
+  };
+  return map[code] || (e && e.message) || 'Something went wrong. Please try again.';
+}
+
+function signInWithEmail() {
+  if (!_fbDb) { state.authError = 'Firebase not available.'; render(); return; }
+  const email = (state.authEmail || '').trim();
+  const pw = state.authPassword || '';
+  if (!email || !pw) { state.authError = 'Enter both email and password.'; render(); return; }
+  state.authLoading = true; state.authError = ''; render();
+  firebase.auth().signInWithEmailAndPassword(email, pw).then(() => {
+    // Reload so the app reinitializes cleanly under the email-authed UID
+    window.location.reload();
+  }).catch(e => {
+    state.authLoading = false;
+    state.authError = _authErrMsg(e);
+    render();
+  });
+}
+
+function signInWithGoogle() {
+  if (!_fbDb) { state.authError = 'Firebase not available.'; render(); return; }
+  state.authLoading = true; state.authError = ''; render();
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  const cur = firebase.auth().currentUser;
+  const doLink = cur && cur.isAnonymous;
+  // Try popup first; on PWA/iOS where popups are blocked, fall back to redirect
+  const popupAction = doLink ? cur.linkWithPopup(provider) : firebase.auth().signInWithPopup(provider);
+  popupAction.then(() => {
+    window.location.reload();
+  }).catch(e => {
+    const code = e && e.code || '';
+    // If linking failed because that Google account is already a PlantBuddy user,
+    // fall back to plain sign-in (anonymous data on this device will be orphaned).
+    if (doLink && (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use')) {
+      firebase.auth().signInWithPopup(provider).then(() => window.location.reload()).catch(e2 => {
+        state.authLoading = false;
+        state.authError = _authErrMsg(e2);
+        render();
+      });
+      return;
+    }
+    // Popup blocked or unavailable → redirect flow
+    if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request' || code === 'auth/operation-not-supported-in-this-environment') {
+      try {
+        sessionStorage.setItem('pt_pendingGoogleLink', doLink ? '1' : '0');
+        if (doLink) cur.linkWithRedirect(provider);
+        else firebase.auth().signInWithRedirect(provider);
+      } catch (e3) {
+        state.authLoading = false;
+        state.authError = _authErrMsg(e3);
+        render();
+      }
+      return;
+    }
+    state.authLoading = false;
+    state.authError = _authErrMsg(e);
+    render();
+  });
+}
+
+// Handle redirect-flow result on page load (after Google sign-in completes via redirect)
+function _handleRedirectResult() {
+  if (!_fbDb) return;
+  firebase.auth().getRedirectResult().then(result => {
+    if (result && result.user) {
+      // Auth state changed — reload to reinit cleanly
+      window.location.reload();
+    }
+  }).catch(e => {
+    if (e && e.code) {
+      console.warn('Google redirect result error:', e.code, e.message);
+      state.authError = _authErrMsg(e);
+      state.showAuth = true;
+      render();
+    }
+  });
+}
+
+function signUpWithEmail() {
+  if (!_fbDb) { state.authError = 'Firebase not available.'; render(); return; }
+  const email = (state.authEmail || '').trim();
+  const pw = state.authPassword || '';
+  const pwc = state.authPasswordConfirm || '';
+  if (!email || !pw) { state.authError = 'Enter email and password.'; render(); return; }
+  if (pw.length < 6) { state.authError = 'Password should be at least 6 characters.'; render(); return; }
+  if (pw !== pwc) { state.authError = 'Passwords don’t match.'; render(); return; }
+  state.authLoading = true; state.authError = ''; render();
+  const cred = firebase.auth.EmailAuthProvider.credential(email, pw);
+  const cur = firebase.auth().currentUser;
+  const doLink = cur && cur.isAnonymous;
+  const action = doLink
+    ? cur.linkWithCredential(cred)        // preserves UID + all existing garden data
+    : firebase.auth().createUserWithEmailAndPassword(email, pw); // fresh account
+  action.then(() => {
+    window.location.reload();
+  }).catch(e => {
+    // If linking failed because email already exists, suggest signing in
+    if (e && e.code === 'auth/email-already-in-use' && doLink) {
+      state.authLoading = false;
+      state.authError = 'An account with this email already exists. Sign in instead — note this will switch you off your current anonymous session.';
+      state.authMode = 'signin';
+      render();
+      return;
+    }
+    state.authLoading = false;
+    state.authError = _authErrMsg(e);
+    render();
+  });
+}
+
+function sendPasswordReset() {
+  if (!_fbDb) { state.authError = 'Firebase not available.'; render(); return; }
+  const email = (state.authEmail || '').trim();
+  if (!email) { state.authError = 'Enter your email address.'; render(); return; }
+  state.authLoading = true; state.authError = ''; state.authMsg = ''; render();
+  firebase.auth().sendPasswordResetEmail(email).then(() => {
+    state.authLoading = false;
+    state.authMsg = 'Password reset email sent. Check your inbox.';
+    render();
+  }).catch(e => {
+    state.authLoading = false;
+    state.authError = _authErrMsg(e);
+    render();
+  });
+}
+
+function signOutUser() {
+  if (!confirm('Sign out? You can sign back in anytime to access your garden.')) return;
+  firebase.auth().signOut().then(() => {
+    // Drop back to a fresh anonymous session via reload
+    window.location.reload();
+  }).catch(e => alert('Sign out failed: ' + (e.message || 'unknown error')));
+}
+
+function renderAuthModal() {
+  const mode = state.authMode || 'signin';
+  const loading = state.authLoading;
+  const titles = { signin: 'Sign In', signup: 'Create Account', reset: 'Reset Password' };
+  const cur = _authUser;
+  const isAnon = cur && cur.isAnonymous;
+  const headerNote = (mode === 'signup' && isAnon)
+    ? `<p style="font-size:11px;color:#4ade80;margin:-6px 0 16px;line-height:1.5">✓ Your current garden data will be preserved when you create your account.</p>`
+    : '';
+  // Google sign-in button (shown for signin and signup modes, hidden in reset mode)
+  const googleBtn = (mode !== 'reset') ? `
+      <button onclick="signInWithGoogle()" ${loading?'disabled':''} style="width:100%;padding:12px;background:#fff;color:#3c4043;border:1px solid #dadce0;border-radius:8px;font-size:14px;font-weight:600;cursor:${loading?'wait':'pointer'};opacity:${loading?'.6':'1'};font-family:'Inter','Roboto',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;transition:background .15s" onmouseover="if(!this.disabled)this.style.background='#f8f9fa'" onmouseout="this.style.background='#fff'">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.997 8.997 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.167 6.656 3.58 9 3.58z"/></svg>
+        <span>${mode==='signup' ? 'Sign up with Google' : 'Continue with Google'}</span>
+      </button>
+      <div style="display:flex;align-items:center;gap:10px;margin:14px 0 16px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+        <span style="font-size:11px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase">or</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.1)"></div>
+      </div>
+    ` : '';
+
+  const body = mode === 'reset' ? `
+      <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Email</label>
+      <input type="email" autocomplete="email" value="${escHtml(state.authEmail||'')}" oninput="state.authEmail=this.value" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
+      <button onclick="sendPasswordReset()" ${loading?'disabled':''} style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:${loading?'wait':'pointer'};opacity:${loading?'.6':'1'};font-family:inherit;margin-bottom:10px">${loading?'Sending…':'Send Reset Email'}</button>
+      <button onclick="state.authMode='signin';state.authError='';state.authMsg='';render()" style="width:100%;padding:10px;background:none;border:none;color:#7a8a80;font-size:13px;cursor:pointer;font-family:inherit">← Back to sign in</button>
+    ` : `
+      ${googleBtn}
+      <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Email</label>
+      <input type="email" autocomplete="email" value="${escHtml(state.authEmail||'')}" oninput="state.authEmail=this.value" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:14px;font-family:inherit">
+      <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Password</label>
+      <input type="password" autocomplete="${mode==='signup'?'new-password':'current-password'}" value="${escHtml(state.authPassword||'')}" oninput="state.authPassword=this.value" onkeydown="if(event.key==='Enter')${mode==='signup'?'signUpWithEmail()':'signInWithEmail()'}" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:14px;font-family:inherit">
+      ${mode==='signup' ? `
+        <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Confirm Password</label>
+        <input type="password" autocomplete="new-password" value="${escHtml(state.authPasswordConfirm||'')}" oninput="state.authPasswordConfirm=this.value" onkeydown="if(event.key==='Enter')signUpWithEmail()" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:14px;font-family:inherit">
+      ` : ''}
+      <button onclick="${mode==='signup'?'signUpWithEmail()':'signInWithEmail()'}" ${loading?'disabled':''} style="width:100%;padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#e8ece9;border-radius:8px;font-size:14px;font-weight:600;cursor:${loading?'wait':'pointer'};opacity:${loading?'.6':'1'};font-family:inherit;margin-bottom:10px">${loading ? (mode==='signup'?'Creating…':'Signing in…') : (mode==='signup'?'Create Account with Email':'Sign In with Email')}</button>
+      <div style="display:flex;justify-content:space-between;gap:10px;margin-top:8px">
+        ${mode==='signin'
+          ? `<button onclick="state.authMode='signup';state.authError='';state.authMsg='';render()" style="background:none;border:none;color:#4ade80;font-size:13px;cursor:pointer;font-family:inherit;padding:4px 0">Create account</button>
+             <button onclick="state.authMode='reset';state.authError='';state.authMsg='';render()" style="background:none;border:none;color:#7a8a80;font-size:13px;cursor:pointer;font-family:inherit;padding:4px 0">Forgot password?</button>`
+          : `<button onclick="state.authMode='signin';state.authError='';state.authMsg='';render()" style="background:none;border:none;color:#4ade80;font-size:13px;cursor:pointer;font-family:inherit;padding:4px 0">← I already have an account</button>`}
+      </div>
+    `;
+  return `<div style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeAuth()">
+    <div style="background:#141f19;border-radius:16px;padding:24px;max-width:380px;width:100%;border:1px solid rgba(212,160,23,.25);box-shadow:0 8px 40px rgba(0,0,0,.6)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <span style="font-family:'Playfair Display',serif;font-size:20px;color:#e8ece9">${titles[mode]}</span>
+        <button onclick="closeAuth()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:2px 6px">&times;</button>
+      </div>
+      ${headerNote}
+      ${body}
+      ${state.authError ? `<p style="font-size:12px;color:#f87171;margin:12px 0 0;text-align:center;line-height:1.5">${escHtml(state.authError)}</p>` : ''}
+      ${state.authMsg ? `<p style="font-size:12px;color:#4ade80;margin:12px 0 0;text-align:center;line-height:1.5">${escHtml(state.authMsg)}</p>` : ''}
+    </div>
+  </div>`;
+}
+
 function initFirebaseSync() {
   // Load profile first so we know the garden name before rendering
   userRef('profile').once('value').then(snap => {
@@ -617,9 +891,14 @@ function initFirebaseSync() {
     if (profile) {
       if (profile.gardenName) { state.gardenName = profile.gardenName; localStorage.setItem("pt_gardenName", profile.gardenName); }
       if (profile.gardenLocation) { state.gardenLocation = profile.gardenLocation; localStorage.setItem("pt_gardenLocation", profile.gardenLocation); }
+      if (profile.phoneNumber) { state.phoneNumber = profile.phoneNumber; localStorage.setItem("pt_phoneNumber", profile.phoneNumber); }
+    }
+    // Populate authUser snapshot for UI
+    if (_authUser) {
+      state.authUser = { uid: _authUser.uid, email: _authUser.email || '', isAnonymous: !!_authUser.isAnonymous };
     }
     if (!state.gardenName) state.showSetup = true;
-    document.title = state.gardenName || 'Plant Buddy';
+    document.title = state.gardenName || 'PlantBuddy';
     render();
   }).catch(() => { if (!state.gardenName) { state.showSetup = true; render(); } });
 
@@ -3269,6 +3548,7 @@ function saveSettings() {
   const name = (document.getElementById('settingsName')||{}).value||'';
   if (name.trim()) state.gardenName = name.trim();
   state.gardenLocation = ((document.getElementById('settingsLocation')||{}).value||'').trim();
+  state.phoneNumber = ((document.getElementById('settingsPhone')||{}).value||'').trim();
   const pk = (document.getElementById('settingsPerenualKey')||{}).value||'';
   state.claudeApiKey = pk.trim();
   localStorage.setItem('pt_claudeApiKey', state.claudeApiKey);
@@ -3280,7 +3560,7 @@ function saveSettings() {
 function renderSetupModal() {
   return `<div style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px">
     <div style="background:#141f19;border-radius:16px;padding:28px 24px;max-width:360px;width:100%;border:1px solid rgba(212,160,23,.3);box-shadow:0 8px 40px rgba(0,0,0,.6)">
-      <div style="font-family:'Playfair Display',serif;font-size:22px;background:linear-gradient(135deg,#f5c842,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">Welcome to Plant Buddy</div>
+      <div style="font-family:'Playfair Display',serif;font-size:22px;background:linear-gradient(135deg,#f5c842,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px">Welcome to PlantBuddy</div>
       <p style="color:#7a8a80;font-size:13px;margin-bottom:22px">Set up your personal garden space — your data is completely separate from anyone else's.</p>
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Your Garden Name</label>
       <input id="setupName" type="text" placeholder="e.g. Sarah's Garden" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
@@ -3302,10 +3582,33 @@ function renderSettingsModal() {
         <span style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9">Garden Settings</span>
         <button onclick="state.showSettings=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:2px 6px">&times;</button>
       </div>
+
+      <!-- Account section -->
+      <div style="margin-bottom:18px;padding:12px 13px;background:rgba(74,222,128,.04);border:1px solid rgba(74,222,128,.15);border-radius:10px">
+        <label style="display:block;font-size:11px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Account</label>
+        ${state.authUser && !state.authUser.isAnonymous ? `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="min-width:0">
+              <div style="font-size:13px;color:#e8ece9;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(state.authUser.email||'')}</div>
+              <div style="font-size:11px;color:#4ade80;margin-top:2px">✓ Signed in</div>
+            </div>
+            <button onclick="signOutUser()" style="padding:7px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:7px;color:#e8ece9;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Sign Out</button>
+          </div>
+        ` : `
+          <p style="font-size:12px;color:#b0bab3;margin:0 0 10px;line-height:1.5">You’re browsing anonymously. Sign in to back up your garden and share it with friends.</p>
+          <div style="display:flex;gap:6px">
+            <button onclick="openAuth('signin')" style="flex:1;padding:9px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);border-radius:7px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Sign In</button>
+            <button onclick="openAuth('signup')" style="flex:1;padding:9px;background:linear-gradient(135deg,#14532d,#166534);border:none;border-radius:7px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Create Account</button>
+          </div>
+        `}
+      </div>
+
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Garden Name</label>
       <input id="settingsName" type="text" value="${escHtml(state.gardenName)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone</label>
-      <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
+      <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
+      <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Phone Number <span style="font-style:italic;text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></label>
+      <input id="settingsPhone" type="tel" value="${escHtml(state.phoneNumber)}" placeholder="e.g. +1 555 123 4567" autocomplete="tel" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
       <div style="margin-bottom:18px">
         <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Anthropic API Key <span style="font-style:italic;text-transform:none;letter-spacing:0;font-weight:400">(for plant lookup)</span></label>
         <input id="settingsPerenualKey" type="password" value="${escHtml(state.claudeApiKey)}" placeholder="${_sharedClaudeKey ? '🔑 Shared key active — leave blank to use it' : 'sk-ant-…'}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:14px;outline:none;font-family:inherit;margin-bottom:6px">
@@ -4283,7 +4586,7 @@ async function askPlantBuddy() {
   const wishCount = PLANTS.filter(p => isWishlisted(p.id)).length;
   const monthName = MONTHS[state.currentMonth - 1];
 
-  const systemPrompt = `You are the Plant Buddy natural-language search interface. The user has a perennial plant database with ${PLANTS.length} plants. They have ${gardenCount} marked as planted in their garden, and ${wishCount} on their wishlist. Today is ${monthName} (month ${state.currentMonth}).
+  const systemPrompt = `You are the PlantBuddy natural-language search interface. The user has a perennial plant database with ${PLANTS.length} plants. They have ${gardenCount} marked as planted in their garden, and ${wishCount} on their wishlist. Today is ${monthName} (month ${state.currentMonth}).
 
 Convert the user's question into a JSON filter spec. Return ONLY the JSON object — no prose, no markdown, no code fences.
 
@@ -4453,7 +4756,7 @@ function renderAskModal() {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:20px">✨</span>
-            <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9;margin:0">Ask Plant Buddy</h2>
+            <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9;margin:0">Ask PlantBuddy</h2>
           </div>
           <button onclick="state.showAsk=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:4px">×</button>
         </div>
@@ -4477,7 +4780,7 @@ function render() {
 
   // Header
   const _viewing = isViewing();
-  const _displayName = state.gardenName || (_viewing ? 'Shared Garden' : 'Plant Buddy');
+  const _displayName = state.gardenName || (_viewing ? 'Shared Garden' : 'PlantBuddy');
   const _displayLoc = state.gardenLocation ? escHtml(state.gardenLocation) + ' &middot; ' : '';
   const _tagline = _viewing ? 'Shared Garden &middot; Read-Only View' : 'Over 200 Perennials &middot; Year-Round Care';
   content += `
@@ -4493,7 +4796,7 @@ function render() {
               <span>← Exit</span>
             </button>
           ` : `
-            <button onclick="openAsk()" title="Ask Plant Buddy" style="background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(74,222,128,.08));border:1px solid rgba(74,222,128,.35);border-radius:8px;cursor:pointer;color:#4ade80;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;transition:background .2s" onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+            <button onclick="openAsk()" title="Ask PlantBuddy" style="background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(74,222,128,.08));border:1px solid rgba(74,222,128,.35);border-radius:8px;cursor:pointer;color:#4ade80;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;transition:background .2s" onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
               <span style="font-size:13px">✨</span><span>Ask</span>
             </button>
             <button onclick="state.showSettings=true;render()" title="Settings" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;cursor:pointer;color:rgba(255,255,255,.75);padding:7px 8px;display:flex;align-items:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
@@ -4562,6 +4865,7 @@ function render() {
   // Modals
   if (state.showSetup) content += renderSetupModal();
   if (state.showSettings) content += renderSettingsModal();
+  if (state.showAuth) content += renderAuthModal();
   if (state.showAddPlant) content += renderAddPlantModal();
   if (state.showBedScan) content += renderBedScanModal();
   if (state.showCultivarScan) content += renderCultivarScanModal();
@@ -4571,6 +4875,17 @@ function render() {
   if (state.view === 'beds' && state.bedView === 'edit') setTimeout(initBedCanvas, 50);
   if (state.detailId) setTimeout(initHeroSwipe, 0);
 }
+
+// If we just bounced back from a failed Google redirect, surface the error
+try {
+  const _redirErr = sessionStorage.getItem('pt_authRedirectErr');
+  if (_redirErr) {
+    sessionStorage.removeItem('pt_authRedirectErr');
+    state.showAuth = true;
+    state.authMode = 'signin';
+    state.authError = 'Google sign-in failed (' + _redirErr + '). Make sure this domain is listed in Firebase Console → Authentication → Settings → Authorized domains.';
+  }
+} catch(_) {}
 
 // Initialize — show app immediately with local data; Firebase syncs once auth resolves
 render();
