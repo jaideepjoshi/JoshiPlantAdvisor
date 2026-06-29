@@ -35,7 +35,11 @@ if (FIREBASE_CONFIG.apiKey) {
         _fbUserId = user.uid;
         _fbRef = _fbDb.ref('users/' + _fbUserId + '/garden');
         _fbReady = true;
-        initFirebaseSync();
+        if (_publicViewId) {
+          loadPublicGarden(_publicViewId);
+        } else {
+          initFirebaseSync();
+        }
       }
     });
     firebase.auth().signInAnonymously().catch(e => {
@@ -50,6 +54,17 @@ if (FIREBASE_CONFIG.apiKey) {
   } catch(e) { console.warn('Firebase init failed:', e); }
 }
 function userRef(path) { return _fbDb.ref('users/' + _fbUserId + '/' + path); }
+
+// ===== PUBLIC GARDEN VIEWER =====
+// If URL has ?g=<id>, we're viewing someone else's shared garden read-only.
+const _publicViewId = (new URLSearchParams(window.location.search)).get('g') || null;
+let _publicViewMeta = null; // { name, location, publishedAt } once loaded
+function isViewing() { return !!_publicViewId; }
+function exitViewing() {
+  const u = new URL(window.location.href);
+  u.searchParams.delete('g');
+  window.location.href = u.pathname + (u.search ? u.search : '') + u.hash;
+}
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
@@ -281,6 +296,7 @@ let state = {
 
 let _fbTasksInitDone = false;
 function saveTasks() {
+  if (isViewing()) return;
   localStorage.setItem("pt_tasks", JSON.stringify(state.tasks));
   if (_fbReady && _fbTasksInitDone) {
     userRef('tasks').set(state.tasks).catch(e => console.warn('Firebase tasks write failed:', e));
@@ -289,6 +305,7 @@ function saveTasks() {
 
 let _fbPhotosInitDone = false;
 function savePhotos() {
+  if (isViewing()) return;
   localStorage.setItem("pt_photos", JSON.stringify(state.photos));
   if (_fbReady && _fbPhotosInitDone) {
     userRef('photos').set(state.photos).catch(e => console.warn('Firebase photos write failed:', e));
@@ -298,6 +315,7 @@ function savePhotos() {
 // Notes persistence and Firebase sync
 let _fbNotesInitDone = false;
 function saveNotes() {
+  if (isViewing()) return;
   localStorage.setItem("pt_notes", JSON.stringify(state.notes));
   if (_fbReady && _fbNotesInitDone) {
     userRef('notes').set(state.notes).catch(e => console.warn('Firebase notes write failed:', e));
@@ -306,6 +324,7 @@ function saveNotes() {
 
 let _notesTimer = null;
 function updatePlantNote(id, value) {
+  if (isViewing()) return;
   state.notes[String(id)] = value;
   clearTimeout(_notesTimer);
   _notesTimer = setTimeout(() => saveNotes(), 500);
@@ -388,6 +407,7 @@ function triggerPhotoUpload(plantId) {
 }
 
 function saveGarden() {
+  if (isViewing()) return;
   localStorage.setItem("pt_garden", JSON.stringify(state.garden));
   // Sync to Firebase — only after initial remote load to prevent overwriting remote data
   if (_fbReady && _fbRef && !_fbSyncing && _fbInitialLoadDone) {
@@ -397,6 +417,7 @@ function saveGarden() {
 
 let _fbCultivarsInitDone = false;
 function saveCultivars() {
+  if (isViewing()) return;
   localStorage.setItem('pt_cultivars', JSON.stringify(state.cultivars));
   if (_fbReady && _fbUserId && _fbCultivarsInitDone) {
     userRef('cultivars').set(state.cultivars).catch(e => console.warn('Firebase cultivars write failed:', e));
@@ -446,6 +467,7 @@ function initGardenDefaults() {
 }
 
 function saveProfile() {
+  if (isViewing()) return;
   localStorage.setItem("pt_gardenName", state.gardenName || "");
   localStorage.setItem("pt_gardenLocation", state.gardenLocation || "");
   if (_fbReady && _fbUserId) {
@@ -453,6 +475,139 @@ function saveProfile() {
       .catch(e => console.warn('Firebase profile write failed:', e));
   }
   document.title = state.gardenName || 'Plant Buddy';
+}
+
+// ===== PUBLIC GARDEN SHARING =====
+// Snapshot-based: user clicks Publish to write a copy of their garden to public_gardens/{id}.
+// Visitors hit ?g={id} which loads that snapshot read-only.
+
+function loadPublicGarden(id) {
+  if (!_fbDb) return;
+  _fbDb.ref('public_gardens/' + id).once('value').then(snap => {
+    const pub = snap.val();
+    if (!pub) {
+      alert('This shared garden link is no longer available.');
+      exitViewing();
+      return;
+    }
+    // Swap in public data; user's own data is never touched in viewer mode
+    // (all save functions early-return via isViewing()).
+    state.garden = pub.garden || {};
+    state.beds = Array.isArray(pub.beds) ? pub.beds : [];
+    state.cultivars = pub.cultivars || {};
+    state.gardenName = pub.name || 'Shared Garden';
+    state.gardenLocation = pub.location || '';
+    _publicViewMeta = { name: pub.name, location: pub.location, publishedAt: pub.publishedAt };
+    _fbInitialLoadDone = true;
+    _fbTasksInitDone = true; _fbPhotosInitDone = true;
+    _fbNotesInitDone = true; _fbCultivarsInitDone = true;
+    initSharedPlants();
+    document.title = state.gardenName;
+    // Load shared plant thumbnails so visitors see images too
+    _fbDb.ref('imageCache').once('value').then(s => {
+      const data = s.val();
+      if (data) _imgCache = data;
+      _imgCacheReady = true;
+      render();
+      setTimeout(fetchAllImages, 800);
+    }).catch(() => { _imgCacheReady = true; render(); });
+    render();
+  }).catch(e => {
+    console.warn('Failed to load public garden:', e);
+    alert('Could not load shared garden. Check your connection.');
+    exitViewing();
+  });
+}
+
+function publishGarden(isUpdate) {
+  if (isViewing()) return;
+  if (!_fbReady || !_fbDb || !_fbUserId) {
+    alert('Cannot publish — not connected to Firebase yet. Try again in a moment.');
+    return;
+  }
+  if (!state.gardenName) {
+    alert('Give your garden a name in Settings first.');
+    return;
+  }
+  if (!isUpdate) {
+    const ok = confirm('Share your garden at a public URL?\n\nAnyone with the link will be able to see your plants, beds, cultivars, and notes. You can unpublish anytime.');
+    if (!ok) return;
+  }
+  userRef('publishedGardenId').once('value').then(snap => {
+    let id = snap.val();
+    const isNew = !id;
+    if (isNew) id = _fbDb.ref('public_gardens').push().key;
+    const payload = {
+      v: 1,
+      name: state.gardenName || 'Shared Garden',
+      location: state.gardenLocation || '',
+      publishedAt: Date.now(),
+      ownerUid: _fbUserId,
+      garden: state.garden || {},
+      beds: state.beds || [],
+      cultivars: state.cultivars || {}
+    };
+    _fbDb.ref('public_gardens/' + id).set(payload).then(() => {
+      if (isNew) userRef('publishedGardenId').set(id);
+      state._publishedGardenId = id;
+      state._shareMsg = isUpdate ? 'Snapshot updated.' : 'Garden published!';
+      render();
+      setTimeout(() => { state._shareMsg = ''; render(); }, 3000);
+    }).catch(e => {
+      alert('Publish failed: ' + (e.message || 'check Firebase rules for public_gardens.'));
+    });
+  });
+}
+
+function unpublishGarden() {
+  if (isViewing()) return;
+  if (!_fbReady || !_fbDb || !_fbUserId) return;
+  if (!confirm('Unpublish your garden? The shareable link will stop working.')) return;
+  userRef('publishedGardenId').once('value').then(snap => {
+    const id = snap.val();
+    if (!id) { state._publishedGardenId = null; render(); return; }
+    _fbDb.ref('public_gardens/' + id).remove().then(() => {
+      userRef('publishedGardenId').remove();
+      state._publishedGardenId = null;
+      state._shareMsg = 'Unpublished.';
+      render();
+      setTimeout(() => { state._shareMsg = ''; render(); }, 2500);
+    }).catch(e => alert('Unpublish failed: ' + (e.message || 'unknown error')));
+  });
+}
+
+function buildShareUrl(id) {
+  const u = new URL(window.location.href);
+  u.search = '?g=' + id;
+  u.hash = '';
+  return u.toString();
+}
+
+function copyShareLink(id) {
+  const url = buildShareUrl(id);
+  const done = () => {
+    state._shareMsg = 'Link copied!';
+    render();
+    setTimeout(() => { state._shareMsg = ''; render(); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(() => {
+      window.prompt('Copy this link:', url);
+    });
+  } else {
+    window.prompt('Copy this link:', url);
+  }
+}
+
+// Load the published id once on settings open, so we know whether to show Publish or Update/Unpublish
+function loadPublishedId() {
+  if (isViewing() || !_fbReady || !_fbUserId) return;
+  if (typeof state._publishedGardenId !== 'undefined') return; // already loaded
+  state._publishedGardenId = null; // mark loading-in-progress
+  userRef('publishedGardenId').once('value').then(snap => {
+    state._publishedGardenId = snap.val() || null;
+    render();
+  }).catch(() => {});
 }
 
 function initFirebaseSync() {
@@ -671,12 +826,14 @@ async function deleteSharedPlant(id) {
 
 // ===== BED DESIGNER FUNCTIONS =====
 function saveBeds() {
+  if (isViewing()) return;
   localStorage.setItem("pt_beds", JSON.stringify(state.beds));
   if (_fbReady && _fbRef && _fbInitialLoadDone) {
     userRef('beds').set(state.beds).catch(e => console.warn('Firebase beds write failed:', e));
   }
 }
 function createNewBed() {
+  if (isViewing()) return;
   state.beds.push({ name: 'Bed ' + (state.beds.length+1), paths: [], plants: [] });
   state.currentBedIdx = state.beds.length - 1;
   state.bedView = 'edit';
@@ -684,6 +841,7 @@ function createNewBed() {
   render();
 }
 function deleteBed(idx) {
+  if (isViewing()) return;
   if (!confirm('Delete this bed?')) return;
   state.beds.splice(idx, 1);
   if (state.currentBedIdx >= state.beds.length) state.currentBedIdx = Math.max(0, state.beds.length-1);
@@ -737,10 +895,15 @@ function renderBeds() {
 }
 
 function renderBedList() {
+  const viewing = isViewing();
   let h = '<div class="beds-container">';
-  h += '<div class="beds-toolbar"><button onclick="createNewBed()">+ New Bed</button></div>';
+  if (!viewing) {
+    h += '<div class="beds-toolbar"><button onclick="createNewBed()">+ New Bed</button></div>';
+  }
   if (state.beds.length === 0) {
-    h += '<div class="bed-empty-msg"><p style="font-size:40px;margin-bottom:12px">🌻</p><p>No flower beds yet.</p><p style="margin-top:8px;font-size:13px;color:var(--text-mid)">Tap <b>+ New Bed</b> to draw your first bed shape and place plants.</p></div>';
+    h += viewing
+      ? '<div class="bed-empty-msg"><p style="font-size:40px;margin-bottom:12px">🌻</p><p>This garden has no flower beds yet.</p></div>'
+      : '<div class="bed-empty-msg"><p style="font-size:40px;margin-bottom:12px">🌻</p><p>No flower beds yet.</p><p style="margin-top:8px;font-size:13px;color:var(--text-mid)">Tap <b>+ New Bed</b> to draw your first bed shape and place plants.</p></div>';
   } else {
     state.beds.forEach((bed, i) => {
       const plantCount = bed.plants ? bed.plants.length : 0;
@@ -749,8 +912,10 @@ function renderBedList() {
       h += '<div><div style="font-weight:700;font-size:15px;color:var(--gold-light)">'+bed.name+'</div>';
       h += '<div style="font-size:12px;color:var(--text-mid);margin-top:2px">'+plantCount+' plant'+(plantCount!==1?'s':'')+'</div></div>';
       h += '<div style="display:flex;gap:8px">';
-      h += '<button onclick="event.stopPropagation();state.currentBedIdx='+i+';state.bedView=\'edit\';render()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--green-accent);font-size:12px;cursor:pointer;font-weight:600">Edit</button>';
-      h += '<button onclick="event.stopPropagation();deleteBed('+i+')" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#ef4444;font-size:12px;cursor:pointer;font-weight:600">Del</button>';
+      h += '<button onclick="event.stopPropagation();state.currentBedIdx='+i+';state.bedView=\'edit\';render()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--green-accent);font-size:12px;cursor:pointer;font-weight:600">'+(viewing?'View':'Edit')+'</button>';
+      if (!viewing) {
+        h += '<button onclick="event.stopPropagation();deleteBed('+i+')" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#ef4444;font-size:12px;cursor:pointer;font-weight:600">Del</button>';
+      }
       h += '</div></div></div>';
     });
   }
@@ -761,6 +926,7 @@ function renderBedList() {
 function renderBedEditor() {
   const bed = state.beds[state.currentBedIdx];
   if (!bed) { state.bedView='list'; return renderBedList(); }
+  const viewing = isViewing();
   const myPlants = PLANTS.filter(p => isPlanted(p.id));
   const searchQ = state.bedSidebarSearch.toLowerCase();
   const filteredPlants = searchQ ? myPlants.filter(p => p.name.toLowerCase().includes(searchQ)) : myPlants;
@@ -770,9 +936,13 @@ function renderBedEditor() {
   // Toolbar
   h += '<div class="beds-toolbar">';
   h += '<button onclick="state.bedView=\'list\';render()" style="font-size:18px;padding:6px 10px" title="Back">←</button>';
-  h += '<input class="bed-name-input" value="'+bed.name+'" onchange="state.beds[state.currentBedIdx].name=this.value;saveBeds()" />';
-  h += '<button class="'+(state.bedDrawing?'active':'')+'" onclick="state.bedDrawing=!state.bedDrawing;render()" title="Draw bed shape">✏️ Draw</button>';
-  h += '<button onclick="state.beds[state.currentBedIdx].paths=[];saveBeds();render()" title="Clear drawing">🗑️ Clear</button>';
+  if (viewing) {
+    h += '<div class="bed-name-input" style="background:transparent;border:none;padding:0;font-weight:600;color:var(--gold-light)">'+escHtml(bed.name||'')+'</div>';
+  } else {
+    h += '<input class="bed-name-input" value="'+bed.name+'" onchange="state.beds[state.currentBedIdx].name=this.value;saveBeds()" />';
+    h += '<button class="'+(state.bedDrawing?'active':'')+'" onclick="state.bedDrawing=!state.bedDrawing;render()" title="Draw bed shape">✏️ Draw</button>';
+    h += '<button onclick="state.beds[state.currentBedIdx].paths=[];saveBeds();render()" title="Clear drawing">🗑️ Clear</button>';
+  }
   h += '</div>';
 
   // Status bar showing selected plant
@@ -787,7 +957,8 @@ function renderBedEditor() {
   }
 
   // Canvas
-  h += '<div class="bed-canvas-wrap'+(state.bedDrawing?' drawing':'')+'" id="bedCanvasWrap" style="height:350px" onclick="bedWrapTap(event)" ontouchend="bedWrapTap(event)" ontouchstart="bedWrapTouchStart(event)">';
+  const canvasHandlers = viewing ? '' : ' onclick="bedWrapTap(event)" ontouchend="bedWrapTap(event)" ontouchstart="bedWrapTouchStart(event)"';
+  h += '<div class="bed-canvas-wrap'+(state.bedDrawing?' drawing':'')+'" id="bedCanvasWrap" style="height:350px"'+canvasHandlers+'>';
   h += '<canvas id="bedCanvas" width="800" height="400"></canvas>';
   // Plant markers
   if (bed.plants && !state.bedDrawing) {
@@ -796,38 +967,43 @@ function renderBedEditor() {
       if (!plant) return;
       const isBlooming = selMonths.length===0 || plant.bloomMonths.some(m => selMonths.includes(m));
       const col = getBedPlantColor(plant);
-      h += '<div class="bed-plant-marker '+(isBlooming?'blooming':'dimmed')+'" style="left:'+bp.x+'%;top:'+bp.y+'%;background:'+col+';touch-action:none" ';
-      h += 'onmousedown="startDragPlant(event,'+pi+')" ontouchstart="startDragPlant(event,'+pi+')">';
+      h += '<div class="bed-plant-marker '+(isBlooming?'blooming':'dimmed')+'" style="left:'+bp.x+'%;top:'+bp.y+'%;background:'+col+';touch-action:none"';
+      if (!viewing) h += ' onmousedown="startDragPlant(event,'+pi+')" ontouchstart="startDragPlant(event,'+pi+')"';
+      h += '>';
       h += bedPlantInitials(plant.name);
       h += '<span class="marker-label">'+plant.name.split(" ").slice(0,2).join(" ")+'</span>';
-      h += '<button ontouchend="event.stopPropagation();event.preventDefault();removeBedPlant('+pi+')" onclick="event.stopPropagation();removeBedPlant('+pi+')" style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#ef4444;color:#fff;border:2px solid #0c1410;font-size:11px;line-height:16px;text-align:center;cursor:pointer;padding:0;z-index:20">✕</button>';
+      if (!viewing) {
+        h += '<button ontouchend="event.stopPropagation();event.preventDefault();removeBedPlant('+pi+')" onclick="event.stopPropagation();removeBedPlant('+pi+')" style="position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:#ef4444;color:#fff;border:2px solid #0c1410;font-size:11px;line-height:16px;text-align:center;cursor:pointer;padding:0;z-index:20">✕</button>';
+      }
       h += '</div>';
     });
   }
   h += '</div>';
 
-  // Inline plant picker (replaces sidebar)
-  h += '<div style="margin-top:12px">';
-  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
-  h += '<h3 style="font-size:13px;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0">🌱 Add Plants</h3>';
-  h += '<input class="bed-sidebar-search" placeholder="Search my plants..." value="'+state.bedSidebarSearch+'" oninput="state.bedSidebarSearch=this.value;render()" style="flex:1;margin:0">';
-  h += '</div>';
-  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;max-height:150px;overflow-y:auto">';
-  filteredPlants.slice(0, 50).forEach(p => {
-    const col = getBedPlantColor(p);
-    const isSelected = state.bedDragging === p.id;
-    h += '<div onclick="addPlantToBedCenter('+p.id+')" style="padding:6px 10px;border-radius:8px;';
-    h += 'background:'+(isSelected?'rgba(74,222,128,.2)':'rgba(255,255,255,.04)')+';';
-    h += 'border:1px solid '+(isSelected?'var(--green-accent)':'var(--border)')+';';
-    h += 'cursor:pointer;font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px;transition:background .15s">';
-    h += '<span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0"></span>';
-    h += p.name;
+  // Inline plant picker (replaces sidebar) — only when editing
+  if (!viewing) {
+    h += '<div style="margin-top:12px">';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+    h += '<h3 style="font-size:13px;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0">🌱 Add Plants</h3>';
+    h += '<input class="bed-sidebar-search" placeholder="Search my plants..." value="'+state.bedSidebarSearch+'" oninput="state.bedSidebarSearch=this.value;render()" style="flex:1;margin:0">';
     h += '</div>';
-  });
-  if (filteredPlants.length === 0) {
-    h += '<div style="color:var(--text-light);font-size:12px;padding:8px">No planted plants found. Mark plants as "In My Garden" first.</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:6px;max-height:150px;overflow-y:auto">';
+    filteredPlants.slice(0, 50).forEach(p => {
+      const col = getBedPlantColor(p);
+      const isSelected = state.bedDragging === p.id;
+      h += '<div onclick="addPlantToBedCenter('+p.id+')" style="padding:6px 10px;border-radius:8px;';
+      h += 'background:'+(isSelected?'rgba(74,222,128,.2)':'rgba(255,255,255,.04)')+';';
+      h += 'border:1px solid '+(isSelected?'var(--green-accent)':'var(--border)')+';';
+      h += 'cursor:pointer;font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px;transition:background .15s">';
+      h += '<span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0"></span>';
+      h += p.name;
+      h += '</div>';
+    });
+    if (filteredPlants.length === 0) {
+      h += '<div style="color:var(--text-light);font-size:12px;padding:8px">No planted plants found. Mark plants as "In My Garden" first.</div>';
+    }
+    h += '</div></div>';
   }
-  h += '</div></div>';
 
   // Companion recommendations
   const recs = getCompanionRecs(bed);
@@ -869,6 +1045,7 @@ function toggleBedMonth(m) {
 }
 
 function addPlantToBedCenter(plantId) {
+  if (isViewing()) return;
   const bed = state.beds[state.currentBedIdx];
   if (!bed) return;
   if (!bed.plants) bed.plants = [];
@@ -881,6 +1058,7 @@ function addPlantToBedCenter(plantId) {
 }
 
 function removeBedPlant(idx) {
+  if (isViewing()) return;
   const bed = state.beds[state.currentBedIdx];
   if (!bed) return;
   bed.plants.splice(idx, 1);
@@ -1089,6 +1267,7 @@ function bedWrapTouchStart(e) {
 
 // Tap on bed canvas wrap to place selected plant
 function bedWrapTap(e) {
+  if (isViewing()) return;
   if (!state.bedDragging || state.bedDrawing) return;
   if (e.target.closest('.bed-plant-marker')) return;
   var clientX, clientY;
@@ -1127,6 +1306,7 @@ function onPlantDragStart(e, plantId) {
 
 // Drag plant markers around the canvas (works on both mobile and desktop)
 function startDragPlant(e, plantIdx) {
+  if (isViewing()) return;
   e.preventDefault();
   e.stopPropagation();
   const bed = state.beds[state.currentBedIdx];
@@ -1160,6 +1340,7 @@ function startDragPlant(e, plantIdx) {
 // Firebase sync is initialized in initFirebaseSync() after anonymous auth resolves
 
 function toggleGardenPlanted(id) {
+  if (isViewing()) return;
   if (!state.garden[id]) state.garden[id] = { planted: false, wishlist: false, name: "", where: "" };
   state.garden[id].planted = !state.garden[id].planted;
   if (state.garden[id].planted) state.garden[id].wishlist = false; // remove from wishlist if planted
@@ -1169,6 +1350,7 @@ function toggleGardenPlanted(id) {
 }
 
 function toggleGardenWishlist(id) {
+  if (isViewing()) return;
   if (!state.garden[id]) state.garden[id] = { planted: false, wishlist: false, name: "", where: "" };
   state.garden[id].wishlist = !state.garden[id].wishlist;
   saveGarden();
@@ -1182,6 +1364,7 @@ function updateGardenField(id, field, value) {
 }
 
 function addMyPairing(plantId, name) {
+  if (isViewing()) return;
   name = name.trim(); if (!name) return;
   const id = String(plantId);
   if (!state.garden[id]) state.garden[id] = {};
@@ -1190,6 +1373,7 @@ function addMyPairing(plantId, name) {
 }
 
 function removeMyPairing(plantId, idx) {
+  if (isViewing()) return;
   const id = String(plantId);
   if (state.garden[id] && state.garden[id].myPairings) {
     state.garden[id].myPairings.splice(idx, 1);
@@ -1456,12 +1640,14 @@ function addCultivar(id) {
 }
 
 function updateCultivar(id, idx, field, value) {
+  if (isViewing()) return;
   if (!state.cultivars[id] || !state.cultivars[id][idx]) return;
   state.cultivars[id][idx][field] = value;
   saveCultivars();
 }
 
 function removeCultivar(id, idx) {
+  if (isViewing()) return;
   if (!state.cultivars[id]) return;
   state.cultivars[id].splice(idx, 1);
   saveCultivars();
@@ -1469,6 +1655,7 @@ function removeCultivar(id, idx) {
 }
 
 function toggleCultivarPlanted(plantId, idx) {
+  if (isViewing()) return;
   const c = (state.cultivars[plantId] || [])[idx];
   if (!c) return;
   c.planted = !c.planted;
@@ -1481,6 +1668,7 @@ function toggleCultivarPlanted(plantId, idx) {
 }
 
 function toggleCultivarWishlist(plantId, idx) {
+  if (isViewing()) return;
   const c = (state.cultivars[plantId] || [])[idx];
   if (!c) return;
   c.wishlist = !c.wishlist;
@@ -1493,6 +1681,7 @@ function toggleCultivarWishlist(plantId, idx) {
 }
 
 function updateCultivarWhere(plantId, idx, val) {
+  if (isViewing()) return;
   const c = (state.cultivars[plantId] || [])[idx];
   if (!c) return;
   c.where = val;
@@ -1500,6 +1689,7 @@ function updateCultivarWhere(plantId, idx, val) {
 }
 
 function updateCultivarNotes(plantId, idx, val) {
+  if (isViewing()) return;
   const c = (state.cultivars[plantId] || [])[idx];
   if (!c) return;
   c.cultivarNotes = val;
@@ -2237,12 +2427,13 @@ function renderGarden() {
   const activeTab = state.gardenTab || 'plants';
 
   const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
+  const showScanBtn = hasKey && !isViewing();
   const subNav = `<div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
     <div style="display:inline-flex;background:rgba(0,0,0,.25);border-radius:12px;padding:3px;gap:2px">
       <div onclick="state.gardenTab='plants';render()" style="padding:7px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab==='plants'?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">My Plants</div>
       <div onclick="state.gardenTab='calendar';render()" style="padding:7px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab==='calendar'?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">Calendar</div>
     </div>
-    ${hasKey ? `<button onclick="state.showBedScan=true;state.bedScanImage=null;state.bedScanResults=[];state.bedScanError='';state.bedScanLoading=false;render()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);border-radius:20px;color:#93c5fd;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+    ${showScanBtn ? `<button onclick="state.showBedScan=true;state.bedScanImage=null;state.bedScanResults=[];state.bedScanError='';state.bedScanLoading=false;render()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);border-radius:20px;color:#93c5fd;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       Scan Bed
     </button>` : ''}
@@ -2584,6 +2775,7 @@ function renderDetail() {
   ).join("");
 
   const g = state.garden[p.id] || { planted: false, name: "", where: "" };
+  const viewing = isViewing();
 
   // Helper to build a collapsible section
   function S(icon, iconBg, iconColor, accentColor, title, content, startOpen) {
@@ -2614,7 +2806,22 @@ function renderDetail() {
   ].filter(Boolean).join('');
 
   // GARDEN section (always open, not collapsible)
-  const gardenCard = `<div class="ds" style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15)">
+  const gardenCard = viewing
+    ? (g.planted || g.wishlist
+      ? `<div class="ds" style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15)">
+          <div style="padding:16px 18px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+              <div class="ds-icon" style="background:linear-gradient(135deg,#2d6a4f,#40916c);color:#fff">${IC.garden}</div>
+              <h3 style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:700;color:#4ade80;margin:0">In This Garden</h3>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              ${g.planted ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.08);color:#4ade80;font-size:12px;font-weight:600">✓ Planted</span>` : ''}
+              ${g.wishlist ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;border:1px solid rgba(251,146,60,.3);background:rgba(251,146,60,.08);color:#fb923c;font-size:12px;font-weight:600">★ Wishlist</span>` : ''}
+            </div>
+          </div>
+        </div>`
+      : '')
+    : `<div class="ds" style="background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.15)">
     <div style="padding:16px 18px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="ds-icon" style="background:linear-gradient(135deg,#2d6a4f,#40916c);color:#fff">${IC.garden}</div>
@@ -2637,6 +2844,7 @@ function renderDetail() {
   const cultivarsCard = (() => {
     const cultivars = state.cultivars[p.id] || [];
     const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
+    if (viewing && cultivars.length === 0) return '';
     const cards = cultivars.map((c, i) => {
       const sd = c.scannedData || {};
       const badges = [
@@ -2646,6 +2854,22 @@ function renderDetail() {
         sd.deer_resistant === true ? `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2)">🦌 Deer safe</span>` : '',
         sd.award ? `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.2)">🏆 ${sd.award}</span>` : '',
       ].filter(Boolean).join('');
+      if (viewing) {
+        return `<div style="padding:12px 14px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid ${c.planted?'rgba(74,222,128,.3)':c.wishlist?'rgba(251,146,60,.25)':'var(--border)'}">
+          <div style="margin-bottom:6px">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${escHtml(c.name||'(unnamed)')}</div>
+            ${c.source ? `<div style="font-size:11px;color:var(--text-mid);margin-top:2px">${escHtml(c.source)}</div>` : ''}
+          </div>
+          ${badges ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${badges}</div>` : ''}
+          ${(c.tagImages && c.tagImages.length) ? `<div style="display:flex;gap:6px;margin-bottom:8px;align-items:flex-end">${c.tagImages.map((src,ti)=>`<img src="${src}" onclick="showTagLightbox(${p.id},${i},${ti})" style="height:56px;width:auto;max-width:80px;border-radius:7px;border:1px solid rgba(96,165,250,.25);cursor:pointer;object-fit:cover">`).join('')}<span style="font-size:10px;color:#93c5fd;font-weight:600;padding-bottom:2px">📷 Tag</span></div>` : ''}
+          ${c.notes ? `<div style="font-size:11px;color:var(--text-light);line-height:1.4;padding:5px 7px;background:rgba(255,255,255,.03);border-radius:6px;border-left:2px solid rgba(96,165,250,.2);margin-bottom:8px">${escHtml(c.notes)}</div>` : ''}
+          ${(c.planted || c.wishlist || c.where || c.cultivarNotes) ? `<div style="display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07)">
+            ${c.planted ? `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#4ade80;font-weight:600">✓ Planted${c.where ? ` <span style="color:var(--text-mid);font-weight:500">· ${escHtml(c.where)}</span>` : ''}</div>` : ''}
+            ${c.wishlist ? `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#fb923c;font-weight:600">★ Wishlist</div>` : ''}
+            ${c.cultivarNotes ? `<div style="font-size:11px;color:var(--text-light);line-height:1.4">${escHtml(c.cultivarNotes)}</div>` : ''}
+          </div>` : ''}
+        </div>`;
+      }
       return `<div style="padding:12px 14px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid ${c.planted?'rgba(74,222,128,.3)':c.wishlist?'rgba(251,146,60,.25)':'var(--border)'}">
         <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px">
           <div style="flex:1;min-width:0">
@@ -2682,17 +2906,30 @@ function renderDetail() {
           <h3 style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:700;color:#93c5fd;margin:0">Cultivars</h3>
         </div>
         ${cultivars.length ? `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">${cards}</div>` : `<p style="font-size:13px;color:var(--text-light);margin-bottom:12px;text-align:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px">No cultivars yet — add one manually or scan a tag</p>`}
-        <div style="display:flex;gap:8px">
+        ${viewing ? '' : `<div style="display:flex;gap:8px">
           <div onclick="addCultivar(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:12px;font-weight:500;transition:background .2s" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'">+ Add cultivar</div>
           ${hasKey ? `<div onclick="openCultivarScan(${p.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-radius:10px;border:1px dashed rgba(96,165,250,.3);cursor:pointer;color:#93c5fd;font-size:12px;font-weight:500;transition:background .2s" onmouseover="this.style.background='rgba(96,165,250,.06)'" onmouseout="this.style.background='transparent'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scan tag</div>` : ''}
-        </div>
+        </div>`}
       </div>
     </div>`;
   })();
 
   // Notes / Journal card
-  const noteVal = (state.notes[String(p.id)]||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-  const notesCard = `<div class="ds" style="background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.15)">
+  const noteValRaw = state.notes[String(p.id)] || '';
+  const noteVal = noteValRaw.replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const notesCard = viewing
+    ? (noteValRaw.trim()
+      ? `<div class="ds" style="background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.15)">
+          <div style="padding:16px 18px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+              <div class="ds-icon" style="background:linear-gradient(135deg,#92400e,#b45309);color:#fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+              <h3 style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:700;color:#f5c842;margin:0">Notes</h3>
+            </div>
+            <div style="font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap;padding:10px 12px;border:1px solid rgba(212,160,23,.2);border-radius:10px;background:rgba(212,160,23,.05)">${escHtml(noteValRaw)}</div>
+          </div>
+        </div>`
+      : '')
+    : `<div class="ds" style="background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.15)">
     <div style="padding:16px 18px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
         <div class="ds-icon" style="background:linear-gradient(135deg,#92400e,#b45309);color:#fff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
@@ -2764,38 +3001,41 @@ function renderDetail() {
     sections.push(S(IC.companion, 'rgba(96,165,250,.1)', '#93c5fd', '#60a5fa', 'Suggested Companions', compContent, true));
   }
 
-  // My Pairings — always shown, user-editable
+  // My Pairings — always shown, user-editable (read-only when viewing)
   {
     const myP = (state.garden[String(p.id)] || {}).myPairings || [];
-    const pairingIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
-    const chips = myP.map((name, idx) => {
-      const found = findPlantByName(name);
-      const planted = found && isPlanted(found.id);
-      const namePart = found
-        ? `<a href="#" onclick="event.preventDefault();state.prevPlantId=${p.id};state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:#4ade80;text-decoration:none;font-weight:600">${escHtml(name)}</a>`
-        : `<span style="color:#4ade80;font-weight:600">${escHtml(name)}</span>`;
-      return `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 8px 5px 10px;border-radius:20px;border:1.5px solid rgba(74,222,128,.3);background:rgba(74,222,128,.06);font-size:12px">
-        ${planted ? '<span style="font-size:9px">🌱</span>' : ''}${namePart}
-        <span onclick="removeMyPairing(${p.id},${idx})" title="Remove" style="cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;padding:0 2px;opacity:.7">&times;</span>
-      </span>`;
-    }).join('');
-    const bloomChart = myP.length ? renderPairingsBloom(p, myP) : '';
-    const heightChart = myP.length ? renderPairingsHeight(p, myP) : '';
-    const myPairingsContent = `
-      ${myP.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${chips}</div>` : ''}
-      <div style="position:relative">
-        <input id="pairing-input" type="text" placeholder="Search any plant or type a name…" autocomplete="off"
-          oninput="updatePairingInput(${p.id},this.value)"
-          onkeydown="if(event.key==='Enter'&&this.value.trim())selectPairing(${p.id},this.value.trim())"
-          onblur="setTimeout(()=>{const d=document.getElementById('pairing-dropdown');if(d)d.style.display='none'},200)"
-          onfocus="if(this.value.trim())updatePairingInput(${p.id},this.value)"
-          style="width:100%;padding:10px 12px;border:1px solid rgba(74,222,128,.25);border-radius:10px;font-size:14px;background:rgba(74,222,128,.05);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif">
-        <div id="pairing-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);background:#111c16;border:1px solid rgba(74,222,128,.2);border-radius:10px;overflow:hidden;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
-      </div>
-      <p style="font-size:11px;color:var(--text-light);margin-top:8px">${myP.length ? '🌱 = in your garden · tap name to open plant page' : 'Record combinations that work well together. Tap a saved name to open its page.'}</p>
-      ${bloomChart ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px">Bloom &amp; Foliage Timeline</div>${bloomChart}` : ''}
-      ${heightChart ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:18px 0 6px">Height Comparison</div>${heightChart}` : ''}`;
-    sections.push(S(pairingIcon, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'My Pairings', myPairingsContent, true));
+    if (!viewing || myP.length > 0) {
+      const pairingIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+      const chips = myP.map((name, idx) => {
+        const found = findPlantByName(name);
+        const planted = found && isPlanted(found.id);
+        const namePart = found
+          ? `<a href="#" onclick="event.preventDefault();state.prevPlantId=${p.id};state.detailId=${found.id};render();window.scrollTo(0,0)" style="color:#4ade80;text-decoration:none;font-weight:600">${escHtml(name)}</a>`
+          : `<span style="color:#4ade80;font-weight:600">${escHtml(name)}</span>`;
+        return `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 8px 5px 10px;border-radius:20px;border:1.5px solid rgba(74,222,128,.3);background:rgba(74,222,128,.06);font-size:12px">
+          ${planted ? '<span style="font-size:9px">🌱</span>' : ''}${namePart}
+          ${viewing ? '' : `<span onclick="removeMyPairing(${p.id},${idx})" title="Remove" style="cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;padding:0 2px;opacity:.7">&times;</span>`}
+        </span>`;
+      }).join('');
+      const bloomChart = myP.length ? renderPairingsBloom(p, myP) : '';
+      const heightChart = myP.length ? renderPairingsHeight(p, myP) : '';
+      const myPairingsContent = `
+        ${myP.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${chips}</div>` : ''}
+        ${viewing ? '' : `<div style="position:relative">
+          <input id="pairing-input" type="text" placeholder="Search any plant or type a name…" autocomplete="off"
+            oninput="updatePairingInput(${p.id},this.value)"
+            onkeydown="if(event.key==='Enter'&&this.value.trim())selectPairing(${p.id},this.value.trim())"
+            onblur="setTimeout(()=>{const d=document.getElementById('pairing-dropdown');if(d)d.style.display='none'},200)"
+            onfocus="if(this.value.trim())updatePairingInput(${p.id},this.value)"
+            style="width:100%;padding:10px 12px;border:1px solid rgba(74,222,128,.25);border-radius:10px;font-size:14px;background:rgba(74,222,128,.05);color:var(--text);outline:none;font-family:'Inter',system-ui,sans-serif">
+          <div id="pairing-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);background:#111c16;border:1px solid rgba(74,222,128,.2);border-radius:10px;overflow:hidden;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
+        </div>
+        <p style="font-size:11px;color:var(--text-light);margin-top:8px">${myP.length ? '🌱 = in your garden · tap name to open plant page' : 'Record combinations that work well together. Tap a saved name to open its page.'}</p>`}
+        ${viewing && myP.length ? `<p style="font-size:11px;color:var(--text-light);margin-top:8px">🌱 = in your garden</p>` : ''}
+        ${bloomChart ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:16px 0 6px">Bloom &amp; Foliage Timeline</div>${bloomChart}` : ''}
+        ${heightChart ? `<div style="font-size:11px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:1px;margin:18px 0 6px">Height Comparison</div>${heightChart}` : ''}`;
+      sections.push(S(pairingIcon, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', viewing ? 'Pairings' : 'My Pairings', myPairingsContent, true));
+    }
   }
 
   // Garden Styles
@@ -3053,8 +3293,11 @@ function renderSetupModal() {
 
 function renderSettingsModal() {
   const uid = _fbUserId || '';
-  return `<div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this){state.showSettings=false;render()}">
-    <div style="background:#141f19;border-radius:16px;padding:24px;max-width:360px;width:100%;border:1px solid rgba(212,160,23,.25);box-shadow:0 8px 40px rgba(0,0,0,.6)">
+  loadPublishedId();
+  const pubId = state._publishedGardenId;
+  const shareUrl = pubId ? buildShareUrl(pubId) : '';
+  return `<div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto" onclick="if(event.target===this){state.showSettings=false;render()}">
+    <div style="background:#141f19;border-radius:16px;padding:24px;max-width:360px;width:100%;border:1px solid rgba(212,160,23,.25);box-shadow:0 8px 40px rgba(0,0,0,.6);max-height:90vh;overflow-y:auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <span style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9">Garden Settings</span>
         <button onclick="state.showSettings=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:2px 6px">&times;</button>
@@ -3077,6 +3320,26 @@ function renderSettingsModal() {
         ` : ''}
       </div>
       <button onclick="saveSettings()" style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:14px">Save</button>
+
+      <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:16px;margin-bottom:14px">
+        <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Share Your Garden</label>
+        ${pubId ? `
+          <p style="font-size:12px;color:#b0bab3;margin-bottom:8px;line-height:1.5">Your garden is live at this link. Anyone with it can view (read-only).</p>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <input readonly value="${escHtml(shareUrl)}" onclick="this.select()" style="flex:1;padding:9px 11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:7px;color:#e8ece9;font-size:12px;font-family:monospace;outline:none;min-width:0">
+            <button onclick="copyShareLink('${pubId}')" style="padding:9px 12px;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);border-radius:7px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">Copy</button>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button onclick="publishGarden(true)" style="flex:1;padding:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:7px;color:#e8ece9;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">⟳ Update snapshot</button>
+            <button onclick="unpublishGarden()" style="flex:1;padding:9px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:7px;color:#ef4444;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Unpublish</button>
+          </div>
+        ` : `
+          <p style="font-size:12px;color:#b0bab3;margin-bottom:10px;line-height:1.5">Publish a read-only snapshot of your garden at a shareable link. You control updates — edits stay private until you re-publish.</p>
+          <button onclick="publishGarden(false)" style="width:100%;padding:11px;background:rgba(74,222,128,.12);border:1.5px solid rgba(74,222,128,.3);border-radius:8px;color:#4ade80;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🌿 Share My Garden</button>
+        `}
+        ${state._shareMsg ? `<p style="font-size:12px;color:#4ade80;margin:8px 0 0;text-align:center">${escHtml(state._shareMsg)}</p>` : ''}
+      </div>
+
       ${uid ? `<p style="font-size:11px;color:#4a5a50;text-align:center">Garden ID: <span style="font-family:monospace;word-break:break-all">${uid}</span></p>` : ''}
     </div>
   </div>`;
@@ -4213,24 +4476,38 @@ function render() {
   let content = '';
 
   // Header
-  const _displayName = state.gardenName || 'Plant Buddy';
+  const _viewing = isViewing();
+  const _displayName = state.gardenName || (_viewing ? 'Shared Garden' : 'Plant Buddy');
   const _displayLoc = state.gardenLocation ? escHtml(state.gardenLocation) + ' &middot; ' : '';
+  const _tagline = _viewing ? 'Shared Garden &middot; Read-Only View' : 'Over 200 Perennials &middot; Year-Round Care';
   content += `
     <div class="header">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div style="min-width:0">
           <h1 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(_displayName)}</h1>
-          <p>${_displayLoc}Over 200 Perennials &middot; Year-Round Care</p>
+          <p>${_displayLoc}${_tagline}</p>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;margin-top:2px">
-          <button onclick="openAsk()" title="Ask Plant Buddy" style="background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(74,222,128,.08));border:1px solid rgba(74,222,128,.35);border-radius:8px;cursor:pointer;color:#4ade80;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;transition:background .2s" onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
-            <span style="font-size:13px">✨</span><span>Ask</span>
-          </button>
-          <button onclick="state.showSettings=true;render()" title="Settings" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;cursor:pointer;color:rgba(255,255,255,.75);padding:7px 8px;display:flex;align-items:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </button>
+          ${_viewing ? `
+            <button onclick="exitViewing()" title="Back to my garden" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;cursor:pointer;color:#fff;padding:7px 12px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;font-family:inherit">
+              <span>← Exit</span>
+            </button>
+          ` : `
+            <button onclick="openAsk()" title="Ask Plant Buddy" style="background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(74,222,128,.08));border:1px solid rgba(74,222,128,.35);border-radius:8px;cursor:pointer;color:#4ade80;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;transition:background .2s" onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
+              <span style="font-size:13px">✨</span><span>Ask</span>
+            </button>
+            <button onclick="state.showSettings=true;render()" title="Settings" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;cursor:pointer;color:rgba(255,255,255,.75);padding:7px 8px;display:flex;align-items:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          `}
         </div>
       </div>
+      ${_viewing ? `
+        <div style="margin-top:10px;padding:8px 12px;background:rgba(212,160,23,.12);border:1px solid rgba(212,160,23,.3);border-radius:8px;font-size:12px;color:#f5c842;display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">👁️</span>
+          <span style="flex:1">You're viewing a shared garden. Changes won't be saved.</span>
+        </div>
+      ` : ''}
       ${state.view==='browse'?`
         <div class="search-bar">
           <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
