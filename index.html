@@ -523,6 +523,136 @@ button[onclick*="showAddPlant"]{
 .bed-rec-item{ color:var(--text); }
 .bed-rec-item:hover{ background:rgba(156,124,60,.1); }
 .bed-empty-msg{ color:var(--text-mid); }
+
+/* ============================================================
+   NOTEBOOK-PAGE TREATMENT (preview on Coneflower About + Plant Info)
+   Replaces the rounded card with a flat parchment "page" — thin gold
+   rules top/bottom, faded horizontal ledger lines behind body text,
+   no colored icon block.
+   ============================================================ */
+.ds.notebook-page{
+  background:transparent !important;
+  border:none !important;
+  border-top:1px solid rgba(120,90,40,.45) !important;
+  border-bottom:1px solid rgba(120,90,40,.45) !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  margin:14px 0 !important;
+  padding:0 !important;
+  position:relative;
+}
+/* Double-rule top: classical field-guide page divider */
+.ds.notebook-page::before{
+  content:'';position:absolute;left:0;right:0;top:-5px;height:1px;
+  background:rgba(120,90,40,.25);
+}
+.ds.notebook-page::after{
+  content:'';position:absolute;left:0;right:0;bottom:-5px;height:1px;
+  background:rgba(120,90,40,.25);
+}
+.ds.notebook-page .ds-head{
+  background:transparent !important;
+  border-bottom:1px dashed rgba(120,90,40,.25) !important;
+  padding:14px 4px 10px !important;
+  margin:0 !important;
+  display:flex;align-items:baseline;gap:10px;
+}
+.ds.notebook-page .ds-accent{ display:none !important; }
+.ds.notebook-page .ds-icon{
+  background:transparent !important;
+  color:var(--text-mid) !important;
+  box-shadow:none !important;
+  width:auto !important;height:auto !important;
+  border:none !important;
+  border-radius:0 !important;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:'Pinyon Script',serif;
+}
+/* Replace the colored SVG icon with a flat sepia ornament */
+.ds.notebook-page .ds-icon > svg{ display:none; }
+.ds.notebook-page .ds-icon::before{
+  content:'✦';
+  font-size:14px;color:var(--gold);
+  margin-right:2px;
+}
+.ds.notebook-page .ds-head h3{
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif !important;
+  font-style:normal;font-weight:400;
+  color:var(--text) !important;
+  font-size:30px !important;
+  letter-spacing:.5px;line-height:1;
+  margin:0;
+}
+.ds.notebook-page .ds-chevron{ color:var(--text-mid); opacity:.5; }
+
+.ds.notebook-page .ds-content{
+  background:transparent !important;
+  /* Faded ledger lines: 28px line height aligns with body text */
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      rgba(120,90,40,.13) 27px,
+      rgba(120,90,40,.13) 28px
+    ) !important;
+  background-position:0 18px;
+  background-attachment:local;
+}
+.ds.notebook-page .ds-inner{
+  padding:18px 8px 22px !important;
+}
+.ds.notebook-page .ds-inner p{
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:normal !important;
+  font-size:17px !important;
+  line-height:28px !important; /* matches ruled line spacing */
+  color:var(--text) !important;
+  letter-spacing:.1px;
+  margin:0 0 14px;
+}
+.ds.notebook-page .ds-inner p em,
+.ds.notebook-page .ds-inner p i{
+  font-style:italic;color:var(--text-mid);
+}
+
+/* Plant Info: convert the info-grid into ledger-style "Label  Value" rows */
+.ds.notebook-page .info-grid{
+  display:block !important;
+  margin:0 !important;
+  padding:0 !important;
+  gap:0 !important;
+}
+.ds.notebook-page .info-item{
+  display:flex !important;
+  align-items:baseline !important;
+  gap:14px !important;
+  padding:0 4px !important;
+  border:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  height:28px;
+  line-height:28px;
+  font-family:'EB Garamond',Georgia,serif !important;
+}
+.ds.notebook-page .info-item .label{
+  font-family:'Cormorant Garamond',Georgia,serif !important;
+  font-style:italic !important;
+  font-weight:500 !important;
+  color:var(--text-mid) !important;
+  text-transform:none !important;
+  letter-spacing:0 !important;
+  font-size:16px !important;
+  min-width:110px;
+  flex-shrink:0;
+}
+.ds.notebook-page .info-item .value{
+  font-family:'EB Garamond',Georgia,serif !important;
+  color:var(--text) !important;
+  font-size:16px !important;
+  font-weight:500 !important;
+}
 </style>
 </head>
 <body>
@@ -3341,9 +3471,10 @@ function renderDetail() {
   const viewing = isViewing();
 
   // Helper to build a collapsible section
-  function S(icon, iconBg, iconColor, accentColor, title, content, startOpen) {
+  function S(icon, iconBg, iconColor, accentColor, title, content, startOpen, extraClass) {
     const o = startOpen ? 'open' : '';
-    return `<div class="ds">
+    const xc = extraClass ? ' ' + extraClass : '';
+    return `<div class="ds${xc}">
       <div class="ds-head" onclick="toggleSection(this)">
         <div class="ds-accent" style="background:${accentColor}"></div>
         <div class="ds-icon" style="background:${iconBg};color:${iconColor}">${icon}</div>
@@ -3506,7 +3637,7 @@ function renderDetail() {
   const sections = [];
 
   // About — always open
-  sections.push(S(IC.about, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'About', `<p>${p.description||""}</p>`, true));
+  sections.push(S(IC.about, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'About', `<p>${p.description||""}</p>`, true, p.plateImage ? 'notebook-page' : ''));
 
   // Plant Info — always open
   sections.push(S(IC.info, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'Plant Info', `
@@ -3523,7 +3654,7 @@ function renderDetail() {
       <div class="info-item"><div class="label">Rabbit Resist</div><div class="value">${p.rabbitResistant?"Yes":"No"}</div></div>
       <div class="info-item"><div class="label">Reblooming</div><div class="value">${p.reblooming?(p.rebloomNote||"Yes"):"No"}</div></div>
       <div class="info-item"><div class="label">Native OH</div><div class="value">${p.nativeOhio?"Yes":"No"}</div></div>
-    </div>`, true));
+    </div>`, true, p.plateImage ? 'notebook-page' : ''));
 
   // Bloom Calendar — open
   sections.push(S(IC.bloom, 'rgba(244,114,182,.1)', '#f472b6', '#ec4899', 'Bloom Calendar', `<div class="bloom-bar">${bloomBar}</div>`, true));
