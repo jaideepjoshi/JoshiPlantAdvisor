@@ -1040,9 +1040,101 @@ button[onclick*="showAddPlant"]{
   position:absolute;inset:0;
   padding:8.5% 8.5% 6%;
   display:flex;flex-direction:column;
-  pointer-events:none;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:var(--gold-light) transparent;
 }
-.plate-overlay > *{ pointer-events:auto; }
+.plate-overlay::-webkit-scrollbar{ width:4px }
+.plate-overlay::-webkit-scrollbar-thumb{ background:var(--gold-light);border-radius:2px }
+.plate-overlay::-webkit-scrollbar-track{ background:transparent }
+/* Section divider for multi-section plates */
+.plate-section-divider{
+  text-align:center;
+  margin:18px 0 10px;
+  color:var(--gold);
+  font-size:14px;
+}
+.plate-section-divider::before{
+  content:'❦';
+}
+.plate-link{
+  font-family:'EB Garamond',serif;
+  font-style:italic;
+  color:var(--green-accent);
+  text-decoration:none;
+  border-bottom:1px solid rgba(60,80,50,.3);
+}
+.plate-link:hover{ color:var(--text);border-bottom-color:var(--gold) }
+.plate-brand-row{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;
+}
+.plate-brand-row a{
+  font-family:'EB Garamond',serif;
+  font-style:italic;
+  font-size:12px;
+  padding:5px 11px;
+  border-radius:14px;
+  background:rgba(255,250,235,.6);
+  border:1px solid var(--gold-light);
+  color:var(--text);
+  text-decoration:none;
+}
+.plate-brand-row a:hover{ background:rgba(255,250,235,1);border-color:var(--gold) }
+.plate-care-list{
+  display:flex;flex-direction:column;gap:0;
+  font-family:'EB Garamond',serif;
+  font-size:13px;
+  line-height:1.55;
+}
+.plate-care-row{
+  display:flex;gap:14px;align-items:baseline;
+  padding:7px 0;
+  border-bottom:1px dotted rgba(120,90,40,.18);
+}
+.plate-care-row .mo{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  color:var(--text-mid);
+  min-width:60px;flex-shrink:0;
+}
+.plate-care-row .task{ color:var(--text);flex:1 }
+.plate-tag-list{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;
+}
+.plate-tag-list .pill{
+  font-family:'EB Garamond',serif;
+  font-style:italic;
+  font-size:12px;
+  padding:3px 11px;
+  border-radius:12px;
+  background:rgba(255,250,235,.5);
+  border:1px solid var(--gold-light);
+  color:var(--text);
+}
+.plate-cultivar-row{
+  font-family:'EB Garamond',serif;
+  font-size:13px;
+  line-height:1.5;
+  color:var(--text);
+  padding:5px 0;
+  border-bottom:1px dotted rgba(120,90,40,.18);
+}
+.plate-pairing-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 11px;border-radius:14px;
+  background:rgba(255,250,235,.5);
+  border:1px solid rgba(90,111,74,.3);
+  font-family:'EB Garamond',serif;
+  font-style:italic;
+  font-size:12px;
+  color:var(--text);
+  margin:0 4px 4px 0;
+}
+.plate-pairing-chip .remove{
+  cursor:pointer;color:var(--text-light);font-size:14px;margin-left:2px;
+}
 .plate-title{
   font-family:'Pinyon Script',serif;
   font-size:34px;
@@ -4262,12 +4354,20 @@ function renderEncyclopedia(p) {
       </div>
     </div>`;
 
-  // ---------- Plate III — Seasons ----------
+  // ---------- Plate III — Seasons & Care ----------
+  const careRows = Object.entries(p.care || {})
+    .sort((a,b) => Number(a[0]) - Number(b[0]))
+    .map(([m,t]) =>
+      `<div class="plate-care-row"><span class="mo">${MONTHS[Number(m)-1]}</span><span class="task">${escHtml(t)}</span></div>`
+    ).join('');
+  const fertMonthStr = (p.fertMonth || []).length
+    ? p.fertMonth.map(m => MONTHS[m-1]).join(', ')
+    : '';
   const plateSeasons = `
     <div class="plate-page no-bg" data-idx="2">
       <div class="plate-overlay">
-        <div class="plate-title">Seasons</div>
-        <div class="plate-subtitle">Bloom · Foliage · Year-round Interest</div>
+        <div class="plate-title">Seasons & Care</div>
+        <div class="plate-subtitle">Bloom · Foliage · Yearly tasks</div>
         <div class="plate-prose-block">
           <div class="heading">Bloom Calendar</div>
           <div class="plate-bloom-strip">${monthsRow()}</div>
@@ -4280,34 +4380,106 @@ function renderEncyclopedia(p) {
           <div class="heading">Year-round Interest</div>
           <div class="body">${escHtml(p.yearRound)}</div>
         </div>` : ''}
+        ${careRows ? `<div class="plate-section-divider"></div>
+          <div class="plate-prose-block">
+            <div class="heading">Monthly Care</div>
+            <div class="plate-care-list">${careRows}</div>
+          </div>` : ''}
+        ${p.fertilizer ? `<div class="plate-prose-block">
+          <div class="heading">Fertilizer</div>
+          <div class="body">${escHtml(p.fertilizer)}${fertMonthStr ? ` <em style="color:var(--text-mid)">(apply: ${fertMonthStr})</em>` : ''}</div>
+        </div>` : ''}
+        ${p.clevelandLightNote ? `<div class="plate-prose-block">
+          <div class="heading">Cleveland Light Notes</div>
+          <div class="body">${escHtml(p.clevelandLightNote)}</div>
+        </div>` : ''}
       </div>
     </div>`;
 
-  // ---------- Plate IV — Companions ----------
+  // ---------- Plate IV — Plants & Companions ----------
   const compList = (p.companions||[]).slice(0,8).map(name => {
     const cp = PLANTS.find(pp => pp.name.toLowerCase().includes(name.toLowerCase()) || (pp.botanical||'').toLowerCase().includes(name.toLowerCase()));
     const col = cp ? getBedPlantColor(cp) : '#8a6d4a';
-    return `<div class="comp-row"><span class="comp-dot" style="background:${col}"></span>${escHtml(name)}</div>`;
+    const linkOpen = cp ? `<a href="#" class="plate-link" onclick="event.preventDefault();state.prevPlantId=${p.id};state.detailId=${cp.id};render()">` : '<span>';
+    const linkClose = cp ? '</a>' : '</span>';
+    return `<div class="comp-row"><span class="comp-dot" style="background:${col}"></span>${linkOpen}${escHtml(name)}${linkClose}</div>`;
+  }).join('');
+  const cultivarsList = (p.cultivars||[]).map(c =>
+    `<div class="plate-cultivar-row">${escHtml(c.replace(/\[(PW|Monrovia|First Ed\.)\]/g,''))}</div>`
+  ).join('');
+  const clevelandList = (p.clevelandCultivars||[]).map(c =>
+    `<div class="plate-cultivar-row">${escHtml(c)}</div>`
+  ).join('');
+  const stylePills = (p.gardenStyles||[]).map(s =>
+    `<span class="pill">${escHtml(s)}</span>`
+  ).join('');
+  const myP = (state.garden[String(p.id)] || {}).myPairings || [];
+  const pairingChips = myP.map((name, idx) => {
+    const found = PLANTS.find(pp => pp.name.toLowerCase() === name.toLowerCase());
+    const planted = found && isPlanted(found.id);
+    return `<span class="plate-pairing-chip">${planted ? '🌱 ' : ''}${escHtml(name)}<span class="remove" onclick="removeMyPairing(${p.id},${idx})">×</span></span>`;
   }).join('');
   const plateCompanions = `
     <div class="plate-page no-bg" data-idx="3">
       <div class="plate-overlay">
         <div class="plate-title">Companions</div>
-        <div class="plate-subtitle">Plants that pair well with ${escHtml(p.name)}</div>
-        <div class="plate-companions-list">
-          ${compList || '<div style="font-family:EB Garamond,serif;font-style:italic;color:var(--text-mid)">No suggested companions yet.</div>'}
+        <div class="plate-subtitle">Pair with · vary with · style</div>
+        <div class="plate-prose-block">
+          <div class="heading">Suggested Companions</div>
+          <div class="plate-companions-list">
+            ${compList || '<div style="font-family:EB Garamond,serif;font-style:italic;color:var(--text-mid);font-size:13px">No suggested companions yet.</div>'}
+          </div>
+        </div>
+        ${stylePills ? `<div class="plate-prose-block">
+          <div class="heading">Garden Styles</div>
+          <div class="plate-tag-list">${stylePills}</div>
+        </div>` : ''}
+        ${cultivarsList ? `<div class="plate-section-divider"></div>
+          <div class="plate-prose-block">
+            <div class="heading">Cultivars</div>
+            ${cultivarsList}
+          </div>` : ''}
+        ${clevelandList ? `<div class="plate-prose-block">
+          <div class="heading">Cleveland-Proven</div>
+          ${clevelandList}
+        </div>` : ''}
+        <div class="plate-section-divider"></div>
+        <div class="plate-prose-block">
+          <div class="heading">My Pairings</div>
+          ${myP.length ? `<div style="margin-bottom:8px">${pairingChips}</div>` : ''}
+          <input type="text" placeholder="Add a pairing (any plant name)…"
+            onkeydown="if(event.key==='Enter'&&this.value.trim()){addMyPairing(${p.id},this.value.trim());this.value='';render()}"
+            style="width:100%;padding:8px 11px;background:rgba(255,250,235,.5);border:1px solid var(--gold-light);border-radius:4px;color:var(--text);font-family:'EB Garamond',serif;font-style:italic;font-size:13px;outline:none">
         </div>
       </div>
     </div>`;
 
-  // ---------- Plate V — Journal (editable) ----------
+  // ---------- Plate V — Journal & Sources ----------
   const g = state.garden[p.id] || {};
   const noteVal = (state.notes[String(p.id)]||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  // User-added cultivars (with scanned tags, etc.)
+  const userCultivars = state.cultivars[p.id] || [];
+  const userCultivarsHtml = userCultivars.length ? userCultivars.map(c => `
+    <div class="plate-cultivar-row">
+      <strong style="font-family:'Cormorant Garamond',serif;font-style:italic">${escHtml(c.name||'(unnamed)')}</strong>
+      ${c.source ? ` <span style="color:var(--text-mid);font-style:italic">· ${escHtml(c.source)}</span>` : ''}
+      ${c.planted ? ` <span style="color:var(--green-accent);font-size:11px">✓ planted${c.where ? ' · '+escHtml(c.where) : ''}</span>` : ''}
+      ${c.wishlist ? ` <span style="color:#a04020;font-size:11px">★ wishlist</span>` : ''}
+      ${c.notes ? `<div style="font-size:12px;color:var(--text-mid);margin-top:2px">${escHtml(c.notes)}</div>` : ''}
+    </div>`).join('') : '';
+  // Brand source badges
+  const brandQuery = encodeURIComponent(p.botanical ? p.botanical.split("'")[0].split(' spp')[0].trim() : p.name);
+  const brandLinks = [
+    p.provenWinners ? `<a href="https://www.provenwinners.com/plants/search?search=${brandQuery}" target="_blank" rel="noopener">Proven Winners</a>` : '',
+    p.monrovia ? `<a href="https://www.monrovia.com/search/?q=${brandQuery}" target="_blank" rel="noopener">Monrovia</a>` : '',
+    p.firstEditions ? `<a href="https://firsteditionsplants.com/?s=${brandQuery}" target="_blank" rel="noopener">First Editions</a>` : ''
+  ].filter(Boolean).join('');
+  const videoHref = p.video ? (p.video.startsWith('http') ? p.video : 'https://www.youtube.com/results?search_query=' + encodeURIComponent(p.video)) : null;
   const plateJournal = `
     <div class="plate-page plate-journal" data-idx="4">
       <div class="plate-overlay">
         <div class="plate-title">Journal</div>
-        <div class="plate-subtitle">Your record for this plant</div>
+        <div class="plate-subtitle">Your record · where to find · learn more</div>
         <label onclick="toggleGardenPlanted(${p.id})">
           <div class="check ${g.planted?'done':''}">${g.planted?'✓':''}</div>
           <span>Planted in my garden</span>
@@ -4320,6 +4492,28 @@ function renderEncyclopedia(p) {
           <div style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--text-mid);font-size:14px;margin-bottom:4px">Notes</div>
           <textarea placeholder="Observations, pest issues, what worked..." oninput="updatePlantNote(${p.id},this.value)">${noteVal}</textarea>
         </div>
+        ${userCultivarsHtml ? `
+          <div class="plate-section-divider"></div>
+          <div class="plate-prose-block">
+            <div class="heading">My Cultivars</div>
+            ${userCultivarsHtml}
+          </div>
+        ` : ''}
+        ${(p.whereToBuy || p.whenAvailable || brandLinks || videoHref) ? `
+          <div class="plate-section-divider"></div>
+          <div class="plate-prose-block">
+            <div class="heading">Sourcing</div>
+            ${p.whereToBuy ? `<div style="font-family:'EB Garamond',serif;font-size:13px;line-height:1.5;margin-bottom:4px"><em style="color:var(--text-mid);font-family:'Cormorant Garamond',serif">Where to buy</em> · ${escHtml(p.whereToBuy)}</div>` : ''}
+            ${p.whenAvailable ? `<div style="font-family:'EB Garamond',serif;font-size:13px;line-height:1.5;margin-bottom:4px"><em style="color:var(--text-mid);font-family:'Cormorant Garamond',serif">When available</em> · ${escHtml(p.whenAvailable)}</div>` : ''}
+            ${brandLinks ? `<div class="plate-brand-row">${brandLinks}</div>` : ''}
+          </div>
+        ` : ''}
+        ${videoHref ? `
+          <div class="plate-prose-block">
+            <div class="heading">Learn More</div>
+            <a class="plate-link" href="${videoHref}" target="_blank" rel="noopener">▶ Watch care videos</a>
+          </div>
+        ` : ''}
       </div>
     </div>`;
 
