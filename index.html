@@ -1029,11 +1029,12 @@ button[onclick*="showAddPlant"]{
   border:1px solid var(--gold-light);
 }
 .plate-page.no-bg{
-  /* faint parchment + ornate corner ornament via CSS only */
-  background:
-    radial-gradient(ellipse at top,rgba(255,250,235,.6),transparent 70%),
-    radial-gradient(ellipse at bottom right,rgba(190,160,100,.15),transparent 60%),
-    #f4ebd9;
+  /* Shared blank parchment image — Plates III-V */
+  background-image:url('plates/PlantBuddyBlank.webp?v=1');
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  background-color:#f4ebd9;
   border:1px solid var(--gold-light);
 }
 .plate-overlay{
@@ -1337,7 +1338,11 @@ button[onclick*="showAddPlant"]{
 /* Plate II: Particulars — text below the top-right inset */
 .plate-particulars .plate-overlay{
   position:relative;
-  padding-top:40%;  /* reserve room so .plate-desc starts BELOW the ledger + inset */
+  /* padding-% is relative to WIDTH. Plate aspect 9:16 → height ≈
+     1.78× width. The absolute-positioned ledger ends at ~42% of
+     plate HEIGHT (i.e., ~75% of width). 95% gives a comfortable gap
+     before flow content starts. */
+  padding-top:95%;
 }
 /* Plate II ledger sits absolute in the top-LEFT next to the inset
    (the inset is baked into the top-right of the background image).
@@ -1492,17 +1497,11 @@ button[onclick*="showAddPlant"]{
 
 /* Plate V: Journal — ruled paper, no image */
 .plate-journal{
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 27px,
-      rgba(120,90,40,.13) 27px,
-      rgba(120,90,40,.13) 28px
-    ),
-    radial-gradient(ellipse at top,rgba(255,250,235,.6),transparent 70%),
-    #f4ebd9 !important;
-  background-position:0 40px,center,center !important;
+  background-image:url('plates/PlantBuddyBlank.webp?v=1') !important;
+  background-size:cover !important;
+  background-position:center !important;
+  background-repeat:no-repeat !important;
+  background-color:#f4ebd9 !important;
   border:1px solid var(--gold-light);
 }
 .plate-journal .plate-overlay{
@@ -4603,7 +4602,12 @@ function renderEncyclopedia(p) {
     </div>`;
 
   // ---------- Plate II — Particulars ----------
-  // (Light/Bloom/Attracts + tolerance flags moved to Plate I.)
+  // Ledger (top-left next to inset, unchanged) + description, then
+  // Bloom Calendar and the Foliage/Year-round/Light/Fertilization
+  // sub-sections in normal flow below.
+  const fertMonthStr = (p.fertMonth || []).length
+    ? p.fertMonth.map(m => MONTHS[m-1]).join(', ')
+    : '';
   const plateParticulars = `
     <div class="plate-page plate-particulars" data-idx="1" style="background-image:url('${p.plateBack}')">
       <div class="plate-overlay">
@@ -4615,48 +4619,46 @@ function renderEncyclopedia(p) {
           <div class="row"><span class="lbl">Soil pH</span><span class="val">${p.ph||'—'}</span></div>
         </div>
         ${p.description ? `<div class="plate-desc">${escHtml(p.description)}</div>` : ''}
+        ${(p.bloomMonths && p.bloomMonths.length) ? `<div class="plate-bloom-section">
+          <div class="heading">Bloom Calendar</div>
+          <div class="plate-bloom-strip">${monthsRow()}</div>
+        </div>` : ''}
+        ${p.foliageInterest ? `<div class="plate-prose-block">
+          <div class="heading">Foliage Highlight</div>
+          <div class="body">${escHtml(p.foliageInterest)}</div>
+        </div>` : ''}
+        ${p.yearRound ? `<div class="plate-prose-block">
+          <div class="heading">Year Round Interest</div>
+          <div class="body">${escHtml(p.yearRound)}</div>
+        </div>` : ''}
+        ${p.sun ? `<div class="plate-prose-block">
+          <div class="heading">Light Preference</div>
+          <div class="body">${escHtml(p.sun)}${p.regionalLightNote ? ` <em style="color:var(--text-mid)">— ${escHtml(p.regionalLightNote)}</em>` : ''}</div>
+        </div>` : ''}
+        ${p.fertilizer ? `<div class="plate-prose-block">
+          <div class="heading">Suggested Fertilization</div>
+          <div class="body">${escHtml(p.fertilizer)}${fertMonthStr ? ` <em style="color:var(--text-mid)">(apply: ${fertMonthStr})</em>` : ''}</div>
+        </div>` : ''}
       </div>
     </div>`;
 
-  // ---------- Plate III — Seasons & Care ----------
+  // ---------- Plate III — Monthly Care ----------
+  // Bloom Calendar + Foliage + Year-round + Light + Fertilization
+  // all moved to Plate II. This plate is now the yearly task schedule.
   const careCards = Object.entries(p.care || {})
     .sort((a,b) => Number(a[0]) - Number(b[0]))
     .map(([m,t]) =>
       `<div class="plate-mo-card"><div class="mo">${MONTHS[Number(m)-1]}</div><div class="task">${escHtml(t)}</div></div>`
     ).join('');
-  const fertMonthStr = (p.fertMonth || []).length
-    ? p.fertMonth.map(m => MONTHS[m-1]).join(', ')
-    : '';
   const plateSeasons = `
     <div class="plate-page no-bg" data-idx="2">
       <div class="plate-overlay">
-        <div class="plate-title">Seasons & Care</div>
-        <div class="plate-subtitle">Bloom · Foliage · Yearly tasks</div>
-        <div class="plate-prose-block">
-          <div class="heading">Bloom Calendar</div>
-          <div class="plate-bloom-strip">${monthsRow()}</div>
-        </div>
-        ${p.foliageInterest ? `<div class="plate-prose-block">
-          <div class="heading">Foliage</div>
-          <div class="body">${escHtml(p.foliageInterest)}</div>
-        </div>` : ''}
-        ${p.yearRound ? `<div class="plate-prose-block">
-          <div class="heading">Year-round Interest</div>
-          <div class="body">${escHtml(p.yearRound)}</div>
-        </div>` : ''}
-        ${careCards ? `<div class="plate-section-divider"></div>
-          <div class="plate-prose-block">
-            <div class="heading">Monthly Care <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
-            <div class="plate-h-scroll">${careCards}</div>
-          </div>` : ''}
-        ${p.fertilizer ? `<div class="plate-prose-block">
-          <div class="heading">Fertilizer</div>
-          <div class="body">${escHtml(p.fertilizer)}${fertMonthStr ? ` <em style="color:var(--text-mid)">(apply: ${fertMonthStr})</em>` : ''}</div>
-        </div>` : ''}
-        ${p.regionalLightNote ? `<div class="plate-prose-block">
-          <div class="heading">Light Notes</div>
-          <div class="body">${escHtml(p.regionalLightNote)}</div>
-        </div>` : ''}
+        <div class="plate-title">Monthly Care</div>
+        <div class="plate-subtitle">A year's tasks at a glance</div>
+        ${careCards ? `<div class="plate-prose-block">
+          <div class="heading">Yearly Schedule <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
+          <div class="plate-h-scroll">${careCards}</div>
+        </div>` : '<p style="font-family:EB Garamond,serif;font-style:italic;color:var(--text-mid)">No monthly tasks recorded.</p>'}
       </div>
     </div>`;
 
@@ -4784,7 +4786,7 @@ function renderEncyclopedia(p) {
     </div>`;
 
   const pages = [plateHabit, plateParticulars, plateSeasons, plateCompanions, plateJournal];
-  const titles = ['Habit','Particulars','Seasons','Companions','Journal'];
+  const titles = ['Habit','Particulars','Care','Companions','Journal'];
   const dots = pages.map((_,i) =>
     `<div class="plate-dot${i===idx?' active':''}" onclick="goToPlate(${i})"></div>`
   ).join('');
@@ -4818,7 +4820,7 @@ function onPlateScroll(e) {
     state.currentPlate = newIdx;
     // Update caption + dots without a full re-render (avoids scroll jump)
     const caption = document.querySelector('.plate-caption');
-    const titles = ['Habit','Particulars','Seasons','Companions','Journal'];
+    const titles = ['Habit','Particulars','Care','Companions','Journal'];
     if (caption) {
       const num = caption.querySelector('.plate-num');
       if (num) num.textContent = ROMAN[newIdx] || (newIdx+1);
