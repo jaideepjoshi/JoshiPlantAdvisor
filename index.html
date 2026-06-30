@@ -1256,7 +1256,7 @@ button[onclick*="showAddPlant"]{
 }
 .plate-habit-stats{
   position:absolute;
-  bottom:5.5%;
+  bottom:6.5%;
   left:8%;
   right:8%;
   display:flex;
@@ -1287,7 +1287,7 @@ button[onclick*="showAddPlant"]{
    light/bloom row in font family, size, and italic style. */
 .plate-habit-flags{
   position:absolute;
-  bottom:2%;
+  bottom:3.5%;
   left:6%;
   right:6%;
   display:flex;
@@ -4500,7 +4500,7 @@ function renderEncyclopedia(p) {
   const habitFlags = [
     p.deerResistant && 'Deer-safe',
     p.rabbitResistant && 'Rabbit-safe',
-    p.droughtTolerant && 'Drought',
+    p.droughtTolerant && 'Drought Resistant',
     p.reblooming && 'Reblooming'
   ].filter(Boolean).map(label => `<span class="flag">${label}</span>`).join('');
   const plateHabit = `
