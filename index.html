@@ -819,6 +819,164 @@ button[onclick*="showAddPlant"]{
   font-family:'EB Garamond',Georgia,serif !important;
   padding:6px 4px !important;
 }
+
+/* ============================================================
+   MODAL VINTAGE THEME — Settings, Auth, Setup, Scan, Ask, etc.
+   Modals are inline-styled in JS templates (no class hooks), so we
+   target by structural patterns: outer fixed/inset:0 div + inner card.
+   ============================================================ */
+
+/* Backdrop: warm sepia tint, not pure black */
+#app div[style*="position:fixed"][style*="inset:0"][style*="rgba(0,0,0"]{
+  background:rgba(58,42,24,.55) !important;
+  backdrop-filter:blur(2px) !important;
+  -webkit-backdrop-filter:blur(2px) !important;
+}
+
+/* Inner modal panel: cream parchment + gold border */
+#app div[style*="position:fixed"] > div[style*="background:#141f19"],
+#app div[style*="position:fixed"] > div[style*="background:rgba(20,31,25"]{
+  background:#f9f2e2 !important;
+  border:1px solid var(--gold-light) !important;
+  border-radius:8px !important;
+  box-shadow:0 20px 60px rgba(58,42,24,.4) !important;
+  color:var(--text) !important;
+}
+
+/* Modal headings — gradient text → solid Pinyon Script */
+#app div[style*="position:fixed"] div[style*="background:linear-gradient(135deg,#f5c842,#4ade80)"],
+#app div[style*="position:fixed"] span[style*="background:linear-gradient(135deg,#f5c842,#4ade80)"]{
+  background:none !important;
+  -webkit-text-fill-color:initial !important;
+  color:var(--text) !important;
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif !important;
+  font-style:normal !important;
+  font-weight:400 !important;
+  font-size:34px !important;
+  letter-spacing:.5px !important;
+  line-height:1.1 !important;
+  padding:2px 0 !important;
+  margin-bottom:4px !important;
+}
+
+/* Playfair Display titles inside modals → Pinyon Script */
+#app div[style*="position:fixed"] span[style*="Playfair Display"],
+#app div[style*="position:fixed"] div[style*="Playfair Display"],
+#app div[style*="position:fixed"] h2[style*="Playfair Display"]{
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif !important;
+  font-style:normal !important;
+  font-weight:400 !important;
+  font-size:30px !important;
+  color:var(--text) !important;
+  letter-spacing:.4px !important;
+}
+
+/* Labels — italic Cormorant, sepia */
+#app div[style*="position:fixed"] label{
+  color:var(--text-mid) !important;
+  font-family:'Cormorant Garamond',Georgia,serif !important;
+  font-style:italic !important;
+  font-weight:500 !important;
+  text-transform:none !important;
+  letter-spacing:0 !important;
+  font-size:14px !important;
+}
+
+/* Inputs / textareas / selects — cream + gold */
+#app div[style*="position:fixed"] input[type="text"],
+#app div[style*="position:fixed"] input[type="email"],
+#app div[style*="position:fixed"] input[type="password"],
+#app div[style*="position:fixed"] input[type="tel"],
+#app div[style*="position:fixed"] input[type="search"],
+#app div[style*="position:fixed"] input:not([type]),
+#app div[style*="position:fixed"] textarea,
+#app div[style*="position:fixed"] select{
+  background:rgba(255,250,235,.55) !important;
+  border:1px solid var(--gold-light) !important;
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  border-radius:4px !important;
+}
+#app div[style*="position:fixed"] input::placeholder,
+#app div[style*="position:fixed"] textarea::placeholder{
+  color:var(--text-light) !important;
+  font-style:italic !important;
+  opacity:1;
+}
+
+/* Primary action buttons (Save, Sign In, Get Started, etc.) — sage */
+#app div[style*="position:fixed"] button[style*="linear-gradient(135deg,#14532d"],
+#app div[style*="position:fixed"] button[style*="linear-gradient(135deg, #14532d"]{
+  background:linear-gradient(135deg,#5a6f4a,#6b7e5a) !important;
+  color:#f9f2e2 !important;
+  border:1px solid var(--green) !important;
+  border-radius:4px !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic !important;
+  font-weight:600 !important;
+  letter-spacing:.5px !important;
+  font-size:15px !important;
+  box-shadow:0 2px 10px rgba(60,80,50,.25) !important;
+}
+
+/* Secondary / link buttons (Sign In with Email, Forgot password, etc.) */
+#app div[style*="position:fixed"] button[style*="background:rgba(255,255,255,.05)"],
+#app div[style*="position:fixed"] button[style*="background:none"]{
+  background:transparent !important;
+  border:1px solid var(--gold-light) !important;
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  border-radius:4px !important;
+}
+
+/* Anchor / link-style buttons (Create account, Forgot password text links) */
+#app div[style*="position:fixed"] button[style*="background:none"][style*="border:none"]{
+  background:none !important;
+  border:none !important;
+  color:var(--green-accent) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic !important;
+}
+
+/* Description paragraphs */
+#app div[style*="position:fixed"] p{
+  font-family:'EB Garamond',Georgia,serif !important;
+  color:var(--text-mid) !important;
+}
+
+/* Close X button — sepia, no styling change for hit area */
+#app div[style*="position:fixed"] button[style*="font-size:22px"]{
+  color:var(--text-mid) !important;
+}
+
+/* Inner cards inside modals (Account section, Share section, etc.) */
+#app div[style*="position:fixed"] div[style*="background:rgba(74,222,128,.04)"],
+#app div[style*="position:fixed"] div[style*="background:rgba(74,222,128,.06)"],
+#app div[style*="position:fixed"] div[style*="background:rgba(212,160,23,.05)"],
+#app div[style*="position:fixed"] div[style*="background:rgba(212,160,23,.06)"]{
+  background:rgba(120,90,40,.06) !important;
+  border:1px solid var(--gold-light) !important;
+  border-radius:4px !important;
+}
+
+/* Google sign-in button is white — leave intact (Google branding) */
+#app div[style*="position:fixed"] button[style*="background:#fff"]{
+  /* preserved */
+}
+
+/* Auth modal inline status text */
+#app div[style*="position:fixed"] p[style*="color:#4ade80"],
+#app div[style*="position:fixed"] p[style*="color:#f87171"]{
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic !important;
+}
+
+/* "Garden ID" or footer text */
+#app div[style*="position:fixed"] p[style*="color:#4a5a50"]{
+  color:var(--text-light) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+}
 .plate-detail .ds .ds-chevron{ color:var(--text-mid); opacity:.5; }
 
 .plate-detail .ds .ds-content,
