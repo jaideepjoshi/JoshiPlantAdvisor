@@ -1240,7 +1240,7 @@ button[onclick*="showAddPlant"]{
    common-glance attributes: Light, Bloom, Attracts. */
 .plate-habit-stats{
   position:absolute;
-  bottom:4.5%;
+  bottom:6.5%;
   left:8%;
   right:8%;
   display:flex;
@@ -1274,20 +1274,21 @@ button[onclick*="showAddPlant"]{
   width:18px;height:18px;
   vertical-align:middle;
 }
-/* Tolerance flags below the stat row on Plate I */
+/* Tolerance flags below the stat row on Plate I — same font as the
+   stats row above but NOT italic. */
 .plate-habit-flags{
   position:absolute;
-  bottom:1%;
+  bottom:3%;
   left:6%;
   right:6%;
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:10px;
+  gap:12px;
   font-family:'EB Garamond',Georgia,serif;
-  font-style:italic;
-  font-size:10px;
-  color:var(--text-mid);
+  font-style:normal;
+  font-size:12px;
+  color:var(--text);
   letter-spacing:.2px;
   pointer-events:none;
   text-shadow:0 1px 0 rgba(255,250,235,.65);
@@ -1295,7 +1296,6 @@ button[onclick*="showAddPlant"]{
 }
 .plate-habit-flags .flag{
   white-space:nowrap;
-  color:var(--text);
 }
 .plate-title{
   font-family:'Pinyon Script',serif;
@@ -4492,8 +4492,7 @@ function renderEncyclopedia(p) {
     p.deerResistant && 'Deer-safe',
     p.rabbitResistant && 'Rabbit-safe',
     p.droughtTolerant && 'Drought',
-    p.reblooming && 'Reblooming',
-    p.nativeOhio && 'Native'
+    p.reblooming && 'Reblooming'
   ].filter(Boolean).map(label => `<span class="flag">✓ ${label}</span>`).join('');
   const plateHabit = `
     <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
