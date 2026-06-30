@@ -530,7 +530,7 @@ button[onclick*="showAddPlant"]{
    rules top/bottom, faded horizontal ledger lines behind body text,
    no colored icon block.
    ============================================================ */
-.ds.notebook-page{
+.plate-detail .ds{
   background:transparent !important;
   border:none !important;
   border-top:1px solid rgba(120,90,40,.45) !important;
@@ -542,23 +542,23 @@ button[onclick*="showAddPlant"]{
   position:relative;
 }
 /* Double-rule top: classical field-guide page divider */
-.ds.notebook-page::before{
+.plate-detail .ds::before{
   content:'';position:absolute;left:0;right:0;top:-5px;height:1px;
   background:rgba(120,90,40,.25);
 }
-.ds.notebook-page::after{
+.plate-detail .ds::after{
   content:'';position:absolute;left:0;right:0;bottom:-5px;height:1px;
   background:rgba(120,90,40,.25);
 }
-.ds.notebook-page .ds-head{
+.plate-detail .ds .ds-head{
   background:transparent !important;
   border-bottom:1px dashed rgba(120,90,40,.25) !important;
   padding:14px 4px 10px !important;
   margin:0 !important;
   display:flex;align-items:baseline;gap:10px;
 }
-.ds.notebook-page .ds-accent{ display:none !important; }
-.ds.notebook-page .ds-icon{
+.plate-detail .ds .ds-accent{ display:none !important; }
+.plate-detail .ds .ds-icon{
   background:transparent !important;
   color:var(--text-mid) !important;
   box-shadow:none !important;
@@ -569,23 +569,100 @@ button[onclick*="showAddPlant"]{
   font-family:'Pinyon Script',serif;
 }
 /* Replace the colored SVG icon with a flat sepia ornament */
-.ds.notebook-page .ds-icon > svg{ display:none; }
-.ds.notebook-page .ds-icon::before{
+.plate-detail .ds .ds-icon > svg{ display:none; }
+.plate-detail .ds .ds-icon::before{
   content:'✦';
   font-size:14px;color:var(--gold);
   margin-right:2px;
 }
-.ds.notebook-page .ds-head h3{
+.plate-detail .ds .ds-head h3,
+.plate-detail .ds h3{
   font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif !important;
-  font-style:normal;font-weight:400;
+  font-style:normal !important;font-weight:400 !important;
   color:var(--text) !important;
   font-size:30px !important;
-  letter-spacing:.5px;line-height:1;
-  margin:0;
+  letter-spacing:.5px !important;line-height:1.05 !important;
+  margin:0 !important;
+  background:none !important;
+  -webkit-text-fill-color:initial !important;
 }
-.ds.notebook-page .ds-chevron{ color:var(--text-mid); opacity:.5; }
+/* gardenCard / cultivarsCard / notesCard don't use .ds-head — they have an
+   inline div with .ds-icon + h3 as siblings. Treat that wrapper as a head. */
+.plate-detail .ds > div{
+  background:transparent !important;
+  padding:0 !important;
+}
+.plate-detail .ds > div > div:first-child{
+  border-bottom:1px dashed rgba(120,90,40,.25) !important;
+  padding:14px 4px 10px !important;
+  margin-bottom:0 !important;
+}
+/* Sepia-ize inline-colored text inside the override cards */
+.plate-detail .ds span[style*="color:#4ade80"],
+.plate-detail .ds span[style*="color:#fb923c"],
+.plate-detail .ds span[style*="color:#f5c842"],
+.plate-detail .ds span[style*="color:var(--green)"]{
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic !important;
+  font-size:16px !important;
+}
+/* Cultivar/Notes textarea and inputs — parchment instead of dark */
+.plate-detail .ds textarea,
+.plate-detail .ds input[type="text"]{
+  background:rgba(255,250,235,.5) !important;
+  border:1px solid var(--gold-light) !important;
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+}
+/* Task-check checkboxes: cream square with gold border */
+.plate-detail .task-check{
+  background:rgba(255,250,235,.6) !important;
+  border:1.5px solid var(--gold-light) !important;
+  color:var(--text) !important;
+}
+.plate-detail .task-check.done{
+  background:rgba(90,111,74,.18) !important;
+  border-color:var(--green) !important;
+  color:var(--green-accent) !important;
+}
 
-.ds.notebook-page .ds-content{
+/* Bloom Calendar pills: sage instead of tech green */
+.plate-detail .bloom-cell{
+  background:rgba(255,250,235,.5);
+  color:var(--text-mid);
+  border:1px solid var(--gold-light);
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic;
+  border-radius:4px !important;
+}
+.plate-detail .bloom-on{
+  background:linear-gradient(135deg,#5a6f4a,#6b7e5a) !important;
+  color:#f9f2e2 !important;
+  border-color:var(--green) !important;
+  box-shadow:0 1px 4px rgba(60,80,50,.25) !important;
+}
+
+/* Hero stat badges: replace inline candy colors with parchment + gold */
+.plate-detail .hero-stat,
+.plate-detail .hero-stats-row .hero-stat{
+  background:rgba(255,250,235,.7) !important;
+  color:var(--text) !important;
+  border:1px solid var(--gold-light) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic !important;
+  font-weight:500 !important;
+  letter-spacing:.2px !important;
+}
+.plate-detail .hero-stats-row{
+  background:#ede2c8 !important;
+  border-bottom:1px solid var(--gold-light) !important;
+}
+.plate-detail .hero-stat svg{ stroke:var(--text-mid) !important; }
+.plate-detail .ds .ds-chevron{ color:var(--text-mid); opacity:.5; }
+
+.plate-detail .ds .ds-content,
+.plate-detail .ds > div > div:not(:first-child){
   background:transparent !important;
   /* Faded ledger lines: 28px line height aligns with body text */
   background-image:
@@ -598,11 +675,12 @@ button[onclick*="showAddPlant"]{
     ) !important;
   background-position:0 18px;
   background-attachment:local;
-}
-.ds.notebook-page .ds-inner{
   padding:18px 8px 22px !important;
 }
-.ds.notebook-page .ds-inner p{
+.plate-detail .ds .ds-inner{
+  padding:18px 8px 22px !important;
+}
+.plate-detail .ds .ds-inner p{
   font-family:'EB Garamond',Georgia,serif !important;
   font-style:normal !important;
   font-size:17px !important;
@@ -611,19 +689,19 @@ button[onclick*="showAddPlant"]{
   letter-spacing:.1px;
   margin:0 0 14px;
 }
-.ds.notebook-page .ds-inner p em,
-.ds.notebook-page .ds-inner p i{
+.plate-detail .ds .ds-inner p em,
+.plate-detail .ds .ds-inner p i{
   font-style:italic;color:var(--text-mid);
 }
 
 /* Plant Info: convert the info-grid into ledger-style "Label  Value" rows */
-.ds.notebook-page .info-grid{
+.plate-detail .ds .info-grid{
   display:block !important;
   margin:0 !important;
   padding:0 !important;
   gap:0 !important;
 }
-.ds.notebook-page .info-item{
+.plate-detail .ds .info-item{
   display:flex !important;
   align-items:baseline !important;
   gap:14px !important;
@@ -636,7 +714,7 @@ button[onclick*="showAddPlant"]{
   line-height:28px;
   font-family:'EB Garamond',Georgia,serif !important;
 }
-.ds.notebook-page .info-item .label{
+.plate-detail .ds .info-item .label{
   font-family:'Cormorant Garamond',Georgia,serif !important;
   font-style:italic !important;
   font-weight:500 !important;
@@ -647,7 +725,7 @@ button[onclick*="showAddPlant"]{
   min-width:110px;
   flex-shrink:0;
 }
-.ds.notebook-page .info-item .value{
+.plate-detail .ds .info-item .value{
   font-family:'EB Garamond',Georgia,serif !important;
   color:var(--text) !important;
   font-size:16px !important;
@@ -3637,7 +3715,7 @@ function renderDetail() {
   const sections = [];
 
   // About — always open
-  sections.push(S(IC.about, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'About', `<p>${p.description||""}</p>`, true, p.plateImage ? 'notebook-page' : ''));
+  sections.push(S(IC.about, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'About', `<p>${p.description||""}</p>`, true));
 
   // Plant Info — always open
   sections.push(S(IC.info, 'rgba(74,222,128,.1)', '#4ade80', '#22804a', 'Plant Info', `
@@ -3654,7 +3732,7 @@ function renderDetail() {
       <div class="info-item"><div class="label">Rabbit Resist</div><div class="value">${p.rabbitResistant?"Yes":"No"}</div></div>
       <div class="info-item"><div class="label">Reblooming</div><div class="value">${p.reblooming?(p.rebloomNote||"Yes"):"No"}</div></div>
       <div class="info-item"><div class="label">Native OH</div><div class="value">${p.nativeOhio?"Yes":"No"}</div></div>
-    </div>`, true, p.plateImage ? 'notebook-page' : ''));
+    </div>`, true));
 
   // Bloom Calendar — open
   sections.push(S(IC.bloom, 'rgba(244,114,182,.1)', '#f472b6', '#ec4899', 'Bloom Calendar', `<div class="bloom-bar">${bloomBar}</div>`, true));
@@ -3796,7 +3874,7 @@ function renderDetail() {
     </div>` : '';
 
   return `
-    <div class="detail open">
+    <div class="detail open ${p.plateImage ? 'plate-detail' : ''}">
       <div class="detail-hero ${p.plateImage ? 'plate-hero' : ''}" id="hero-wrap">
         ${p.plateImage
           ? `<img class="plate-hero-img" src="${p.plateImage}" alt="${p.name}">`
