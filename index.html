@@ -4475,6 +4475,7 @@ function renderEncyclopedia(p) {
     </div>`;
 
   // ---------- Plate II — Particulars ----------
+  // (Light/Bloom/Attracts moved to Plate I — kept off here to avoid duplication.)
   const flagYes = (b) => b ? 'yes' : 'no';
   const plateParticulars = `
     <div class="plate-page plate-particulars" data-idx="1" style="background-image:url('${p.plateBack}')">
@@ -4482,18 +4483,8 @@ function renderEncyclopedia(p) {
         <div class="plate-ledger">
           <div class="row"><span class="lbl">Height</span><span class="val">${p.height||'—'}</span></div>
           <div class="row"><span class="lbl">Width</span><span class="val">${p.width||'—'}</span></div>
-          <div class="row"><span class="lbl">Light</span><span class="val">${p.sun||'—'}</span></div>
           <div class="row"><span class="lbl">Water</span><span class="val">${p.waterReq||'—'}</span></div>
           <div class="row"><span class="lbl">Soil pH</span><span class="val">${p.ph||'—'}</span></div>
-          <div class="row"><span class="lbl">Bloom</span><span class="val">${fmtBloom()}</span></div>
-        </div>
-        <div class="plate-attracts">
-          <span class="lbl">Attracts</span>
-          <span class="icons">
-            <span class="${attractsSet.has('bees')?'':'muted'}" title="Bees">${plateGlyph('bee')}</span>
-            <span class="${attractsSet.has('butterflies')?'':'muted'}" title="Butterflies">${plateGlyph('butterfly')}</span>
-            <span class="${attractsSet.has('birds')?'':'muted'}" title="Birds">${plateGlyph('bird')}</span>
-          </span>
         </div>
         <div class="plate-flags">
           <span class="${flagYes(p.deerResistant)}">Deer-safe</span>
