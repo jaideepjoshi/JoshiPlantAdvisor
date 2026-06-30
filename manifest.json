@@ -1,6 +1,6 @@
 {
-  "name": "Plant Buddy",
-  "short_name": "Plant Buddy",
+  "name": "PlantBuddy",
+  "short_name": "PlantBuddy",
   "description": "Your personal perennial garden planner",
   "start_url": "/JoshiPlantAdvisor/",
   "scope": "/JoshiPlantAdvisor/",
