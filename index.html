@@ -1337,14 +1337,14 @@ button[onclick*="showAddPlant"]{
 /* Plate II: Particulars — text below the top-right inset */
 .plate-particulars .plate-overlay{
   position:relative;
-  padding-top:34%;  /* reserve room so .plate-desc starts BELOW the inset */
+  padding-top:40%;  /* reserve room so .plate-desc starts BELOW the ledger + inset */
 }
 /* Plate II ledger sits absolute in the top-LEFT next to the inset
    (the inset is baked into the top-right of the background image).
    Equal margin from top and left edges; no rule lines between rows. */
 .plate-particulars .plate-ledger{
   position:absolute;
-  top:11%;
+  top:16%;
   left:11%;
   width:48%;
   font-family:'EB Garamond',Georgia,serif;
@@ -1356,7 +1356,7 @@ button[onclick*="showAddPlant"]{
 .plate-particulars .plate-ledger .row{
   display:flex;align-items:baseline;gap:10px;
   padding:3px 0;
-  border-bottom:none;
+  border:none !important;
 }
 .plate-particulars .plate-ledger .lbl{
   font-family:'Cormorant Garamond',serif;
@@ -1414,7 +1414,7 @@ button[onclick*="showAddPlant"]{
   font-style:italic;
   margin-top:auto;
   padding-top:8px;
-  border-top:1px solid rgba(120,90,40,.2);
+  border-top:none;
 }
 .plate-desc::before{
   content:'❦';
