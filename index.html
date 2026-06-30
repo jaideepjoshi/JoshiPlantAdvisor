@@ -1238,9 +1238,25 @@ button[onclick*="showAddPlant"]{
 /* Plate I (Habit) — small stat row overlaid in the gap below the baked
    botanical name and above the bottom border. Shows the three most
    common-glance attributes: Light, Bloom, Attracts. */
+/* Attracts row — hand-drawn glyphs above the Light/Bloom line */
+.plate-habit-attracts{
+  position:absolute;
+  bottom:9%;
+  left:8%;
+  right:8%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:8px;
+  pointer-events:none;
+}
+.plate-habit-attracts svg{
+  width:22px;height:22px;
+  vertical-align:middle;
+}
 .plate-habit-stats{
   position:absolute;
-  bottom:6.5%;
+  bottom:5.5%;
   left:8%;
   right:8%;
   display:flex;
@@ -1267,18 +1283,11 @@ button[onclick*="showAddPlant"]{
   font-size:13px;
   line-height:1;
 }
-.plate-habit-stats .attracts{
-  gap:3px;
-}
-.plate-habit-stats .attracts svg{
-  width:18px;height:18px;
-  vertical-align:middle;
-}
 /* Tolerance flags below the stat row on Plate I — matches the
    light/bloom row in font family, size, and italic style. */
 .plate-habit-flags{
   position:absolute;
-  bottom:3%;
+  bottom:2%;
   left:6%;
   right:6%;
   display:flex;
@@ -4496,10 +4505,10 @@ function renderEncyclopedia(p) {
   ].filter(Boolean).map(label => `<span class="flag">${label}</span>`).join('');
   const plateHabit = `
     <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
+      ${habitAttractsIcons ? `<div class="plate-habit-attracts">${habitAttractsIcons}</div>` : ''}
       <div class="plate-habit-stats">
         ${p.sun ? `<div class="stat"><span class="ico">☀</span><span>${escHtml(p.sun)}</span></div>` : ''}
         ${fmtBloom() && fmtBloom() !== '—' ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(fmtBloom())}</span></div>` : ''}
-        ${habitAttractsIcons ? `<div class="stat attracts">${habitAttractsIcons}</div>` : ''}
       </div>
       ${habitFlags ? `<div class="plate-habit-flags">${habitFlags}</div>` : ''}
     </div>`;
