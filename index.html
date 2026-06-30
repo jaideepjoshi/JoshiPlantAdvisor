@@ -1135,6 +1135,105 @@ button[onclick*="showAddPlant"]{
 .plate-pairing-chip .remove{
   cursor:pointer;color:var(--text-light);font-size:14px;margin-left:2px;
 }
+
+/* Horizontal scroller inside a plate (Monthly Care months, Cultivar cards, etc.).
+   Uses overscroll-behavior-x: contain so the parent plate-pages horizontal swipe
+   doesn't trigger when scrolling within. */
+.plate-h-scroll{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;
+  padding:4px 0 8px;
+  margin-top:6px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--gold-light) transparent;
+  touch-action:pan-x;
+}
+.plate-h-scroll::-webkit-scrollbar{ height:4px }
+.plate-h-scroll::-webkit-scrollbar-thumb{ background:var(--gold-light);border-radius:2px }
+.plate-h-scroll::-webkit-scrollbar-track{ background:transparent }
+.plate-h-scroll > *{
+  flex:0 0 auto;
+  scroll-snap-align:start;
+}
+/* Month card for Monthly Care horizontal scroll */
+.plate-mo-card{
+  width:140px;
+  padding:10px 12px;
+  background:rgba(255,250,235,.5);
+  border:1px solid var(--gold-light);
+  border-radius:6px;
+  display:flex;flex-direction:column;gap:6px;
+  min-height:90px;
+}
+.plate-mo-card .mo{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  color:var(--text-mid);
+  font-size:14px;
+  letter-spacing:.4px;
+  border-bottom:1px dotted rgba(120,90,40,.25);
+  padding-bottom:4px;
+}
+.plate-mo-card .task{
+  font-family:'EB Garamond',serif;
+  font-size:12px;
+  line-height:1.45;
+  color:var(--text);
+}
+/* Cultivar card */
+.plate-cv-card{
+  width:170px;
+  padding:10px 12px;
+  background:rgba(255,250,235,.5);
+  border:1px solid var(--gold-light);
+  border-radius:6px;
+  display:flex;flex-direction:column;gap:4px;
+  min-height:80px;
+}
+.plate-cv-card .name{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-weight:500;
+  color:var(--text);
+  font-size:14px;
+  line-height:1.25;
+}
+.plate-cv-card .meta{
+  font-family:'EB Garamond',serif;
+  font-size:11px;
+  color:var(--text-mid);
+  letter-spacing:.3px;
+}
+.plate-cv-card .brand{
+  display:inline-block;
+  font-size:9px;
+  padding:2px 6px;
+  border-radius:8px;
+  background:rgba(255,250,235,.7);
+  border:1px solid var(--gold-light);
+  color:var(--text-mid);
+  letter-spacing:.4px;
+  text-transform:uppercase;
+  margin-top:auto;
+  align-self:flex-start;
+}
+.plate-cv-card .badge-row{
+  display:flex;gap:4px;margin-top:auto;
+  font-size:10px;
+}
+.plate-cv-card .badge-planted{
+  color:var(--green-accent);
+  font-style:italic;
+}
+.plate-cv-card .badge-wishlist{
+  color:#a04020;
+  font-style:italic;
+}
 .plate-title{
   font-family:'Pinyon Script',serif;
   font-size:34px;
@@ -4355,10 +4454,10 @@ function renderEncyclopedia(p) {
     </div>`;
 
   // ---------- Plate III — Seasons & Care ----------
-  const careRows = Object.entries(p.care || {})
+  const careCards = Object.entries(p.care || {})
     .sort((a,b) => Number(a[0]) - Number(b[0]))
     .map(([m,t]) =>
-      `<div class="plate-care-row"><span class="mo">${MONTHS[Number(m)-1]}</span><span class="task">${escHtml(t)}</span></div>`
+      `<div class="plate-mo-card"><div class="mo">${MONTHS[Number(m)-1]}</div><div class="task">${escHtml(t)}</div></div>`
     ).join('');
   const fertMonthStr = (p.fertMonth || []).length
     ? p.fertMonth.map(m => MONTHS[m-1]).join(', ')
@@ -4380,10 +4479,10 @@ function renderEncyclopedia(p) {
           <div class="heading">Year-round Interest</div>
           <div class="body">${escHtml(p.yearRound)}</div>
         </div>` : ''}
-        ${careRows ? `<div class="plate-section-divider"></div>
+        ${careCards ? `<div class="plate-section-divider"></div>
           <div class="plate-prose-block">
-            <div class="heading">Monthly Care</div>
-            <div class="plate-care-list">${careRows}</div>
+            <div class="heading">Monthly Care <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
+            <div class="plate-h-scroll">${careCards}</div>
           </div>` : ''}
         ${p.fertilizer ? `<div class="plate-prose-block">
           <div class="heading">Fertilizer</div>
@@ -4404,11 +4503,18 @@ function renderEncyclopedia(p) {
     const linkClose = cp ? '</a>' : '</span>';
     return `<div class="comp-row"><span class="comp-dot" style="background:${col}"></span>${linkOpen}${escHtml(name)}${linkClose}</div>`;
   }).join('');
-  const cultivarsList = (p.cultivars||[]).map(c =>
-    `<div class="plate-cultivar-row">${escHtml(c.replace(/\[(PW|Monrovia|First Ed\.)\]/g,''))}</div>`
-  ).join('');
+  const cultivarsList = (p.cultivars||[]).map(c => {
+    // Extract brand tag if present (e.g. "Magnus [PW]" -> name="Magnus", brand="PW")
+    const m = c.match(/^(.*?)\s*\[(PW|Monrovia|First Ed\.)\]\s*$/);
+    const name = m ? m[1].trim() : c.trim();
+    const brand = m ? m[2] : '';
+    return `<div class="plate-cv-card">
+      <div class="name">${escHtml(name)}</div>
+      ${brand ? `<span class="brand">${escHtml(brand)}</span>` : ''}
+    </div>`;
+  }).join('');
   const clevelandList = (p.clevelandCultivars||[]).map(c =>
-    `<div class="plate-cultivar-row">${escHtml(c)}</div>`
+    `<div class="plate-cv-card"><div class="name">${escHtml(c)}</div><span class="brand">Cleveland-Proven</span></div>`
   ).join('');
   const stylePills = (p.gardenStyles||[]).map(s =>
     `<span class="pill">${escHtml(s)}</span>`
@@ -4436,12 +4542,12 @@ function renderEncyclopedia(p) {
         </div>` : ''}
         ${cultivarsList ? `<div class="plate-section-divider"></div>
           <div class="plate-prose-block">
-            <div class="heading">Cultivars</div>
-            ${cultivarsList}
+            <div class="heading">Cultivars <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
+            <div class="plate-h-scroll">${cultivarsList}</div>
           </div>` : ''}
         ${clevelandList ? `<div class="plate-prose-block">
-          <div class="heading">Cleveland-Proven</div>
-          ${clevelandList}
+          <div class="heading">Cleveland-Proven <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
+          <div class="plate-h-scroll">${clevelandList}</div>
         </div>` : ''}
         <div class="plate-section-divider"></div>
         <div class="plate-prose-block">
@@ -4457,15 +4563,17 @@ function renderEncyclopedia(p) {
   // ---------- Plate V — Journal & Sources ----------
   const g = state.garden[p.id] || {};
   const noteVal = (state.notes[String(p.id)]||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-  // User-added cultivars (with scanned tags, etc.)
+  // User-added cultivars (with scanned tags, etc.) → horizontal scroll cards
   const userCultivars = state.cultivars[p.id] || [];
   const userCultivarsHtml = userCultivars.length ? userCultivars.map(c => `
-    <div class="plate-cultivar-row">
-      <strong style="font-family:'Cormorant Garamond',serif;font-style:italic">${escHtml(c.name||'(unnamed)')}</strong>
-      ${c.source ? ` <span style="color:var(--text-mid);font-style:italic">· ${escHtml(c.source)}</span>` : ''}
-      ${c.planted ? ` <span style="color:var(--green-accent);font-size:11px">✓ planted${c.where ? ' · '+escHtml(c.where) : ''}</span>` : ''}
-      ${c.wishlist ? ` <span style="color:#a04020;font-size:11px">★ wishlist</span>` : ''}
-      ${c.notes ? `<div style="font-size:12px;color:var(--text-mid);margin-top:2px">${escHtml(c.notes)}</div>` : ''}
+    <div class="plate-cv-card" style="width:200px">
+      <div class="name">${escHtml(c.name||'(unnamed)')}</div>
+      ${c.source ? `<div class="meta">${escHtml(c.source)}</div>` : ''}
+      ${c.notes ? `<div class="meta" style="font-style:italic">${escHtml(c.notes).slice(0,80)}${c.notes.length>80?'…':''}</div>` : ''}
+      <div class="badge-row">
+        ${c.planted ? `<span class="badge-planted">✓ planted${c.where ? ' · '+escHtml(c.where) : ''}</span>` : ''}
+        ${c.wishlist ? `<span class="badge-wishlist">★ wishlist</span>` : ''}
+      </div>
     </div>`).join('') : '';
   // Brand source badges
   const brandQuery = encodeURIComponent(p.botanical ? p.botanical.split("'")[0].split(' spp')[0].trim() : p.name);
@@ -4479,7 +4587,7 @@ function renderEncyclopedia(p) {
     <div class="plate-page plate-journal" data-idx="4">
       <div class="plate-overlay">
         <div class="plate-title">Journal</div>
-        <div class="plate-subtitle">Your record · where to find · learn more</div>
+        <div class="plate-subtitle">Your record for this plant</div>
         <label onclick="toggleGardenPlanted(${p.id})">
           <div class="check ${g.planted?'done':''}">${g.planted?'✓':''}</div>
           <span>Planted in my garden</span>
@@ -4495,23 +4603,16 @@ function renderEncyclopedia(p) {
         ${userCultivarsHtml ? `
           <div class="plate-section-divider"></div>
           <div class="plate-prose-block">
-            <div class="heading">My Cultivars</div>
-            ${userCultivarsHtml}
+            <div class="heading">My Cultivars <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
+            <div class="plate-h-scroll">${userCultivarsHtml}</div>
           </div>
         ` : ''}
-        ${(p.whereToBuy || p.whenAvailable || brandLinks || videoHref) ? `
+        ${(brandLinks || videoHref) ? `
           <div class="plate-section-divider"></div>
           <div class="plate-prose-block">
-            <div class="heading">Sourcing</div>
-            ${p.whereToBuy ? `<div style="font-family:'EB Garamond',serif;font-size:13px;line-height:1.5;margin-bottom:4px"><em style="color:var(--text-mid);font-family:'Cormorant Garamond',serif">Where to buy</em> · ${escHtml(p.whereToBuy)}</div>` : ''}
-            ${p.whenAvailable ? `<div style="font-family:'EB Garamond',serif;font-size:13px;line-height:1.5;margin-bottom:4px"><em style="color:var(--text-mid);font-family:'Cormorant Garamond',serif">When available</em> · ${escHtml(p.whenAvailable)}</div>` : ''}
-            ${brandLinks ? `<div class="plate-brand-row">${brandLinks}</div>` : ''}
-          </div>
-        ` : ''}
-        ${videoHref ? `
-          <div class="plate-prose-block">
             <div class="heading">Learn More</div>
-            <a class="plate-link" href="${videoHref}" target="_blank" rel="noopener">▶ Watch care videos</a>
+            ${brandLinks ? `<div class="plate-brand-row">${brandLinks}</div>` : ''}
+            ${videoHref ? `<div style="margin-top:8px"><a class="plate-link" href="${videoHref}" target="_blank" rel="noopener">▶ Watch care videos</a></div>` : ''}
           </div>
         ` : ''}
       </div>
