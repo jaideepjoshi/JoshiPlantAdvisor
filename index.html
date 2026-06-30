@@ -1029,11 +1029,12 @@ button[onclick*="showAddPlant"]{
   border:1px solid var(--gold-light);
 }
 .plate-page.no-bg{
-  /* faint parchment + ornate corner ornament via CSS only */
-  background:
-    radial-gradient(ellipse at top,rgba(255,250,235,.6),transparent 70%),
-    radial-gradient(ellipse at bottom right,rgba(190,160,100,.15),transparent 60%),
-    #f4ebd9;
+  /* Shared blank parchment image — used on Plates III-V */
+  background-image:url('plates/PlantBuddyBlank.webp?v=1');
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  background-color:#f4ebd9;
   border:1px solid var(--gold-light);
 }
 .plate-overlay{
@@ -1506,17 +1507,11 @@ button[onclick*="showAddPlant"]{
 
 /* Plate V: Journal — ruled paper, no image */
 .plate-journal{
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 27px,
-      rgba(120,90,40,.13) 27px,
-      rgba(120,90,40,.13) 28px
-    ),
-    radial-gradient(ellipse at top,rgba(255,250,235,.6),transparent 70%),
-    #f4ebd9 !important;
-  background-position:0 40px,center,center !important;
+  background-image:url('plates/PlantBuddyBlank.webp?v=1') !important;
+  background-size:cover !important;
+  background-position:center !important;
+  background-repeat:no-repeat !important;
+  background-color:#f4ebd9 !important;
   border:1px solid var(--gold-light);
 }
 .plate-journal .plate-overlay{
