@@ -1234,6 +1234,46 @@ button[onclick*="showAddPlant"]{
   color:#a04020;
   font-style:italic;
 }
+
+/* Plate I (Habit) — small stat row overlaid in the gap below the baked
+   botanical name and above the bottom border. Shows the three most
+   common-glance attributes: Light, Bloom, Attracts. */
+.plate-habit-stats{
+  position:absolute;
+  bottom:2.5%;
+  left:8%;
+  right:8%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:14px;
+  font-family:'EB Garamond',Georgia,serif;
+  font-style:italic;
+  font-size:12px;
+  color:var(--text);
+  letter-spacing:.2px;
+  pointer-events:none;
+  text-shadow:0 1px 0 rgba(255,250,235,.65);
+}
+.plate-habit-stats .stat{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+}
+.plate-habit-stats .ico{
+  font-style:normal;
+  color:var(--gold);
+  font-size:13px;
+  line-height:1;
+}
+.plate-habit-stats .attracts{
+  gap:3px;
+}
+.plate-habit-stats .attracts svg{
+  width:18px;height:18px;
+  vertical-align:middle;
+}
 .plate-title{
   font-family:'Pinyon Script',serif;
   font-size:34px;
@@ -4416,12 +4456,25 @@ function renderEncyclopedia(p) {
   };
 
   // ---------- Plate I — Habit ----------
+  // Helper: map attracts list to glyphs (only show ones it actually attracts)
+  const attractsSet = new Set((p.attracts||[]).map(a=>a.toLowerCase()));
+  const habitAttractsIcons = ['bees','butterflies','birds','hummingbirds']
+    .filter(k => Array.from(attractsSet).some(a => a.startsWith(k.slice(0,3))))
+    .map(k => {
+      if (k === 'bees') return plateGlyph('bee');
+      if (k === 'butterflies') return plateGlyph('butterfly');
+      return plateGlyph('bird');
+    }).join('');
   const plateHabit = `
     <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
+      <div class="plate-habit-stats">
+        ${p.sun ? `<div class="stat"><span class="ico">☀</span><span>${escHtml(p.sun)}</span></div>` : ''}
+        ${fmtBloom() && fmtBloom() !== '—' ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(fmtBloom())}</span></div>` : ''}
+        ${habitAttractsIcons ? `<div class="stat attracts">${habitAttractsIcons}</div>` : ''}
+      </div>
     </div>`;
 
   // ---------- Plate II — Particulars ----------
-  const attractsSet = new Set((p.attracts||[]).map(a=>a.toLowerCase()));
   const flagYes = (b) => b ? 'yes' : 'no';
   const plateParticulars = `
     <div class="plate-page plate-particulars" data-idx="1" style="background-image:url('${p.plateBack}')">
