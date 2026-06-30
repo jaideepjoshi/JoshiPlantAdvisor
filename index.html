@@ -4618,6 +4618,10 @@ function renderEncyclopedia(p) {
           <div class="heading">Foliage Highlight</div>
           <div class="body">${escHtml(p.foliageInterest)}</div>
         </div>` : ''}
+        ${p.yearRound ? `<div class="plate-prose-block">
+          <div class="heading">Year Round Interest</div>
+          <div class="body">${escHtml(p.yearRound)}</div>
+        </div>` : ''}
       </div>
     </div>`;
 
@@ -4639,10 +4643,6 @@ function renderEncyclopedia(p) {
           <div class="heading">Bloom Calendar</div>
           <div class="plate-bloom-strip">${monthsRow()}</div>
         </div>
-        ${p.yearRound ? `<div class="plate-prose-block">
-          <div class="heading">Year-round Interest</div>
-          <div class="body">${escHtml(p.yearRound)}</div>
-        </div>` : ''}
         ${careCards ? `<div class="plate-section-divider"></div>
           <div class="plate-prose-block">
             <div class="heading">Monthly Care <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
