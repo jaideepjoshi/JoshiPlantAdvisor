@@ -1358,22 +1358,28 @@ button[onclick*="showAddPlant"]{
   justify-content:space-between;  /* rows stretch to fill the inset height */
 }
 .plate-particulars .plate-ledger .row{
-  display:flex;align-items:baseline;gap:10px;
+  display:flex;align-items:baseline;gap:12px;
   padding:0;
   border:none !important;
 }
 .plate-particulars .plate-ledger .lbl{
   font-family:'Cormorant Garamond',serif;
   font-style:italic;
-  color:var(--text-mid);
+  font-weight:700;
+  color:var(--text);
   min-width:78px;
   flex-shrink:0;
   font-size:13px;
 }
 .plate-particulars .plate-ledger .val{
-  color:var(--text);
+  font-family:'Pinyon Script','Cormorant Garamond',serif;
+  font-style:normal;
+  font-weight:400;
+  color:#7d1f1a;
   flex:1;
-  font-size:13px;
+  font-size:20px;
+  line-height:1.1;
+  letter-spacing:.3px;
 }
 
 .plate-attracts{
