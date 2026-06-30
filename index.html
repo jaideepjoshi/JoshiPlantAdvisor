@@ -1336,30 +1336,39 @@ button[onclick*="showAddPlant"]{
 
 /* Plate II: Particulars — text below the top-right inset */
 .plate-particulars .plate-overlay{
-  padding-top:36%;  /* clear the top-right inset (which lives at top-right ~28% width × 28% height) */
+  position:relative;
+  padding-top:34%;  /* reserve room so .plate-desc starts BELOW the inset */
 }
-.plate-ledger{
+/* Plate II ledger sits absolute in the top-LEFT next to the inset
+   (the inset is baked into the top-right of the background image). */
+.plate-particulars .plate-ledger{
+  position:absolute;
+  top:8%;
+  left:8.5%;
+  width:50%;
   font-family:'EB Garamond',Georgia,serif;
-  line-height:1.6;
-  font-size:14px;
+  line-height:1.5;
+  font-size:13px;
   color:var(--text);
-  margin-bottom:14px;
+  margin:0;
 }
-.plate-ledger .row{
-  display:flex;align-items:baseline;gap:14px;
-  padding:3px 0;
-  border-bottom:1px dotted rgba(120,90,40,.18);
+.plate-particulars .plate-ledger .row{
+  display:flex;align-items:baseline;gap:10px;
+  padding:2px 0;
+  border-bottom:1px dotted rgba(120,90,40,.2);
 }
-.plate-ledger .lbl{
+.plate-particulars .plate-ledger .lbl{
   font-family:'Cormorant Garamond',serif;
   font-style:italic;
   color:var(--text-mid);
-  min-width:78px;
+  min-width:62px;
   flex-shrink:0;
+  font-size:13px;
 }
-.plate-ledger .val{
+.plate-particulars .plate-ledger .val{
   color:var(--text);
   flex:1;
+  font-size:13px;
 }
 
 .plate-attracts{
