@@ -257,13 +257,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .bed-rec-item:hover{background:rgba(255,255,255,.06)}
 .bed-name-input{background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--gold-light);font-size:15px;font-weight:700;font-family:'Playfair Display',serif;padding:4px 0;outline:none;width:140px}
 .bed-empty-msg{text-align:center;padding:60px 20px;color:var(--text-light);font-size:14px}
-
+</style>
+<style id="vintage-styles">
 /* ============================================================
    VINTAGE BOTANICAL THEME
    Override block. Remaps the dark green app to a cream parchment
-   field-guide aesthetic. Branch: vintage-theme.
-   Fonts are loaded via the single @import at the top of this stylesheet
-   (CSS spec: @import must precede all other rules).
+   field-guide aesthetic. Toggle via state.theme + applyTheme() —
+   this whole <style> element's `disabled` attribute is flipped.
+   Fonts are loaded via the @import at the top of the main stylesheet.
    ============================================================ */
 
 :root{
@@ -1085,6 +1086,7 @@ let state = {
   gardenName: localStorage.getItem("pt_gardenName") || "",
   gardenLocation: localStorage.getItem("pt_gardenLocation") || "",
   phoneNumber: localStorage.getItem("pt_phoneNumber") || "",
+  theme: localStorage.getItem("pt_theme") || "vintage",  // 'modern' | 'vintage'
   // Auth state
   authUser: null,           // { uid, email, isAnonymous } once auth resolves
   showAuth: false,          // controls auth modal visibility
@@ -1309,15 +1311,37 @@ function saveProfile() {
   localStorage.setItem("pt_gardenName", state.gardenName || "");
   localStorage.setItem("pt_gardenLocation", state.gardenLocation || "");
   localStorage.setItem("pt_phoneNumber", state.phoneNumber || "");
+  localStorage.setItem("pt_theme", state.theme || "vintage");
   if (_fbReady && _fbUserId) {
     userRef('profile').set({
       gardenName: state.gardenName || '',
       gardenLocation: state.gardenLocation || '',
       phoneNumber: state.phoneNumber || '',
+      theme: state.theme || 'vintage',
       email: (state.authUser && state.authUser.email) || ''
     }).catch(e => console.warn('Firebase profile write failed:', e));
   }
   document.title = state.gardenName || 'PlantBuddy';
+}
+
+// ===== THEME TOGGLE =====
+// Enables/disables the <style id="vintage-styles"> block. When disabled,
+// only the modern (dark green) styles apply.
+function applyTheme() {
+  const el = document.getElementById('vintage-styles');
+  if (!el) return;
+  el.disabled = (state.theme !== 'vintage');
+}
+function setTheme(theme) {
+  if (theme !== 'modern' && theme !== 'vintage') return;
+  state.theme = theme;
+  localStorage.setItem('pt_theme', theme);
+  applyTheme();
+  // Save to Firebase profile too (non-blocking)
+  if (_fbReady && _fbUserId && !isViewing()) {
+    userRef('profile/theme').set(theme).catch(() => {});
+  }
+  render();
 }
 
 // ===== PUBLIC GARDEN SHARING =====
@@ -1697,6 +1721,10 @@ function initFirebaseSync() {
       if (profile.gardenName) { state.gardenName = profile.gardenName; localStorage.setItem("pt_gardenName", profile.gardenName); }
       if (profile.gardenLocation) { state.gardenLocation = profile.gardenLocation; localStorage.setItem("pt_gardenLocation", profile.gardenLocation); }
       if (profile.phoneNumber) { state.phoneNumber = profile.phoneNumber; localStorage.setItem("pt_phoneNumber", profile.phoneNumber); }
+      if (profile.theme === 'modern' || profile.theme === 'vintage') {
+        state.theme = profile.theme; localStorage.setItem("pt_theme", profile.theme);
+        applyTheme();
+      }
     }
     // Populate authUser snapshot for UI
     if (_authUser) {
@@ -4416,6 +4444,16 @@ function renderSettingsModal() {
         `}
       </div>
 
+      <!-- Theme toggle -->
+      <div style="margin-bottom:18px;padding:12px 13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px">
+        <label style="display:block;font-size:11px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Theme</label>
+        <div style="display:flex;gap:6px">
+          <button onclick="setTheme('modern')" style="flex:1;padding:9px;background:${state.theme==='modern'?'linear-gradient(135deg,#14532d,#166534)':'rgba(255,255,255,.05)'};border:1px solid ${state.theme==='modern'?'#22804a':'rgba(255,255,255,.15)'};border-radius:7px;color:${state.theme==='modern'?'#4ade80':'#e8ece9'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">${state.theme==='modern'?'✓ ':''}Modern</button>
+          <button onclick="setTheme('vintage')" style="flex:1;padding:9px;background:${state.theme==='vintage'?'linear-gradient(135deg,#14532d,#166534)':'rgba(255,255,255,.05)'};border:1px solid ${state.theme==='vintage'?'#22804a':'rgba(255,255,255,.15)'};border-radius:7px;color:${state.theme==='vintage'?'#4ade80':'#e8ece9'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">${state.theme==='vintage'?'✓ ':''}Vintage</button>
+        </div>
+        <p style="font-size:11px;color:#7a8a80;margin:8px 0 0;line-height:1.4">${state.theme==='vintage'?'Cream parchment + copperplate field-guide aesthetic.':'Dark green tech with bright accents.'}</p>
+      </div>
+
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Garden Name</label>
       <input id="settingsName" type="text" value="${escHtml(state.gardenName)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone</label>
@@ -5699,6 +5737,9 @@ try {
     state.authError = 'Google sign-in failed (' + _redirErr + '). Make sure this domain is listed in Firebase Console → Authentication → Settings → Authorized domains.';
   }
 } catch(_) {}
+
+// Apply theme before first paint to avoid a flash of the wrong theme
+applyTheme();
 
 // Initialize — show app immediately with local data; Firebase syncs once auth resolves
 render();
