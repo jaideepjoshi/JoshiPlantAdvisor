@@ -1338,10 +1338,7 @@ button[onclick*="showAddPlant"]{
 /* Plate II: Particulars — text below the top-right inset */
 .plate-particulars .plate-overlay{
   position:relative;
-  /* padding-% is relative to WIDTH. Plate aspect 9:16 → height ≈
-     1.78× width. The absolute-positioned ledger ends at ~42% of
-     plate HEIGHT (~75% of width). 80% clears the ledger comfortably. */
-  padding-top:80%;
+  padding-top:40%;  /* reserve room so .plate-desc starts BELOW the ledger + inset */
 }
 /* Plate II ledger sits absolute in the top-LEFT next to the inset
    (the inset is baked into the top-right of the background image).
@@ -4601,12 +4598,7 @@ function renderEncyclopedia(p) {
     </div>`;
 
   // ---------- Plate II — Particulars ----------
-  // Ledger (top-left next to inset, unchanged) + description, then
-  // Bloom Calendar and the Foliage/Year-round/Light/Fertilization
-  // sub-sections in normal flow below.
-  const fertMonthStr = (p.fertMonth || []).length
-    ? p.fertMonth.map(m => MONTHS[m-1]).join(', ')
-    : '';
+  // (Light/Bloom/Attracts + tolerance flags moved to Plate I.)
   const plateParticulars = `
     <div class="plate-page plate-particulars" data-idx="1" style="background-image:url('${p.plateBack}')">
       <div class="plate-overlay">
@@ -4618,27 +4610,27 @@ function renderEncyclopedia(p) {
           <div class="row"><span class="lbl">Soil pH</span><span class="val">${p.ph||'—'}</span></div>
         </div>
         ${p.description ? `<div class="plate-desc">${escHtml(p.description)}</div>` : ''}
-        ${(p.bloomMonths && p.bloomMonths.length) ? `<div class="plate-bloom-section">
-          <div class="heading">Bloom Calendar</div>
-          <div class="plate-bloom-strip">${monthsRow()}</div>
-        </div>` : ''}
       </div>
     </div>`;
 
   // ---------- Plate III — Seasons & Care ----------
-  // Bloom Calendar lives on Plate II. This plate keeps the seasonal
-  // narrative (Foliage, Year-round Interest) + the yearly task schedule
-  // + fertilizer + light notes.
   const careCards = Object.entries(p.care || {})
     .sort((a,b) => Number(a[0]) - Number(b[0]))
     .map(([m,t]) =>
       `<div class="plate-mo-card"><div class="mo">${MONTHS[Number(m)-1]}</div><div class="task">${escHtml(t)}</div></div>`
     ).join('');
+  const fertMonthStr = (p.fertMonth || []).length
+    ? p.fertMonth.map(m => MONTHS[m-1]).join(', ')
+    : '';
   const plateSeasons = `
     <div class="plate-page no-bg" data-idx="2">
       <div class="plate-overlay">
         <div class="plate-title">Seasons & Care</div>
-        <div class="plate-subtitle">Foliage · Year-round interest · Yearly tasks</div>
+        <div class="plate-subtitle">Bloom · Foliage · Yearly tasks</div>
+        <div class="plate-prose-block">
+          <div class="heading">Bloom Calendar</div>
+          <div class="plate-bloom-strip">${monthsRow()}</div>
+        </div>
         ${p.foliageInterest ? `<div class="plate-prose-block">
           <div class="heading">Foliage</div>
           <div class="body">${escHtml(p.foliageInterest)}</div>
