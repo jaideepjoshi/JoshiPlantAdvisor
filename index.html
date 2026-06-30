@@ -1682,6 +1682,7 @@ let state = {
   gardenName: localStorage.getItem("pt_gardenName") || "",
   gardenLocation: localStorage.getItem("pt_gardenLocation") || "",
   phoneNumber: localStorage.getItem("pt_phoneNumber") || "",
+  hardinessZone: localStorage.getItem("pt_hardinessZone") || "",
   theme: localStorage.getItem("pt_theme") || "vintage",  // 'modern' | 'vintage'
   currentPlate: 0,  // Active encyclopedia page (when viewing a multi-plate plant)
   // Auth state
@@ -1909,16 +1910,65 @@ function saveProfile() {
   localStorage.setItem("pt_gardenLocation", state.gardenLocation || "");
   localStorage.setItem("pt_phoneNumber", state.phoneNumber || "");
   localStorage.setItem("pt_theme", state.theme || "vintage");
+  if (state.hardinessZone) localStorage.setItem("pt_hardinessZone", state.hardinessZone);
   if (_fbReady && _fbUserId) {
     userRef('profile').set({
       gardenName: state.gardenName || '',
       gardenLocation: state.gardenLocation || '',
       phoneNumber: state.phoneNumber || '',
+      hardinessZone: state.hardinessZone || '',
       theme: state.theme || 'vintage',
       email: (state.authUser && state.authUser.email) || ''
     }).catch(e => console.warn('Firebase profile write failed:', e));
   }
   document.title = state.gardenName || 'PlantBuddy';
+  // After persisting, derive a hardiness zone if we don't already have one.
+  if (!state.hardinessZone && state.gardenLocation) {
+    deriveHardinessZone(state.gardenLocation);
+  }
+}
+
+// ===== HARDINESS ZONE DETECTION =====
+// Parses the user's gardenLocation for a USDA zone and stores it on the
+// profile. Used internally; not displayed as a marker on Plate II.
+function parseZoneFromString(loc) {
+  if (!loc) return null;
+  const m = String(loc).match(/zone\s*(\d{1,2})\s*([ab])?/i);
+  if (m) return m[1] + (m[2] || '').toLowerCase();
+  return null;
+}
+const CITY_ZONES = {
+  'cleveland':'6a','cincinnati':'6b','columbus':'6a','akron':'6a','toledo':'6a','dayton':'6a',
+  'new york':'7a','manhattan':'7a','brooklyn':'7b','queens':'7b','bronx':'7a','staten island':'7b',
+  'boston':'6b','philadelphia':'7b','pittsburgh':'6b','buffalo':'6a','rochester':'6a','syracuse':'6a',
+  'chicago':'6a','detroit':'6a','minneapolis':'4b','st paul':'4b','milwaukee':'5b','grand rapids':'6a',
+  'st louis':'7a','st. louis':'7a','kansas city':'6b','indianapolis':'6a','louisville':'7a',
+  'atlanta':'8a','charlotte':'8a','raleigh':'7b','nashville':'7b','memphis':'7b','birmingham':'8a',
+  'miami':'10b','orlando':'9b','tampa':'9b','jacksonville':'9a','new orleans':'9b',
+  'houston':'9a','dallas':'8a','austin':'8b','san antonio':'8b','fort worth':'8a',
+  'denver':'6a','salt lake city':'7a','boise':'7a','spokane':'6b',
+  'phoenix':'9b','tucson':'9b','las vegas':'9a','albuquerque':'7a','santa fe':'6a',
+  'san diego':'10b','los angeles':'10b','san francisco':'10b','san jose':'10a','sacramento':'9b','oakland':'10a',
+  'portland':'9a','seattle':'9a',
+  'washington':'7b','dc':'7b','baltimore':'7b','richmond':'7b','norfolk':'8a',
+  'omaha':'5b','des moines':'5b','wichita':'7a','tulsa':'7a','oklahoma city':'7a',
+  'hartford':'6b','providence':'6b','newark':'7a','jersey city':'7b',
+  'anchorage':'4b','honolulu':'12b'
+};
+function lookupCityZone(loc) {
+  if (!loc) return null;
+  const norm = String(loc).toLowerCase().replace(/[^a-z\s.]/g, ' ').replace(/\s+/g, ' ').trim();
+  const keys = Object.keys(CITY_ZONES).sort((a,b) => b.length - a.length);
+  for (const k of keys) if (norm.includes(k)) return CITY_ZONES[k];
+  return null;
+}
+function deriveHardinessZone(loc) {
+  const zone = parseZoneFromString(loc) || lookupCityZone(loc);
+  if (!zone) return;
+  state.hardinessZone = zone;
+  localStorage.setItem('pt_hardinessZone', zone);
+  if (_fbReady && _fbUserId && !isViewing()) userRef('profile/hardinessZone').set(zone).catch(()=>{});
+  render();
 }
 
 // ===== THEME TOGGLE =====
@@ -2318,6 +2368,10 @@ function initFirebaseSync() {
       if (profile.gardenName) { state.gardenName = profile.gardenName; localStorage.setItem("pt_gardenName", profile.gardenName); }
       if (profile.gardenLocation) { state.gardenLocation = profile.gardenLocation; localStorage.setItem("pt_gardenLocation", profile.gardenLocation); }
       if (profile.phoneNumber) { state.phoneNumber = profile.phoneNumber; localStorage.setItem("pt_phoneNumber", profile.phoneNumber); }
+      if (profile.hardinessZone) { state.hardinessZone = profile.hardinessZone; localStorage.setItem("pt_hardinessZone", profile.hardinessZone); }
+      if (state.gardenLocation && !state.hardinessZone && typeof deriveHardinessZone === 'function') {
+        setTimeout(() => deriveHardinessZone(state.gardenLocation), 200);
+      }
       if (profile.theme === 'modern' || profile.theme === 'vintage') {
         state.theme = profile.theme; localStorage.setItem("pt_theme", profile.theme);
         applyTheme();
@@ -5364,7 +5418,8 @@ function renderSettingsModal() {
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Garden Name</label>
       <input id="settingsName" type="text" value="${escHtml(state.gardenName)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone</label>
-      <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
+      <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" placeholder="e.g. Cleveland, OH or Zone 6a" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:4px;font-family:inherit">
+      ${state.hardinessZone ? `<p style="font-size:11px;color:#4ade80;margin:0 0 16px;font-style:italic">✓ USDA hardiness zone <strong>${escHtml(state.hardinessZone)}</strong> detected</p>` : `<p style="font-size:11px;color:#7a8a80;margin:0 0 16px;font-style:italic">Tip: include a major US city or your zone (e.g. "Zone 6a").</p>`}
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Phone Number <span style="font-style:italic;text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></label>
       <input id="settingsPhone" type="tel" value="${escHtml(state.phoneNumber)}" placeholder="e.g. +1 555 123 4567" autocomplete="tel" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
       <div style="margin-bottom:18px">
