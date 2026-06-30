@@ -1274,8 +1274,8 @@ button[onclick*="showAddPlant"]{
   width:18px;height:18px;
   vertical-align:middle;
 }
-/* Tolerance flags below the stat row on Plate I — same font as the
-   stats row above but NOT italic. */
+/* Tolerance flags below the stat row on Plate I — matches the
+   light/bloom row in font family, size, and italic style. */
 .plate-habit-flags{
   position:absolute;
   bottom:3%;
@@ -1284,9 +1284,9 @@ button[onclick*="showAddPlant"]{
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:12px;
+  gap:14px;
   font-family:'EB Garamond',Georgia,serif;
-  font-style:normal;
+  font-style:italic;
   font-size:12px;
   color:var(--text);
   letter-spacing:.2px;
@@ -4493,7 +4493,7 @@ function renderEncyclopedia(p) {
     p.rabbitResistant && 'Rabbit-safe',
     p.droughtTolerant && 'Drought',
     p.reblooming && 'Reblooming'
-  ].filter(Boolean).map(label => `<span class="flag">✓ ${label}</span>`).join('');
+  ].filter(Boolean).map(label => `<span class="flag">${label}</span>`).join('');
   const plateHabit = `
     <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
       <div class="plate-habit-stats">
