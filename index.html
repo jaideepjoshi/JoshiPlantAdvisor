@@ -1338,7 +1338,10 @@ button[onclick*="showAddPlant"]{
 /* Plate II: Particulars — text below the top-right inset */
 .plate-particulars .plate-overlay{
   position:relative;
-  padding-top:40%;  /* reserve room so .plate-desc starts BELOW the ledger + inset */
+  /* padding-% is relative to WIDTH. At 9:16 aspect the plate height
+     is ~1.78× width, so we need ~95% of width to land below the
+     ledger (which absolute-positions through ~42% of plate height). */
+  padding-top:95%;
 }
 /* Plate II ledger sits absolute in the top-LEFT next to the inset
    (the inset is baked into the top-right of the background image).
@@ -4612,7 +4615,11 @@ function renderEncyclopedia(p) {
     </div>`;
 
   // ---------- Plate II — Particulars ----------
-  // (Light/Bloom/Attracts + tolerance flags moved to Plate I.)
+  // Holds the at-a-glance ledger, description, Bloom Calendar, plus
+  // Foliage / Year-round / Light / Fertilization sub-sections.
+  const fertMonthStr = (p.fertMonth || []).length
+    ? p.fertMonth.map(m => MONTHS[m-1]).join(', ')
+    : '';
   const plateParticulars = `
     <div class="plate-page plate-particulars" data-idx="1" style="background-image:url('${p.plateBack}')">
       <div class="plate-overlay">
@@ -4628,23 +4635,6 @@ function renderEncyclopedia(p) {
           <div class="heading">Bloom Calendar</div>
           <div class="plate-bloom-strip">${monthsRow()}</div>
         </div>` : ''}
-      </div>
-    </div>`;
-
-  // ---------- Plate III — Seasons & Care ----------
-  const careCards = Object.entries(p.care || {})
-    .sort((a,b) => Number(a[0]) - Number(b[0]))
-    .map(([m,t]) =>
-      `<div class="plate-mo-card"><div class="mo">${MONTHS[Number(m)-1]}</div><div class="task">${escHtml(t)}</div></div>`
-    ).join('');
-  const fertMonthStr = (p.fertMonth || []).length
-    ? p.fertMonth.map(m => MONTHS[m-1]).join(', ')
-    : '';
-  const plateSeasons = `
-    <div class="plate-page no-bg" data-idx="2">
-      <div class="plate-overlay">
-        <div class="plate-title">Seasons & Care</div>
-        <div class="plate-subtitle">Foliage · Light · Fertilization · Yearly tasks</div>
         ${p.foliageInterest ? `<div class="plate-prose-block">
           <div class="heading">Foliage Highlight</div>
           <div class="body">${escHtml(p.foliageInterest)}</div>
@@ -4661,11 +4651,24 @@ function renderEncyclopedia(p) {
           <div class="heading">Suggested Fertilization</div>
           <div class="body">${escHtml(p.fertilizer)}${fertMonthStr ? ` <em style="color:var(--text-mid)">(apply: ${fertMonthStr})</em>` : ''}</div>
         </div>` : ''}
-        ${careCards ? `<div class="plate-section-divider"></div>
-          <div class="plate-prose-block">
-            <div class="heading">Monthly Care <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
-            <div class="plate-h-scroll">${careCards}</div>
-          </div>` : ''}
+      </div>
+    </div>`;
+
+  // ---------- Plate III — Monthly Care ----------
+  const careCards = Object.entries(p.care || {})
+    .sort((a,b) => Number(a[0]) - Number(b[0]))
+    .map(([m,t]) =>
+      `<div class="plate-mo-card"><div class="mo">${MONTHS[Number(m)-1]}</div><div class="task">${escHtml(t)}</div></div>`
+    ).join('');
+  const plateSeasons = `
+    <div class="plate-page no-bg" data-idx="2">
+      <div class="plate-overlay">
+        <div class="plate-title">Monthly Care</div>
+        <div class="plate-subtitle">A year's tasks at a glance</div>
+        ${careCards ? `<div class="plate-prose-block">
+          <div class="heading">Yearly Schedule <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
+          <div class="plate-h-scroll">${careCards}</div>
+        </div>` : '<p style="font-family:EB Garamond,serif;font-style:italic;color:var(--text-mid)">No monthly tasks recorded.</p>'}
       </div>
     </div>`;
 
@@ -4793,7 +4796,7 @@ function renderEncyclopedia(p) {
     </div>`;
 
   const pages = [plateHabit, plateParticulars, plateSeasons, plateCompanions, plateJournal];
-  const titles = ['Habit','Particulars','Seasons','Companions','Journal'];
+  const titles = ['Habit','Particulars','Care','Companions','Journal'];
   const dots = pages.map((_,i) =>
     `<div class="plate-dot${i===idx?' active':''}" onclick="goToPlate(${i})"></div>`
   ).join('');
@@ -4827,7 +4830,7 @@ function onPlateScroll(e) {
     state.currentPlate = newIdx;
     // Update caption + dots without a full re-render (avoids scroll jump)
     const caption = document.querySelector('.plate-caption');
-    const titles = ['Habit','Particulars','Seasons','Companions','Journal'];
+    const titles = ['Habit','Particulars','Care','Companions','Journal'];
     if (caption) {
       const num = caption.querySelector('.plate-num');
       if (num) num.textContent = ROMAN[newIdx] || (newIdx+1);
