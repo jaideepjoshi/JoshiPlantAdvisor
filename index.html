@@ -1238,32 +1238,30 @@ button[onclick*="showAddPlant"]{
 /* Plate I (Habit) — small stat row overlaid in the gap below the baked
    botanical name and above the bottom border. Shows the three most
    common-glance attributes: Light, Bloom, Attracts. */
-/* Attracts group: hummingbird (top) + bee/butterfly (below). Tight gap
-   inside the group, larger gap below to the Light/Bloom line. */
+/* Attracts row: single horizontal line, hummingbird leading the bees
+   and butterflies. */
 .plate-habit-pollinators{
   position:absolute;
-  bottom:11%;
+  bottom:10%;
   left:8%;
   right:8%;
   display:flex;
-  flex-direction:column;
+  flex-direction:row;
   align-items:center;
-  gap:0;
+  justify-content:center;
+  gap:10px;
   pointer-events:none;
 }
-.plate-habit-pollinators .row{
-  display:flex;
-  justify-content:center;
+.plate-habit-pollinators span{
+  display:inline-flex;
   align-items:center;
-  gap:8px;
-  line-height:1;
 }
 .plate-habit-pollinators .hum svg{
   width:34px;height:34px;
   vertical-align:middle;
-  margin-bottom:-4px; /* nudge bee/butterfly closer */
 }
-.plate-habit-pollinators .ba svg{
+.plate-habit-pollinators .bee svg,
+.plate-habit-pollinators .butterfly svg{
   width:22px;height:22px;
   vertical-align:middle;
 }
@@ -4509,11 +4507,9 @@ function renderEncyclopedia(p) {
   const hasHummingbird = attractsArr.some(a => a.startsWith('hum'));
   const hasBees = attractsArr.some(a => a.startsWith('bee'));
   const hasButterflies = attractsArr.some(a => a.startsWith('but'));
-  const habitAttractsIcons = [
-    hasBees ? plateGlyph('bee') : '',
-    hasButterflies ? plateGlyph('butterfly') : ''
-  ].filter(Boolean).join('');
   const habitHummingbirdIcon = hasHummingbird ? plateGlyph('hummingbird') : '';
+  const habitBeeIcon = hasBees ? plateGlyph('bee') : '';
+  const habitButterflyIcon = hasButterflies ? plateGlyph('butterfly') : '';
   const habitFlags = [
     p.deerResistant && 'Deer-safe',
     p.rabbitResistant && 'Rabbit-safe',
@@ -4522,9 +4518,10 @@ function renderEncyclopedia(p) {
   ].filter(Boolean).map(label => `<span class="flag">${label}</span>`).join('');
   const plateHabit = `
     <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
-      ${(habitHummingbirdIcon || habitAttractsIcons) ? `<div class="plate-habit-pollinators">
-        ${habitHummingbirdIcon ? `<div class="row hum">${habitHummingbirdIcon}</div>` : ''}
-        ${habitAttractsIcons ? `<div class="row ba">${habitAttractsIcons}</div>` : ''}
+      ${(habitHummingbirdIcon || habitBeeIcon || habitButterflyIcon) ? `<div class="plate-habit-pollinators">
+        ${habitHummingbirdIcon ? `<span class="hum">${habitHummingbirdIcon}</span>` : ''}
+        ${habitBeeIcon ? `<span class="bee">${habitBeeIcon}</span>` : ''}
+        ${habitButterflyIcon ? `<span class="butterfly">${habitButterflyIcon}</span>` : ''}
       </div>` : ''}
       <div class="plate-habit-stats">
         ${p.sun ? `<div class="stat"><span class="ico">☀</span><span>${escHtml(p.sun)}</span></div>` : ''}
