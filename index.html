@@ -263,7 +263,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
    Override block. Remaps the dark green app to a cream parchment
    field-guide aesthetic. Branch: vintage-theme.
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Caveat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Pinyon+Script&family=Tangerine:wght@400;700&family=Petit+Formal+Script&family=Caveat:wght@400;500;600;700&display=swap');
 
 :root{
   --green:#5a6f4a;--green-mid:#6b7e5a;--green-light:#7a8d6a;
@@ -300,10 +300,13 @@ body{
   position:sticky;
 }
 .header h1{
-  font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;
-  font-style:italic;font-weight:600;
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif;
+  font-style:normal;font-weight:400;
   background:none;-webkit-text-fill-color:initial;
-  color:var(--text);letter-spacing:0;font-size:30px;line-height:1.1;
+  color:var(--text);letter-spacing:.5px;
+  font-size:46px;line-height:1.05;
+  margin-bottom:0;
+  text-shadow:0 1px 0 rgba(255,250,235,.4);
 }
 .header p{
   color:var(--text-mid);
@@ -355,8 +358,10 @@ body{
 }
 .card .placeholder span{ color:var(--text-mid) !important; }
 .card-body h3{
-  font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;
-  font-style:italic;font-weight:600;color:var(--text);font-size:16px;line-height:1.2;
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif;
+  font-style:normal;font-weight:400;color:var(--text);
+  font-size:24px;line-height:1.1;letter-spacing:.3px;
+  margin-bottom:4px;
 }
 .card-body .meta{
   color:var(--text-mid);
@@ -388,8 +393,9 @@ body{
 .detail-hero .hero-back:hover{ background:#fff; }
 .detail-hero .hero-back svg{ stroke:var(--text); }
 .detail-hero h2{
-  font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;
-  font-style:italic;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.7);font-weight:600;
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif;
+  font-style:normal;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.8),0 1px 3px rgba(0,0,0,.6);
+  font-weight:400;font-size:38px;letter-spacing:.5px;line-height:1.1;
 }
 .detail-hero .hero-sub{ color:rgba(255,250,235,.9);font-style:italic; }
 
@@ -401,8 +407,9 @@ body{
   box-shadow:0 1px 4px rgba(120,90,40,.1);
 }
 .ds-head h3{
-  font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;
-  font-style:italic;font-weight:600;color:var(--text);font-size:17px;
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif;
+  font-style:normal;font-weight:400;color:var(--text);
+  font-size:26px;letter-spacing:.4px;line-height:1.1;
 }
 .ds-icon{ box-shadow:0 1px 3px rgba(120,90,40,.15); }
 .ds-content,.ds-content p,.ds-content div,.ds-content span,.ds-content li{ color:var(--text); }
@@ -443,7 +450,8 @@ body{
 .beds-toolbar button.active{ background:var(--green);color:#f9f2e2;border-color:var(--green); }
 .bed-name-input{
   color:var(--text);border-bottom:1px solid var(--gold-light);
-  font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;font-style:italic;
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif;
+  font-style:normal;font-size:22px;font-weight:400;
 }
 
 /* Month strip */
@@ -461,8 +469,9 @@ body{
   border:1px solid var(--gold-light) !important;
 }
 .bed-recs h3{
-  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;
-  color:var(--text);
+  font-family:'Pinyon Script','Cormorant Garamond',Georgia,serif;
+  font-style:normal;font-weight:400;color:var(--text);
+  font-size:22px;letter-spacing:.3px;
 }
 .bed-rec-item{ color:var(--text); }
 .bed-rec-item:hover{ background:rgba(156,124,60,.1); }
