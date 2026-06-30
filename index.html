@@ -1379,6 +1379,20 @@ button[onclick*="showAddPlant"]{
   flex:1;
   font-size:13px;
 }
+.plate-particulars .plate-bloom-section{
+  margin-top:14px;
+}
+.plate-particulars .plate-bloom-section .heading{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-weight:700;
+  font-size:13px;
+  color:var(--text);
+  margin-bottom:6px;
+}
+.plate-particulars .plate-bloom-section .plate-bloom-strip{
+  margin:0;
+}
 
 .plate-attracts{
   margin:6px 0 8px;
@@ -4615,6 +4629,10 @@ function renderEncyclopedia(p) {
           <div class="row"><span class="lbl">Soil pH</span><span class="val">${p.ph||'—'}</span></div>
         </div>
         ${p.description ? `<div class="plate-desc">${escHtml(p.description)}</div>` : ''}
+        ${(p.bloomMonths && p.bloomMonths.length) ? `<div class="plate-bloom-section">
+          <div class="heading">Bloom Calendar</div>
+          <div class="plate-bloom-strip">${monthsRow()}</div>
+        </div>` : ''}
       </div>
     </div>`;
 
@@ -4631,11 +4649,7 @@ function renderEncyclopedia(p) {
     <div class="plate-page no-bg" data-idx="2">
       <div class="plate-overlay">
         <div class="plate-title">Seasons & Care</div>
-        <div class="plate-subtitle">Bloom · Foliage · Yearly tasks</div>
-        <div class="plate-prose-block">
-          <div class="heading">Bloom Calendar</div>
-          <div class="plate-bloom-strip">${monthsRow()}</div>
-        </div>
+        <div class="plate-subtitle">Foliage · Year-round interest · Yearly tasks</div>
         ${p.foliageInterest ? `<div class="plate-prose-block">
           <div class="heading">Foliage</div>
           <div class="body">${escHtml(p.foliageInterest)}</div>
