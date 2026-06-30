@@ -1240,7 +1240,7 @@ button[onclick*="showAddPlant"]{
    common-glance attributes: Light, Bloom, Attracts. */
 .plate-habit-stats{
   position:absolute;
-  bottom:2.5%;
+  bottom:4.5%;
   left:8%;
   right:8%;
   display:flex;
@@ -1273,6 +1273,29 @@ button[onclick*="showAddPlant"]{
 .plate-habit-stats .attracts svg{
   width:18px;height:18px;
   vertical-align:middle;
+}
+/* Tolerance flags below the stat row on Plate I */
+.plate-habit-flags{
+  position:absolute;
+  bottom:1%;
+  left:6%;
+  right:6%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  font-family:'EB Garamond',Georgia,serif;
+  font-style:italic;
+  font-size:10px;
+  color:var(--text-mid);
+  letter-spacing:.2px;
+  pointer-events:none;
+  text-shadow:0 1px 0 rgba(255,250,235,.65);
+  flex-wrap:wrap;
+}
+.plate-habit-flags .flag{
+  white-space:nowrap;
+  color:var(--text);
 }
 .plate-title{
   font-family:'Pinyon Script',serif;
@@ -4465,6 +4488,13 @@ function renderEncyclopedia(p) {
       if (k === 'butterflies') return plateGlyph('butterfly');
       return plateGlyph('bird');
     }).join('');
+  const habitFlags = [
+    p.deerResistant && 'Deer-safe',
+    p.rabbitResistant && 'Rabbit-safe',
+    p.droughtTolerant && 'Drought',
+    p.reblooming && 'Reblooming',
+    p.nativeOhio && 'Native'
+  ].filter(Boolean).map(label => `<span class="flag">✓ ${label}</span>`).join('');
   const plateHabit = `
     <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
       <div class="plate-habit-stats">
@@ -4472,11 +4502,11 @@ function renderEncyclopedia(p) {
         ${fmtBloom() && fmtBloom() !== '—' ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(fmtBloom())}</span></div>` : ''}
         ${habitAttractsIcons ? `<div class="stat attracts">${habitAttractsIcons}</div>` : ''}
       </div>
+      ${habitFlags ? `<div class="plate-habit-flags">${habitFlags}</div>` : ''}
     </div>`;
 
   // ---------- Plate II — Particulars ----------
-  // (Light/Bloom/Attracts moved to Plate I — kept off here to avoid duplication.)
-  const flagYes = (b) => b ? 'yes' : 'no';
+  // (Light/Bloom/Attracts + tolerance flags moved to Plate I.)
   const plateParticulars = `
     <div class="plate-page plate-particulars" data-idx="1" style="background-image:url('${p.plateBack}')">
       <div class="plate-overlay">
@@ -4485,13 +4515,6 @@ function renderEncyclopedia(p) {
           <div class="row"><span class="lbl">Width</span><span class="val">${p.width||'—'}</span></div>
           <div class="row"><span class="lbl">Water</span><span class="val">${p.waterReq||'—'}</span></div>
           <div class="row"><span class="lbl">Soil pH</span><span class="val">${p.ph||'—'}</span></div>
-        </div>
-        <div class="plate-flags">
-          <span class="${flagYes(p.deerResistant)}">Deer-safe</span>
-          <span class="${flagYes(p.rabbitResistant)}">Rabbit-safe</span>
-          <span class="${flagYes(p.droughtTolerant)}">Drought</span>
-          <span class="${flagYes(p.reblooming)}">Reblooming</span>
-          <span class="${flagYes(p.nativeOhio)}">Native</span>
         </div>
         ${p.description ? `<div class="plate-desc">${escHtml(p.description)}</div>` : ''}
       </div>
