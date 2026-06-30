@@ -1379,6 +1379,14 @@ button[onclick*="showAddPlant"]{
   flex:1;
   font-size:13px;
 }
+.plate-particulars .plate-ledger .zone-mark{
+  margin-left:6px;
+  font-style:normal;
+  font-weight:400;
+  font-size:12px;
+}
+.plate-particulars .plate-ledger .zone-mark.hardy{ color:var(--green-accent); }
+.plate-particulars .plate-ledger .zone-mark.warn{ color:#a04020; }
 
 .plate-attracts{
   margin:6px 0 8px;
@@ -1682,6 +1690,7 @@ let state = {
   gardenName: localStorage.getItem("pt_gardenName") || "",
   gardenLocation: localStorage.getItem("pt_gardenLocation") || "",
   phoneNumber: localStorage.getItem("pt_phoneNumber") || "",
+  hardinessZone: localStorage.getItem("pt_hardinessZone") || "",
   theme: localStorage.getItem("pt_theme") || "vintage",  // 'modern' | 'vintage'
   currentPlate: 0,  // Active encyclopedia page (when viewing a multi-plate plant)
   // Auth state
@@ -1909,16 +1918,105 @@ function saveProfile() {
   localStorage.setItem("pt_gardenLocation", state.gardenLocation || "");
   localStorage.setItem("pt_phoneNumber", state.phoneNumber || "");
   localStorage.setItem("pt_theme", state.theme || "vintage");
+  if (state.hardinessZone) localStorage.setItem("pt_hardinessZone", state.hardinessZone);
   if (_fbReady && _fbUserId) {
     userRef('profile').set({
       gardenName: state.gardenName || '',
       gardenLocation: state.gardenLocation || '',
       phoneNumber: state.phoneNumber || '',
+      hardinessZone: state.hardinessZone || '',
       theme: state.theme || 'vintage',
       email: (state.authUser && state.authUser.email) || ''
     }).catch(e => console.warn('Firebase profile write failed:', e));
   }
   document.title = state.gardenName || 'PlantBuddy';
+  // After persisting, try to derive a hardiness zone if we don't already have one.
+  // Async; updates state and re-renders when it lands.
+  if (!state.hardinessZone && state.gardenLocation) {
+    deriveHardinessZone(state.gardenLocation);
+  }
+}
+
+// ===== HARDINESS ZONE =====
+// Derive a USDA zone from the user's gardenLocation string.
+// Two paths:
+//   1. Parse "Zone 6a" / "zone 5b" / "USDA 7" directly from the string (sync, free).
+//   2. Fall back: extract a 5-digit ZIP and look it up via phzmapi.org (async, free, US-only).
+function parseZoneFromString(loc) {
+  if (!loc) return null;
+  const m = String(loc).match(/zone\s*(\d{1,2})\s*([ab])?/i);
+  if (m) return m[1] + (m[2] || '').toLowerCase();
+  return null;
+}
+function parseZipFromString(loc) {
+  if (!loc) return null;
+  const m = String(loc).match(/\b(\d{5})\b/);
+  return m ? m[1] : null;
+}
+// Lookup table: most-populous US metro areas → USDA zone. Coarse but
+// covers the majority of US users who type just a city name.
+const CITY_ZONES = {
+  'cleveland':'6a','cincinnati':'6b','columbus':'6a','akron':'6a','toledo':'6a','dayton':'6a',
+  'new york':'7a','manhattan':'7a','brooklyn':'7b','queens':'7b','bronx':'7a','staten island':'7b',
+  'boston':'6b','philadelphia':'7b','pittsburgh':'6b','buffalo':'6a','rochester':'6a','syracuse':'6a',
+  'chicago':'6a','detroit':'6a','minneapolis':'4b','st paul':'4b','milwaukee':'5b','grand rapids':'6a',
+  'st louis':'7a','st. louis':'7a','kansas city':'6b','indianapolis':'6a','louisville':'7a',
+  'atlanta':'8a','charlotte':'8a','raleigh':'7b','nashville':'7b','memphis':'7b','birmingham':'8a',
+  'miami':'10b','orlando':'9b','tampa':'9b','jacksonville':'9a','new orleans':'9b',
+  'houston':'9a','dallas':'8a','austin':'8b','san antonio':'8b','fort worth':'8a',
+  'denver':'6a','salt lake city':'7a','boise':'7a','spokane':'6b',
+  'phoenix':'9b','tucson':'9b','las vegas':'9a','albuquerque':'7a','santa fe':'6a',
+  'san diego':'10b','los angeles':'10b','san francisco':'10b','san jose':'10a','sacramento':'9b','oakland':'10a',
+  'portland':'9a','seattle':'9a',
+  'washington':'7b','dc':'7b','baltimore':'7b','richmond':'7b','norfolk':'8a',
+  'omaha':'5b','des moines':'5b','wichita':'7a','tulsa':'7a','oklahoma city':'7a',
+  'hartford':'6b','providence':'6b','newark':'7a','jersey city':'7b',
+  'anchorage':'4b','honolulu':'12b'
+};
+function lookupCityZone(loc) {
+  if (!loc) return null;
+  const norm = String(loc).toLowerCase().replace(/[^a-z\s.]/g, ' ').replace(/\s+/g, ' ').trim();
+  // Try multi-word city names first (longer wins), then single-word
+  const keys = Object.keys(CITY_ZONES).sort((a,b) => b.length - a.length);
+  for (const k of keys) {
+    if (norm.includes(k)) return CITY_ZONES[k];
+  }
+  return null;
+}
+function deriveHardinessZone(loc) {
+  // 1. Direct parse — "Zone 6a", "USDA 7", etc.
+  const direct = parseZoneFromString(loc);
+  if (direct) {
+    state.hardinessZone = direct;
+    localStorage.setItem('pt_hardinessZone', direct);
+    if (_fbReady && _fbUserId && !isViewing()) userRef('profile/hardinessZone').set(direct).catch(()=>{});
+    render();
+    return;
+  }
+  // 2. City lookup — built-in table of major US metros
+  const cityZone = lookupCityZone(loc);
+  if (cityZone) {
+    state.hardinessZone = cityZone;
+    localStorage.setItem('pt_hardinessZone', cityZone);
+    if (_fbReady && _fbUserId && !isViewing()) userRef('profile/hardinessZone').set(cityZone).catch(()=>{});
+    render();
+    return;
+  }
+  // 3. No reliable derivation — user can enter explicit zone in settings.
+}
+// Compare a plant's hardiness range to the user's zone.
+// Returns 'hardy' | 'too-cold' | 'too-warm' | null (no data)
+function plantIsHardyHere(p) {
+  if (!p || !p.hardiness || !state.hardinessZone) return null;
+  const range = String(p.hardiness).match(/(\d{1,2})\s*-\s*(\d{1,2})/);
+  if (!range) return null;
+  const min = parseInt(range[1], 10);
+  const max = parseInt(range[2], 10);
+  const u = parseInt(String(state.hardinessZone), 10);
+  if (isNaN(u)) return null;
+  if (u < min) return 'too-cold';
+  if (u > max) return 'too-warm';
+  return 'hardy';
 }
 
 // ===== THEME TOGGLE =====
@@ -2318,6 +2416,12 @@ function initFirebaseSync() {
       if (profile.gardenName) { state.gardenName = profile.gardenName; localStorage.setItem("pt_gardenName", profile.gardenName); }
       if (profile.gardenLocation) { state.gardenLocation = profile.gardenLocation; localStorage.setItem("pt_gardenLocation", profile.gardenLocation); }
       if (profile.phoneNumber) { state.phoneNumber = profile.phoneNumber; localStorage.setItem("pt_phoneNumber", profile.phoneNumber); }
+      if (profile.hardinessZone) { state.hardinessZone = profile.hardinessZone; localStorage.setItem("pt_hardinessZone", profile.hardinessZone); }
+      // Derive hardiness zone if we have a location but no zone yet (one-time backfill
+      // for users who set their location before this feature existed)
+      if (state.gardenLocation && !state.hardinessZone && typeof deriveHardinessZone === 'function') {
+        setTimeout(() => deriveHardinessZone(state.gardenLocation), 200);
+      }
       if (profile.theme === 'modern' || profile.theme === 'vintage') {
         state.theme = profile.theme; localStorage.setItem("pt_theme", profile.theme);
         applyTheme();
@@ -4554,7 +4658,14 @@ function renderEncyclopedia(p) {
     <div class="plate-page plate-particulars" data-idx="1" style="background-image:url('${p.plateBack}')">
       <div class="plate-overlay">
         <div class="plate-ledger">
-          ${p.hardiness ? `<div class="row"><span class="lbl">Hardiness</span><span class="val">Zone ${escHtml(p.hardiness)}</span></div>` : ''}
+          ${p.hardiness ? (() => {
+            const fit = plantIsHardyHere(p);
+            const mark = fit === 'hardy' ? ' <span class="zone-mark hardy" title="Hardy in your zone (' + state.hardinessZone + ')">✓</span>'
+                       : fit === 'too-cold' ? ' <span class="zone-mark warn" title="Your zone is too cold for this plant">⚠</span>'
+                       : fit === 'too-warm' ? ' <span class="zone-mark warn" title="Your zone is warmer than this plant prefers">⚠</span>'
+                       : '';
+            return `<div class="row"><span class="lbl">Hardiness</span><span class="val">Zone ${escHtml(p.hardiness)}${mark}</span></div>`;
+          })() : ''}
           <div class="row"><span class="lbl">Height</span><span class="val">${p.height||'—'}</span></div>
           <div class="row"><span class="lbl">Width</span><span class="val">${p.width||'—'}</span></div>
           <div class="row"><span class="lbl">Water</span><span class="val">${p.waterReq||'—'}</span></div>
@@ -5364,7 +5475,8 @@ function renderSettingsModal() {
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Garden Name</label>
       <input id="settingsName" type="text" value="${escHtml(state.gardenName)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Location &amp; Zone</label>
-      <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:16px;font-family:inherit">
+      <input id="settingsLocation" type="text" value="${escHtml(state.gardenLocation)}" placeholder="e.g. Cleveland, OH 44106 or Zone 6a" autocomplete="off" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:4px;font-family:inherit">
+      ${state.hardinessZone ? `<p style="font-size:11px;color:#4ade80;margin:0 0 16px;font-style:italic">✓ USDA hardiness zone <strong>${escHtml(state.hardinessZone)}</strong> detected</p>` : `<p style="font-size:11px;color:#7a8a80;margin:0 0 16px;font-style:italic">Tip: include a major US city (e.g. "Cleveland, OH") or your zone ("Zone 6a"). <a href="https://planthardiness.ars.usda.gov/" target="_blank" rel="noopener" style="color:#4ade80">Find your zone</a>.</p>`}
       <label style="display:block;font-size:12px;color:#7a8a80;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Phone Number <span style="font-style:italic;text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></label>
       <input id="settingsPhone" type="tel" value="${escHtml(state.phoneNumber)}" placeholder="e.g. +1 555 123 4567" autocomplete="tel" style="width:100%;padding:11px 13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#e8ece9;font-size:15px;outline:none;margin-bottom:22px;font-family:inherit">
       <div style="margin-bottom:18px">
