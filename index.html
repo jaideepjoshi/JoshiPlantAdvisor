@@ -1238,35 +1238,32 @@ button[onclick*="showAddPlant"]{
 /* Plate I (Habit) — small stat row overlaid in the gap below the baked
    botanical name and above the bottom border. Shows the three most
    common-glance attributes: Light, Bloom, Attracts. */
-/* Hummingbird row — appears ONLY if plant.attracts includes "Hummingbirds".
-   Sits at the top of the bottom-stack, above the bee/butterfly row. */
-.plate-habit-hummingbird{
+/* Attracts group: hummingbird (top) + bee/butterfly (below). Tight gap
+   inside the group, larger gap below to the Light/Bloom line. */
+.plate-habit-pollinators{
   position:absolute;
-  bottom:12.5%;
+  bottom:11%;
   left:8%;
   right:8%;
   display:flex;
-  justify-content:center;
+  flex-direction:column;
   align-items:center;
+  gap:0;
   pointer-events:none;
 }
-.plate-habit-hummingbird svg{
-  width:34px;height:34px;
-  vertical-align:middle;
-}
-/* Attracts row — hand-drawn glyphs above the Light/Bloom line */
-.plate-habit-attracts{
-  position:absolute;
-  bottom:9%;
-  left:8%;
-  right:8%;
+.plate-habit-pollinators .row{
   display:flex;
   justify-content:center;
   align-items:center;
   gap:8px;
-  pointer-events:none;
+  line-height:1;
 }
-.plate-habit-attracts svg{
+.plate-habit-pollinators .hum svg{
+  width:34px;height:34px;
+  vertical-align:middle;
+  margin-bottom:-4px; /* nudge bee/butterfly closer */
+}
+.plate-habit-pollinators .ba svg{
   width:22px;height:22px;
   vertical-align:middle;
 }
@@ -4525,8 +4522,10 @@ function renderEncyclopedia(p) {
   ].filter(Boolean).map(label => `<span class="flag">${label}</span>`).join('');
   const plateHabit = `
     <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
-      ${habitHummingbirdIcon ? `<div class="plate-habit-hummingbird">${habitHummingbirdIcon}</div>` : ''}
-      ${habitAttractsIcons ? `<div class="plate-habit-attracts">${habitAttractsIcons}</div>` : ''}
+      ${(habitHummingbirdIcon || habitAttractsIcons) ? `<div class="plate-habit-pollinators">
+        ${habitHummingbirdIcon ? `<div class="row hum">${habitHummingbirdIcon}</div>` : ''}
+        ${habitAttractsIcons ? `<div class="row ba">${habitAttractsIcons}</div>` : ''}
+      </div>` : ''}
       <div class="plate-habit-stats">
         ${p.sun ? `<div class="stat"><span class="ico">☀</span><span>${escHtml(p.sun)}</span></div>` : ''}
         ${fmtBloom() && fmtBloom() !== '—' ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(fmtBloom())}</span></div>` : ''}
