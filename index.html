@@ -4649,28 +4649,28 @@ function renderEncyclopedia(p) {
     <div class="plate-page no-bg" data-idx="2">
       <div class="plate-overlay">
         <div class="plate-title">Seasons & Care</div>
-        <div class="plate-subtitle">Foliage · Light · Fertilization · Yearly tasks</div>
+        <div class="plate-subtitle">Foliage · Year-round interest · Yearly tasks</div>
         ${p.foliageInterest ? `<div class="plate-prose-block">
-          <div class="heading">Foliage Highlight</div>
+          <div class="heading">Foliage</div>
           <div class="body">${escHtml(p.foliageInterest)}</div>
         </div>` : ''}
         ${p.yearRound ? `<div class="plate-prose-block">
-          <div class="heading">Year Round Interest</div>
+          <div class="heading">Year-round Interest</div>
           <div class="body">${escHtml(p.yearRound)}</div>
-        </div>` : ''}
-        ${p.sun ? `<div class="plate-prose-block">
-          <div class="heading">Light Preference</div>
-          <div class="body">${escHtml(p.sun)}${p.regionalLightNote ? ` <em style="color:var(--text-mid)">— ${escHtml(p.regionalLightNote)}</em>` : ''}</div>
-        </div>` : ''}
-        ${p.fertilizer ? `<div class="plate-prose-block">
-          <div class="heading">Suggested Fertilization</div>
-          <div class="body">${escHtml(p.fertilizer)}${fertMonthStr ? ` <em style="color:var(--text-mid)">(apply: ${fertMonthStr})</em>` : ''}</div>
         </div>` : ''}
         ${careCards ? `<div class="plate-section-divider"></div>
           <div class="plate-prose-block">
             <div class="heading">Monthly Care <span style="font-size:11px;font-style:italic;color:var(--text-light)">— swipe →</span></div>
             <div class="plate-h-scroll">${careCards}</div>
           </div>` : ''}
+        ${p.fertilizer ? `<div class="plate-prose-block">
+          <div class="heading">Fertilizer</div>
+          <div class="body">${escHtml(p.fertilizer)}${fertMonthStr ? ` <em style="color:var(--text-mid)">(apply: ${fertMonthStr})</em>` : ''}</div>
+        </div>` : ''}
+        ${p.regionalLightNote ? `<div class="plate-prose-block">
+          <div class="heading">Light Notes</div>
+          <div class="body">${escHtml(p.regionalLightNote)}</div>
+        </div>` : ''}
       </div>
     </div>`;
 
