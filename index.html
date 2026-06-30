@@ -659,6 +659,166 @@ button[onclick*="showAddPlant"]{
   border-bottom:1px solid var(--gold-light) !important;
 }
 .plate-detail .hero-stat svg{ stroke:var(--text-mid) !important; }
+
+/* ============================================================
+   NUKE inner rounded boxes inside section panels
+   Flattens every nested inline-styled card (cultivar entries, care month
+   rows, companion suggestions, pairing chips, tag pills, etc.) so the
+   notebook page reads as a continuous ruled sheet.
+   ============================================================ */
+
+/* Flatten every nested element by default */
+.plate-detail .ds .ds-content div,
+.plate-detail .ds .ds-content span,
+.plate-detail .ds .ds-content p,
+.plate-detail .ds > div > div:not(:first-child) div,
+.plate-detail .ds > div > div:not(:first-child) span,
+.plate-detail .ds > div > div:not(:first-child) p{
+  background:transparent !important;
+  background-color:transparent !important;
+  box-shadow:none !important;
+}
+.plate-detail .ds .ds-content div,
+.plate-detail .ds > div > div:not(:first-child) div{
+  border-radius:0 !important;
+}
+
+/* Bordered containers (cultivar entries, add buttons, etc.): drop the box,
+   keep a soft sepia bottom rule so rows still feel separated */
+.plate-detail .ds .ds-content div[style*="border:"][style*="border-radius"],
+.plate-detail .ds .ds-content div[style*="border:1px"],
+.plate-detail .ds .ds-content div[style*="border:1.5px"],
+.plate-detail .ds > div > div div[style*="border:"][style*="border-radius"]{
+  border:none !important;
+  border-bottom:1px dotted rgba(120,90,40,.25) !important;
+  padding-left:0 !important;
+  padding-right:0 !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+
+/* Inline color spans inside sections: switch to sepia + italic Garamond */
+.plate-detail .ds span[style*="color:#"]:not(.badge),
+.plate-detail .ds div[style*="color:#"]:not(.task-check):not(.ds-icon){
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+}
+.plate-detail .ds span[style*="font-weight:600"],
+.plate-detail .ds span[style*="font-weight:700"]{
+  color:var(--text) !important;
+}
+
+/* PROTECTED elements — keep their vintage styling */
+.plate-detail .ds .task-check{
+  background:rgba(255,250,235,.6) !important;
+  border:1.5px solid var(--gold-light) !important;
+  border-radius:4px !important;
+  box-shadow:none !important;
+  color:var(--text) !important;
+}
+.plate-detail .ds .task-check.done{
+  background:rgba(90,111,74,.18) !important;
+  border-color:var(--green) !important;
+  color:var(--green-accent) !important;
+}
+.plate-detail .ds textarea,
+.plate-detail .ds input[type="text"]{
+  background:rgba(255,250,235,.5) !important;
+  border:1px solid var(--gold-light) !important;
+  border-radius:4px !important;
+  box-shadow:none !important;
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  padding:8px 10px !important;
+}
+.plate-detail .ds .tag-pill,
+.plate-detail .ds .cultivar-item{
+  background:rgba(255,250,235,.6) !important;
+  border:1px solid var(--gold-light) !important;
+  border-radius:14px !important;
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic !important;
+  padding:4px 11px !important;
+  display:inline-block !important;
+}
+.plate-detail .ds .bloom-cell{
+  background:rgba(255,250,235,.5) !important;
+  color:var(--text-mid) !important;
+  border:1px solid var(--gold-light) !important;
+  border-radius:4px !important;
+}
+.plate-detail .ds .bloom-cell.bloom-on{
+  background:linear-gradient(135deg,#5a6f4a,#6b7e5a) !important;
+  color:#f9f2e2 !important;
+  border-color:var(--green) !important;
+}
+
+/* Care month rows: ledger style, italic month label */
+.plate-detail .ds .care-month{
+  background:transparent !important;
+  border:none !important;
+  border-bottom:1px dotted rgba(120,90,40,.18) !important;
+  border-radius:0 !important;
+  padding:8px 4px !important;
+  display:flex;align-items:baseline;gap:14px;
+  font-family:'EB Garamond',Georgia,serif !important;
+  color:var(--text) !important;
+}
+.plate-detail .ds .care-month .mo{
+  font-family:'Cormorant Garamond',Georgia,serif !important;
+  font-style:italic !important;
+  color:var(--text-mid) !important;
+  min-width:60px;
+  font-size:16px !important;
+  background:none !important;
+  border:none !important;
+  padding:0 !important;
+}
+
+/* Buttons inside sections (Add cultivar / Scan tag / etc.): flat sepia outline */
+.plate-detail .ds button,
+.plate-detail .ds div[onclick][style*="dashed"]{
+  background:transparent !important;
+  border:1px dashed var(--gold-light) !important;
+  border-radius:4px !important;
+  color:var(--text-mid) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic !important;
+  font-weight:500 !important;
+  box-shadow:none !important;
+}
+.plate-detail .ds button:hover,
+.plate-detail .ds div[onclick][style*="dashed"]:hover{
+  background:rgba(255,250,235,.4) !important;
+  border-color:var(--gold) !important;
+  color:var(--text) !important;
+}
+
+/* Pairing chips: flat with thin gold outline */
+.plate-detail .ds span[style*="border-radius:20px"]{
+  background:rgba(255,250,235,.5) !important;
+  border:1px solid var(--gold-light) !important;
+  border-radius:14px !important;
+  color:var(--text) !important;
+}
+.plate-detail .ds span[style*="border-radius:20px"] a{
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  font-style:italic !important;
+}
+
+/* Companion card grid: flatten the colored gradient cards into named rows */
+.plate-detail .ds a[style*="background:linear-gradient"],
+.plate-detail .ds .bed-rec-item{
+  background:transparent !important;
+  border:none !important;
+  border-bottom:1px dotted rgba(120,90,40,.18) !important;
+  border-radius:0 !important;
+  color:var(--text) !important;
+  font-family:'EB Garamond',Georgia,serif !important;
+  padding:6px 4px !important;
+}
 .plate-detail .ds .ds-chevron{ color:var(--text-mid); opacity:.5; }
 
 .plate-detail .ds .ds-content,
