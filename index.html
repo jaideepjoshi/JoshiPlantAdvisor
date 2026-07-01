@@ -3758,6 +3758,16 @@ function displayName(p) {
   return raw.replace(/\s*(\([^)]+\)|'[^']+')/g, ' <span class="name-alt">$1</span>');
 }
 
+// The plant's common/vernacular name only — used for the Plate I title overlay.
+// If p.name is "Acanthus (Bear's Breeches)" this returns "Bear's Breeches";
+// if it's just "Bleeding Heart" it returns "Bleeding Heart". Follows the
+// Coneflower plate convention (common on top, botanical italic below).
+function commonName(p) {
+  const raw = (p && p.name) || '';
+  const m = raw.match(/\(([^)]+)\)/);
+  return (m ? m[1] : raw).trim();
+}
+
 function isPlanted(id) {
   const g = state.garden[id];
   return g && g.planted;
@@ -4910,7 +4920,7 @@ function renderEncyclopedia(p) {
   const plateHabit = `
     <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
       ${showNameOverlay ? `<div class="plate-habit-name">
-        <div class="plate-name-common">${escHtml(p.name || '')}</div>
+        <div class="plate-name-common">${escHtml(commonName(p))}</div>
         ${p.botanical ? `<div class="plate-name-botanical">${escHtml(p.botanical)}</div>` : ''}
       </div>` : ''}
       ${(habitHummingbirdIcon || habitBeeIcon || habitButterflyIcon) ? `<div class="plate-habit-pollinators">
