@@ -1004,31 +1004,53 @@ button[onclick*="showAddPlant"]{
   box-shadow:0 2px 8px rgba(58,42,24,.2);
 }
 .encyc-back-btn svg{width:18px;height:18px;stroke:var(--text);fill:none;stroke-width:2.5}
+/* The plate stack is a 3D book — pages stack on top of each other and
+   flip to the left around their spine (left edge) on navigation. Perspective
+   gives the flip depth; children absolute-position so they overlap. */
 .plate-pages{
-  display:flex;
-  overflow-x:auto;
-  scroll-snap-type:x mandatory;
-  scroll-behavior:smooth;
-  scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;
-  gap:0;
-  border-radius:8px;
-}
-.plate-pages::-webkit-scrollbar{display:none}
-.plate-page{
-  flex:0 0 100%;
+  position:relative;
+  width:100%;
   aspect-ratio:9/16;
-  scroll-snap-align:center;
-  scroll-snap-stop:always;
+  perspective:1600px;
+  border-radius:8px;
+  overflow:visible;
+  touch-action:pan-y;
+}
+.plate-page{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  transform-origin:left center;
+  transform-style:preserve-3d;
+  transition:transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
   background-color:#f9f2e2;
   background-size:cover;
   background-position:center;
   background-repeat:no-repeat;
-  position:relative;
   border-radius:6px;
   overflow:hidden;
   box-shadow:0 12px 36px rgba(58,42,24,.32),0 2px 6px rgba(58,42,24,.2);
   border:1px solid var(--gold-light);
+}
+/* Page states: .plate-flipped is turned to the left (already past). */
+.plate-page.plate-flipped{
+  transform:rotateY(-180deg);
+}
+/* The reverse of a flipped page is blank parchment (the back of the paper). */
+.plate-page::after{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(120deg,#f4ebd9 0%,#f9f2e2 40%,#f4ebd9 100%);
+  border:1px solid var(--gold-light);
+  border-radius:6px;
+  transform:rotateY(180deg);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  pointer-events:none;
 }
 .plate-page.no-bg{
   /* Shared blank parchment image — Plates III-V */
@@ -4978,7 +5000,7 @@ function renderEncyclopedia(p) {
         <div class="encyc-back-btn" onclick="closeDetail()">
           <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         </div>
-        <div class="plate-pages" id="platePages" onscroll="onPlateScroll(event)">
+        <div class="plate-pages" id="platePages">
           ${pages.join('')}
         </div>
         <div class="plate-dots">${dots}</div>
@@ -4986,30 +5008,63 @@ function renderEncyclopedia(p) {
     </div>`;
 }
 
-function onPlateScroll(e) {
-  const el = e.currentTarget;
-  const w = el.clientWidth;
-  if (!w) return;
-  const newIdx = Math.round(el.scrollLeft / w);
-  if (newIdx !== state.currentPlate) {
-    state.currentPlate = newIdx;
-    // Update caption + dots without a full re-render (avoids scroll jump)
-    const caption = document.querySelector('.plate-caption');
-    const titles = ['Habit','Particulars','Companions','Journal'];
-    if (caption) {
-      const num = caption.querySelector('.plate-num');
-      if (num) num.textContent = ROMAN[newIdx] || (newIdx+1);
-      const text = caption.lastChild;
-      if (text && text.nodeType === 3) text.textContent = ' Plate ' + (state.detailId ? String(state.detailId).padStart(3,'0') : '001') + ' · ' + (titles[newIdx]||'');
+// Page-flip navigation: apply the .plate-flipped class to every plate
+// whose index is BEFORE the current one, and manage z-index so already-flipped
+// pages stack correctly on the left and un-flipped pages stack behind current
+// on the right. Called after every navigation.
+function refreshPlateStack(newIdx) {
+  const pages = document.querySelectorAll('#platePages .plate-page');
+  if (!pages.length) return;
+  pages.forEach((page, i) => {
+    if (i < newIdx) {
+      // Already flipped past — sits on the left stack, later flips on top.
+      page.classList.add('plate-flipped');
+      page.style.zIndex = 100 + i;
+    } else {
+      // Current + future pages sit on the right; current is on top.
+      page.classList.remove('plate-flipped');
+      page.style.zIndex = 100 - i + (i === newIdx ? 50 : 0);
     }
-    document.querySelectorAll('.plate-dot').forEach((d,i) => d.classList.toggle('active', i === newIdx));
-  }
+  });
+  document.querySelectorAll('.plate-dot').forEach((d,i) => d.classList.toggle('active', i === newIdx));
 }
 
 function goToPlate(idx) {
+  const pages = document.querySelectorAll('#platePages .plate-page');
+  const total = pages.length || 4;
+  idx = Math.max(0, Math.min(idx, total - 1));
   state.currentPlate = idx;
-  const el = document.getElementById('platePages');
-  if (el) el.scrollTo({ left: el.clientWidth * idx, behavior: 'smooth' });
+  refreshPlateStack(idx);
+}
+
+// Attach swipe (left/right) + tap-zone (right half → next, left half → prev)
+// navigation to the plate stack. Called from render() after DOM insertion.
+function initPlateFlip() {
+  const stack = document.getElementById('platePages');
+  if (!stack) return;
+  refreshPlateStack(state.currentPlate || 0);
+  let startX = 0, startY = 0, moved = false;
+  stack.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY; moved = false;
+  }, { passive: true });
+  stack.addEventListener('touchmove', e => { moved = true; }, { passive: true });
+  stack.addEventListener('touchend', e => {
+    if (!moved) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      goToPlate((state.currentPlate || 0) + (dx < 0 ? 1 : -1));
+    }
+  }, { passive: true });
+  // Tap zones for mouse/desktop and single-tap navigation.
+  stack.addEventListener('click', e => {
+    // Don't intercept clicks on interactive elements inside the plate.
+    if (e.target.closest('a, button, input, textarea, .plate-dot, .pgl-link, .plate-link, [onclick]')) return;
+    const rect = stack.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width;
+    if (relX < 0.35) goToPlate((state.currentPlate || 0) - 1);
+    else if (relX > 0.65) goToPlate((state.currentPlate || 0) + 1);
+  });
 }
 
 function renderDetail() {
@@ -6886,7 +6941,7 @@ function render() {
 
   app.innerHTML = content;
   if (state.view === 'beds' && state.bedView === 'edit') setTimeout(initBedCanvas, 50);
-  if (state.detailId) setTimeout(() => { initHeroSwipe(); initMonthlyCareCenter(); }, 0);
+  if (state.detailId) setTimeout(() => { initHeroSwipe(); initMonthlyCareCenter(); initPlateFlip(); }, 0);
 }
 
 // If we just bounced back from a failed Google redirect, surface the error
