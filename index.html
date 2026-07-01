@@ -1036,12 +1036,9 @@ button[onclick*="showAddPlant"]{
   box-shadow:0 12px 36px rgba(58,42,24,.32),0 2px 6px rgba(58,42,24,.2);
   border:1px solid var(--gold-light);
 }
-/* Page states: .plate-flipped is turned to the left (already past). Using
-   +180 (not -180) so the right edge sweeps UP and OVER toward the viewer —
-   matches how you physically lift a book page (right corner comes forward,
-   then pivots to the left spine). */
+/* Page states: .plate-flipped is turned to the left (already past). */
 .plate-page.plate-flipped{
-  transform:rotateY(180deg);
+  transform:rotateY(-180deg);
 }
 /* The reverse of a flipped page is blank parchment (the back of the paper). */
 .plate-page::after{
