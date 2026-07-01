@@ -186,28 +186,16 @@ ${promptText}
   return chat.choices[0].message.content.trim();
 }
 
-// Encode a raw PNG buffer to a plate WEBP:
-//   1. Pad top+bottom with matching cream parchment so the aspect ratio
-//      becomes exactly 9:16. gpt-image-2's 1024x1792 output is 4:7 (0.571) —
-//      very close to 9:16 (0.5625) already, so this pad is only ~14 px each
-//      side. Since the pad color matches the plate's background-color, the
-//      seam is invisible. This ensures the antique border of the illustration
-//      isn't clipped by background-size:cover inside the 9:16 plate container.
-//   2. Encode WEBP at quality 85.
+// Encode a raw PNG buffer to a plate WEBP with a framed book-page appearance:
+//   Add a hairline dark-walnut band (14px) around ALL FOUR sides of the image.
+//   The illustration content is untouched — the antique border stays fully
+//   intact inside the dark walnut frame. Result: 1024+28 × 1792+28 = 1052 × 1820,
+//   aspect ratio 0.578 (matches the plate CSS aspect below).
 async function encodePlateWebp(pngBuffer, outWebp) {
-  const meta = await sharp(pngBuffer).metadata();
-  const targetH = Math.round(meta.width * 16 / 9);
-  const padTotal = Math.max(0, targetH - meta.height);
-  const padTop = Math.floor(padTotal / 2);
-  const padBottom = padTotal - padTop;
+  const dark = { r: 102, g: 73, b: 35, alpha: 1 };   // #664923 — dark walnut brown
+  const band = 14;                                    // hairline band thickness
   await sharp(pngBuffer)
-    .extend({
-      top: padTop,
-      bottom: padBottom,
-      left: 0,
-      right: 0,
-      background: { r: 249, g: 242, b: 226, alpha: 1 },  // #f9f2e2 — matches .plate-page background-color
-    })
+    .extend({ top: band, bottom: band, left: band, right: band, background: dark })
     .webp({ quality: 85 })
     .toFile(outWebp);
 }

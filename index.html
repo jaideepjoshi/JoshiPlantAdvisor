@@ -1010,10 +1010,10 @@ button[onclick*="showAddPlant"]{
 .plate-pages{
   position:relative;
   width:100%;
-  /* 9:16 is the canonical plate aspect — matches the original hand-composed
-     Coneflower plate (941×1672). New generator outputs are padded from 4:7
-     up to 9:16 with matching cream parchment (~14px each side, invisible). */
-  aspect-ratio:9/16;
+  /* 1052 : 1820 (≈ 26:45, aspect 0.578) — matches gpt-image-2's 1024×1792
+     output plus a 14px dark-walnut hairline frame added on all four sides
+     by the encoder. Very close to 9:16 (0.5625). */
+  aspect-ratio:1052/1820;
   perspective:1600px;
   border-radius:8px;
   overflow:visible;
