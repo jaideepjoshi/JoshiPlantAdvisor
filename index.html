@@ -1420,19 +1420,7 @@ button[onclick*="showAddPlant"]{
   font-size:14px;
   line-height:1.35;
 }
-/* Relevant Videos heading is itself the anchor — style it identically to
-   the other sub-section headings (bold italic Cormorant Garamond in the
-   muted color) but with a pointer cursor. No underline or border-bottom. */
-.plate-particulars .plate-prose-block a.heading{
-  color:var(--text-mid);
-  text-decoration:none;
-  border-bottom:none;
-  cursor:pointer;
-  display:inline-block;
-}
-.plate-particulars .plate-prose-block a.heading:hover{
-  color:var(--text);
-}
+/* (Relevant Videos link moved to Plate IV — inline styles there.) */
 /* Plate II ledger sits absolute in the top-LEFT next to the inset
    (the inset is baked into the top-right of the background image).
    Equal margin from top and left edges; no rule lines between rows.
@@ -4842,9 +4830,6 @@ function renderEncyclopedia(p) {
           <div class="heading">Care Tips</div>
           <div class="plate-h-scroll">${careCards}</div>
         </div>` : ''}
-        ${videoHref ? `<div class="plate-prose-block" style="margin-top:14px;margin-bottom:24px">
-          <a class="heading" href="${videoHref}" target="_blank" rel="noopener">Relevant Videos</a>
-        </div>` : ''}
       </div>
     </div>`;
 
@@ -4966,6 +4951,9 @@ function renderEncyclopedia(p) {
             onkeydown="if(event.key==='Enter'&&this.value.trim()){addMyPairing(${p.id},this.value.trim());this.value='';render()}"
             style="width:100%;padding:8px 11px;background:rgba(255,250,235,.5);border:1px solid var(--gold-light);border-radius:4px;color:var(--text);font-family:'EB Garamond',serif;font-style:italic;font-size:13px;outline:none">
         </div>
+        ${videoHref ? `<div class="plate-prose-block" style="margin-top:14px">
+          <a href="${videoHref}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700;font-size:14px;color:var(--text-mid);text-decoration:none;border-bottom:none;cursor:pointer;display:inline-block">Relevant Videos</a>
+        </div>` : ''}
         ${userCultivarsHtml ? `
           <div class="plate-section-divider"></div>
           <div class="plate-prose-block">
