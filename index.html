@@ -5008,23 +5008,36 @@ function renderEncyclopedia(p) {
     </div>`;
 }
 
-// Page-flip navigation: apply the .plate-flipped class to every plate
-// whose index is BEFORE the current one, and manage z-index so already-flipped
-// pages stack correctly on the left and un-flipped pages stack behind current
-// on the right. Called after every navigation.
-function refreshPlateStack(newIdx) {
+// Page-flip navigation. On every navigation we make the DESTINATION page
+// animate opening (rotateY(-180) → rotateY(0)) — the "book opening" motion
+// that reads better than a page folding shut. The previously-current page
+// snaps to flipped state without animation so the two motions don't fight.
+function refreshPlateStack(newIdx, isInitial) {
   const pages = document.querySelectorAll('#platePages .plate-page');
   if (!pages.length) return;
+  const oldIdx = (typeof state.currentPlate === 'number') ? state.currentPlate : newIdx;
   pages.forEach((page, i) => {
-    if (i < newIdx) {
-      // Already flipped past — sits on the left stack, later flips on top.
-      page.classList.add('plate-flipped');
-      page.style.zIndex = 100 + i;
-    } else {
-      // Current + future pages sit on the right; current is on top.
+    // isInitial → no page has a transition yet, so nothing animates on load.
+    // For subsequent navigation, we selectively suppress the transition on
+    // the page that was previously current, so it snaps to flipped instantly
+    // instead of folding away (only the destination page animates opening).
+    const needsSnap = isInitial
+      ? (i !== newIdx)                              // set default state without animation
+      : (i === oldIdx && i !== newIdx);             // snap-close the previous current
+    if (needsSnap) {
+      const prev = page.style.transition;
+      page.style.transition = 'none';
+      if (i === newIdx) page.classList.remove('plate-flipped');
+      else page.classList.add('plate-flipped');
+      void page.offsetWidth;                         // force reflow so no-transition takes effect
+      page.style.transition = prev || '';
+    } else if (i === newIdx) {
+      // Destination page — animate opening from flipped to visible.
       page.classList.remove('plate-flipped');
-      page.style.zIndex = 100 - i + (i === newIdx ? 50 : 0);
+    } else {
+      page.classList.add('plate-flipped');
     }
+    page.style.zIndex = (i === newIdx) ? 150 : 50 - Math.abs(i - newIdx);
   });
   document.querySelectorAll('.plate-dot').forEach((d,i) => d.classList.toggle('active', i === newIdx));
 }
@@ -5033,8 +5046,9 @@ function goToPlate(idx) {
   const pages = document.querySelectorAll('#platePages .plate-page');
   const total = pages.length || 4;
   idx = Math.max(0, Math.min(idx, total - 1));
+  if (idx === state.currentPlate) return;
+  refreshPlateStack(idx);  // uses old state.currentPlate as oldIdx for the snap
   state.currentPlate = idx;
-  refreshPlateStack(idx);
 }
 
 // Attach swipe (left/right) + tap-zone (right half → next, left half → prev)
@@ -5042,7 +5056,7 @@ function goToPlate(idx) {
 function initPlateFlip() {
   const stack = document.getElementById('platePages');
   if (!stack) return;
-  refreshPlateStack(state.currentPlate || 0);
+  refreshPlateStack(state.currentPlate || 0, true);  // initial layout — no snap animations
   let startX = 0, startY = 0, moved = false;
   stack.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX; startY = e.touches[0].clientY; moved = false;
