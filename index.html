@@ -987,9 +987,11 @@ button[onclick*="showAddPlant"]{
 .encyclopedia{
   position:relative;
   width:100%;
-  max-width:420px;
+  max-width:460px;
   margin:0 auto;
-  padding:60px 16px 16px;
+  /* Slim padding — plate hugs both side edges on phones and starts closer
+     to the top (still leaves room for the floating back button). */
+  padding:20px 0 16px;
   background:transparent;
 }
 .encyc-back-btn{
@@ -4978,12 +4980,6 @@ function renderEncyclopedia(p) {
         </div>
         <div class="plate-pages" id="platePages" onscroll="onPlateScroll(event)">
           ${pages.join('')}
-        </div>
-        <div class="plate-caption-row">
-          <div class="plate-caption">
-            <span class="plate-num">${ROMAN[idx] || (idx+1)}</span>
-            Plate ${plateNo} · ${titles[idx] || ''}
-          </div>
         </div>
         <div class="plate-dots">${dots}</div>
       </div>
