@@ -4395,18 +4395,24 @@ function renderGarden() {
 
   const hasKey = !!(state.claudeApiKey || _sharedClaudeKey);
   const showScanBtn = hasKey && !isViewing();
+  const tabBtn = (id, label) => `<div onclick="state.gardenTab='${id}';render()" style="padding:7px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab===id?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">${label}</div>`;
   const subNav = `<div style="padding:10px 14px;background:var(--cream);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
     <div style="display:inline-flex;background:rgba(0,0,0,.25);border-radius:12px;padding:3px;gap:2px">
-      <div onclick="state.gardenTab='plants';render()" style="padding:7px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab==='plants'?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">My Plants</div>
-      <div onclick="state.gardenTab='calendar';render()" style="padding:7px 22px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;${activeTab==='calendar'?'background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;box-shadow:0 2px 8px rgba(0,0,0,.3)':'color:var(--text-light)'}">Calendar</div>
+      ${tabBtn('plants','My Plants')}
+      ${tabBtn('list','List')}
+      ${tabBtn('calendar','Calendar')}
     </div>
-    ${showScanBtn ? `<button onclick="state.showBedScan=true;state.bedScanImage=null;state.bedScanResults=[];state.bedScanError='';state.bedScanLoading=false;render()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);border-radius:20px;color:#93c5fd;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+    ${activeTab==='list' && myPlants.length ? `<button onclick="exportGardenCSV()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:20px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export CSV
+    </button>` : (showScanBtn && activeTab==='plants' ? `<button onclick="state.showBedScan=true;state.bedScanImage=null;state.bedScanResults=[];state.bedScanError='';state.bedScanLoading=false;render()" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);border-radius:20px;color:#93c5fd;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       Scan Bed
-    </button>` : ''}
+    </button>` : '')}
   </div>`;
 
   if (activeTab === 'calendar') return subNav + renderCalendar();
+  if (activeTab === 'list') return subNav + renderGardenList(myPlants, bloomingNow);
 
   if (!myPlants.length) return subNav + `<div style="padding:60px 24px;text-align:center"><div style="font-size:52px;margin-bottom:14px;opacity:.3">🌱</div><div style="color:var(--text-mid);font-size:15px;font-weight:500">Your garden is empty</div><div style="color:var(--text-light);font-size:13px;margin-top:8px;line-height:1.6">Browse plants and tap<br>"Planted in my garden" to add them here.</div></div>`;
 
@@ -4440,6 +4446,82 @@ function renderGarden() {
     </div>`).join("")}</div>`;
 
   return subNav + statsRow + grid;
+}
+
+// Compact tabular list of the user's planted plants — better than the grid
+// when the goal is to scan lots of plants quickly or export the collection.
+function renderGardenList(myPlants, bloomingNow) {
+  if (!myPlants.length) {
+    return `<div style="padding:60px 24px;text-align:center"><div style="font-size:52px;margin-bottom:14px;opacity:.3">🌱</div><div style="color:var(--text-mid);font-size:15px;font-weight:500">Your garden is empty</div><div style="color:var(--text-light);font-size:13px;margin-top:8px;line-height:1.6">Browse plants and tap<br>"Planted in my garden" to add them here.</div></div>`;
+  }
+  const bloomingIds = new Set(bloomingNow.map(p => p.id));
+  const bloomMonths = p => (p.bloomMonths || []).map(m => MONTHS[m-1]).join('–');
+  const summary = `<div style="padding:8px 14px 4px;color:var(--text-mid);font-size:12px;letter-spacing:.4px;text-transform:uppercase">${myPlants.length} plant${myPlants.length===1?'':'s'} · sorted A–Z</div>`;
+  const rows = myPlants.map(p => `
+    <div class="garden-list-row" onclick="state.detailId=${p.id};render()">
+      <div class="glr-main">
+        <div class="glr-name">${displayName(p)}${bloomingIds.has(p.id)?' <span style="color:#f472b6;font-size:11px">🌸</span>':''}</div>
+        <div class="glr-bot">${escHtml(p.botanical||'')}</div>
+      </div>
+      <div class="glr-attrs">
+        ${p.hardiness ? `<span title="Hardiness">Z${escHtml(p.hardiness)}</span>` : ''}
+        ${p.height ? `<span title="Height">↕ ${escHtml(p.height)}</span>` : ''}
+        ${bloomMonths(p) ? `<span title="Bloom" style="color:#f472b6">✿ ${bloomMonths(p)}</span>` : ''}
+        ${p.sun ? `<span title="Sun" style="color:#f5c842">☼ ${escHtml(p.sun)}</span>` : ''}
+      </div>
+    </div>`).join('');
+  return `<style>
+    .garden-list-row{
+      display:flex;flex-direction:column;gap:6px;
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      cursor:pointer;transition:background .15s;
+    }
+    .garden-list-row:hover{ background:rgba(74,222,128,.04) }
+    .glr-main{ display:flex;align-items:baseline;gap:10px;flex-wrap:wrap }
+    .glr-name{ font-weight:600;color:var(--text);font-size:15px }
+    .glr-bot{ font-style:italic;color:var(--text-mid);font-size:12px }
+    .glr-attrs{ display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text-light) }
+    .glr-attrs span{ white-space:nowrap }
+  </style>${summary}<div class="garden-list">${rows}</div>`;
+}
+
+// Export the user's planted plants as a CSV file. Downloads directly via a
+// synthetic <a download>. Trigger from the Garden > List sub-tab.
+function exportGardenCSV() {
+  const myPlants = PLANTS.filter(p => isPlanted(p.id)).sort((a,b) => a.name.localeCompare(b.name));
+  if (!myPlants.length) return;
+  const headers = ['Name','Botanical','Type','Hardiness Zone','Height','Width','Sun','Water','Soil pH','Bloom Months','Garden Styles','Attracts'];
+  const escape = v => {
+    if (v == null) return '';
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = myPlants.map(p => [
+    p.name || '',
+    p.botanical || '',
+    p.type || '',
+    p.hardiness ? 'Zone ' + p.hardiness : '',
+    p.height || '',
+    p.width || '',
+    p.sun || '',
+    p.waterReq || '',
+    p.ph || '',
+    (p.bloomMonths || []).map(m => MONTHS[m-1]).join(', '),
+    (p.gardenStyles || []).join(', '),
+    (p.attracts || []).join(', '),
+  ].map(escape).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.download = `my-garden-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function renderWishlist() {
