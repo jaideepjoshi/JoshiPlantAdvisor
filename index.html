@@ -5018,14 +5018,29 @@ function renderEncyclopedia(p) {
 //   animates rotating IN from the left, covering the previously-current page.
 // Both directions read as book-natural: forward = the page you were on
 // flips away; back = the previous page swings back into view.
-function refreshPlateStack(newIdx) {
+function refreshPlateStack(newIdx, oldIdx) {
   const pages = document.querySelectorAll('#platePages .plate-page');
   if (!pages.length) return;
   pages.forEach((page, i) => {
     if (i < newIdx) {
-      // Already flipped past — sits on the left stack, later flips on top.
+      // Already-flipped-past page — sits on the left stack.
       page.classList.add('plate-flipped');
-      page.style.zIndex = 100 + i;
+      if (i === oldIdx) {
+        // This page went from current → flipped this turn (we're advancing over
+        // it). Keep it visually on TOP during the rotation so we can see it
+        // turning — otherwise the destination underneath (higher z-index) would
+        // cover the flip and you'd see no animation. Drop it back after the
+        // transition ends.
+        page.style.zIndex = 200;
+        const onEnd = e => {
+          if (e.propertyName !== 'transform') return;
+          page.style.zIndex = 100 + i;
+          page.removeEventListener('transitionend', onEnd);
+        };
+        page.addEventListener('transitionend', onEnd);
+      } else {
+        page.style.zIndex = 100 + i;
+      }
     } else {
       // Current + future pages sit on the right; current is on top.
       page.classList.remove('plate-flipped');
@@ -5040,8 +5055,9 @@ function goToPlate(idx) {
   const total = pages.length || 4;
   idx = Math.max(0, Math.min(idx, total - 1));
   if (idx === state.currentPlate) return;
+  const oldIdx = state.currentPlate;
   state.currentPlate = idx;
-  refreshPlateStack(idx);
+  refreshPlateStack(idx, oldIdx);
 }
 
 // Attach swipe (left/right) + tap-zone (right half → next, left half → prev)
@@ -5049,7 +5065,7 @@ function goToPlate(idx) {
 function initPlateFlip() {
   const stack = document.getElementById('platePages');
   if (!stack) return;
-  refreshPlateStack(state.currentPlate || 0);
+  refreshPlateStack(state.currentPlate || 0, state.currentPlate || 0);
   let startX = 0, startY = 0, moved = false;
   stack.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX; startY = e.touches[0].clientY; moved = false;
