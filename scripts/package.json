@@ -1,0 +1,15 @@
+{
+  "name": "plantbuddy-plate-generator",
+  "version": "1.0.0",
+  "description": "Generate vintage botanical plate images (via DALL-E 3) and wire them into PLANTS.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "generate": "node generate-images.mjs",
+    "link": "node link-plates.mjs"
+  },
+  "dependencies": {
+    "openai": "^4.60.0",
+    "sharp": "^0.33.5"
+  }
+}

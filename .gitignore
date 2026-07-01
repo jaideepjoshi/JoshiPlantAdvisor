@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Local Claude harness config
+.claude/
+
+# Secrets
+.openai/
+
+# Original PNG archives from the plate generator — huge (~2-5 MB each) and
+# not needed at runtime. The app only serves the WEBP variants next to them.
+# Keep locally so re-encoding is possible without another API call.
+plates/png/
+
+# Node dependencies for the plate generator scripts
+scripts/node_modules/
+scripts/package-lock.json
