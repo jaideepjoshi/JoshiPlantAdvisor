@@ -1352,6 +1352,18 @@ button[onclick*="showAddPlant"]{
   font-size:13px;
   line-height:1;
 }
+/* Sun/shade pie-chart glyph — 5 states (Full sun → Deep shade).
+   Uses currentColor so it inherits the sepia body-text tone on Plate I. */
+.plate-habit-stats .sun-ico{
+  display:inline-flex;
+  align-items:center;
+  color:var(--text);
+  line-height:0;
+}
+.plate-habit-stats .sun-ico svg{
+  width:15px;height:15px;
+  vertical-align:middle;
+}
 /* Tolerance flags below the stat row on Plate I — matches the
    light/bloom row in font family, size, and italic style. */
 .plate-habit-flags{
@@ -4874,6 +4886,68 @@ const PLATE_GLYPHS = {
 
 function plateGlyph(name){ return PLATE_GLYPHS[name] || ''; }
 
+// ---------- Sun / shade pie-chart glyphs ----------
+// 5 states matching the classic horticulture-guide legend:
+//   0 Full sun          — empty circle
+//   1 Mostly sunny      — bottom ~28% filled
+//   2 Half sun/half shade — bottom half filled
+//   3 Mostly shady      — bottom ~72% filled
+//   4 Deep shade        — solid circle
+// All 32×32 viewBox, radius 8, centered at (16,16). Filled portion drawn as
+// a circle-segment path below a horizontal chord. Uses currentColor so it
+// picks up the sepia body-text tone on Plate I.
+const SUN_GLYPHS = [
+  // 0 — Full sun (empty)
+  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/></svg>`,
+  // 1 — Mostly sunny (bottom ~28% filled; chord at y = 20.5)
+  //   chord half-width = sqrt(64 - 4.5²) ≈ 6.61
+  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/><path d="M9.39 20.5 A 8 8 0 0 1 22.61 20.5 Z" fill="currentColor" stroke="none"/></svg>`,
+  // 2 — Half sun / half shade (bottom half)
+  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/><path d="M8 16 A 8 8 0 0 1 24 16 Z" fill="currentColor" stroke="none"/></svg>`,
+  // 3 — Mostly shady (bottom ~72% filled; chord at y = 11.5, large arc)
+  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/><path d="M9.39 11.5 A 8 8 0 1 1 22.61 11.5 Z" fill="currentColor" stroke="none"/></svg>`,
+  // 4 — Deep shade (solid)
+  `<svg viewBox="0 0 32 32" fill="currentColor" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/></svg>`,
+];
+
+// Explicit table for the horticultural strings we know are in PLANTS.
+// Falls back to token averaging for anything unrecognized.
+const SUN_LEVEL_TABLE = {
+  'full sun': 0,
+  'part sun to full sun': 1,
+  'full sun to part sun': 1,
+  'full sun to part shade': 1,
+  'part sun to part shade': 2,
+  'part shade to part sun': 2,
+  'part shade to full sun': 2,
+  'part shade': 3,
+  'shade to part shade': 3,
+  'part shade to full shade': 3,
+  'full shade': 4,
+  'shade': 4,
+};
+function sunLevel(sunStr){
+  if (!sunStr) return null;
+  const key = sunStr.toLowerCase().trim();
+  if (key in SUN_LEVEL_TABLE) return SUN_LEVEL_TABLE[key];
+  // Fallback: score each side of "X to Y" and average
+  const score = t =>
+    t.includes('full sun')   ? 0 :
+    t.includes('part sun')   ? 1 :
+    t.includes('full shade') ? 4 :
+    t.includes('part shade') ? 3 :
+    t.includes('shade')      ? 4 :
+    t.includes('sun')        ? 0 : null;
+  const parts = key.split(/\s+to\s+/).map(score).filter(x => x !== null);
+  if (!parts.length) return null;
+  const avg = parts.reduce((a,b) => a+b, 0) / parts.length;
+  return Math.max(0, Math.min(4, Math.round(avg)));
+}
+function sunGlyph(sunStr){
+  const lvl = sunLevel(sunStr);
+  return lvl == null ? '' : SUN_GLYPHS[lvl];
+}
+
 let _lastEncycPlantId = null;
 function renderEncyclopedia(p) {
   const plates = p.plates || [];
@@ -4929,7 +5003,7 @@ function renderEncyclopedia(p) {
         ${habitButterflyIcon ? `<span class="butterfly">${habitButterflyIcon}</span>` : ''}
       </div>` : ''}
       <div class="plate-habit-stats">
-        ${p.sun ? `<div class="stat"><span class="ico">☀</span><span>${escHtml(p.sun)}</span></div>` : ''}
+        ${p.sun ? `<div class="stat"><span class="sun-ico">${sunGlyph(p.sun)}</span><span>${escHtml(p.sun)}</span></div>` : ''}
         ${fmtBloom() && fmtBloom() !== '—' ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(fmtBloom())}</span></div>` : ''}
       </div>
       ${habitFlags ? `<div class="plate-habit-flags">${habitFlags}</div>` : ''}
