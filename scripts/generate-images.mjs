@@ -46,12 +46,13 @@ const BATCH_SIZE = 5;
 // -----------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const args = { only: null, first: null, dryRun: false, quality: 'medium' };
+  const args = { only: null, first: null, dryRun: false, quality: 'medium', yes: false };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--only') args.only = argv[++i];
     else if (a === '--first') args.first = Number(argv[++i]);
     else if (a === '--dry-run') args.dryRun = true;
+    else if (a === '--yes' || a === '-y') args.yes = true;
     else if (a === '--high' || a === '--hd') args.quality = 'high';
     else if (a === '--medium') args.quality = 'medium';
     else if (a === '--low' || a === '--standard') args.quality = 'low';
@@ -309,8 +310,19 @@ async function main() {
       console.log(`No seed matched --only "${opts.only}".`);
       process.exit(1);
     }
-  } else if (opts.first) {
-    seeds = seeds.slice(0, opts.first);
+  } else {
+    // Skip seeds whose plates already exist — so --first N always advances
+    // through fresh work instead of counting already-completed plants.
+    seeds = seeds.filter(seed => {
+      const plant = matchPlant(seed, PLANTS);
+      if (!plant) return true;   // surface as no-plants-entry warning
+      const id = padId(plant.id);
+      const slug = slugify(plant.name.replace(/[^\w\s-]/g, '').trim());
+      const front = path.join(PLATES_DIR, `${id}-${slug}-front.webp`);
+      const back  = path.join(PLATES_DIR, `${id}-${slug}-back.webp`);
+      return !fss.existsSync(front) || !fss.existsSync(back);
+    });
+    if (opts.first) seeds = seeds.slice(0, opts.first);
   }
 
   console.log(`\nPipeline summary`);
@@ -322,7 +334,7 @@ async function main() {
   console.log(`  plants queued:  ${seeds.length}`);
   console.log(`  est. cost:      ~$${(seeds.length * COST_PER_PLANT[opts.quality]).toFixed(2)}\n`);
 
-  if (!opts.dryRun) {
+  if (!opts.dryRun && !opts.yes) {
     const ans = await askYesNo('Proceed? [y/N] ');
     if (ans !== 'y' && ans !== 'yes') { console.log('Aborted.'); return; }
   }
@@ -340,8 +352,8 @@ async function main() {
     batchResults.forEach(r => console.log(formatResultsRow(r)));
     allResults.push(...batchResults);
 
-    // Between-batch approval prompt (skipped on dry-run or last batch).
-    if (!opts.dryRun && bi + BATCH_SIZE < seeds.length) {
+    // Between-batch approval prompt (skipped on dry-run, --yes, or last batch).
+    if (!opts.dryRun && !opts.yes && bi + BATCH_SIZE < seeds.length) {
       console.log(`\nPreview the images above in Finder (plates/), then choose:`);
       const ans = await askYesNo(`  Continue with batch ${batchNum + 1}? [y/N] `);
       if (ans !== 'y' && ans !== 'yes') {
