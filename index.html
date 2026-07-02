@@ -4889,23 +4889,26 @@ function plateGlyph(name){ return PLATE_GLYPHS[name] || ''; }
 // ---------- Sun / shade pie-chart glyphs ----------
 // 5 states matching the classic horticulture-guide legend:
 //   0 Full sun          — empty circle
-//   1 Mostly sunny      — bottom ~28% filled
+//   1 Mostly sunny      — bottom ~24% filled
 //   2 Half sun/half shade — bottom half filled
-//   3 Mostly shady      — bottom ~72% filled
+//   3 Mostly shady      — bottom ~76% filled
 //   4 Deep shade        — solid circle
-// All 32×32 viewBox, radius 8, centered at (16,16). Filled portion drawn as
-// a circle-segment path below a horizontal chord. Uses currentColor so it
+// All 32×32 viewBox, outline circle at r=8 with stroke-width 1.5, so the
+// visible outer edge sits at r=8.75. Filled cap paths are traced along an
+// arc of radius 8.75 (matching the outline's OUTER edge) so the fill and
+// outline share an identical outer boundary — every glyph has the same
+// visible outer diameter (17.5px in viewBox units). currentColor so it
 // picks up the sepia body-text tone on Plate I.
+// Chord half-widths: sqrt(8.75² - 4.5²) ≈ 7.504 for levels 1 & 3.
 const SUN_GLYPHS = [
   // 0 — Full sun (empty)
   `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/></svg>`,
-  // 1 — Mostly sunny (bottom ~28% filled; chord at y = 20.5)
-  //   chord half-width = sqrt(64 - 4.5²) ≈ 6.61
-  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/><path d="M9.39 20.5 A 8 8 0 0 1 22.61 20.5 Z" fill="currentColor" stroke="none"/></svg>`,
-  // 2 — Half sun / half shade (bottom half)
-  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/><path d="M8 16 A 8 8 0 0 1 24 16 Z" fill="currentColor" stroke="none"/></svg>`,
-  // 3 — Mostly shady (bottom ~72% filled; chord at y = 11.5, large arc)
-  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/><path d="M9.39 11.5 A 8 8 0 1 1 22.61 11.5 Z" fill="currentColor" stroke="none"/></svg>`,
+  // 1 — Mostly sunny (bottom ~24% filled; chord at y = 20.5, arc r=8.75)
+  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.496 20.5 A 8.75 8.75 0 0 0 23.504 20.5 Z" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="8"/></svg>`,
+  // 2 — Half sun / half shade (bottom half; chord at y = 16, arc r=8.75)
+  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7.25 16 A 8.75 8.75 0 0 0 24.75 16 Z" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="8"/></svg>`,
+  // 3 — Mostly shady (bottom ~76% filled; chord at y = 11.5, large arc r=8.75)
+  `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.496 11.5 A 8.75 8.75 0 1 0 23.504 11.5 Z" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="8"/></svg>`,
   // 4 — Deep shade (solid)
   `<svg viewBox="0 0 32 32" fill="currentColor" stroke="currentColor" stroke-width="1.5"><circle cx="16" cy="16" r="8"/></svg>`,
 ];
