@@ -2083,70 +2083,30 @@ button[onclick*="showAddPlant"]{
 .cover-back-ribbon:hover{ background:rgba(255,250,235,.9); }
 .cover-back-ribbon svg{ width:14px;height:14px;color:var(--gold); }
 
-/* Persistent Settings corner ribbon — mirrors the Ask ribbon on the
-   top-LEFT. Only rendered on the journal cover, where the app-header
-   (and its gear button) is hidden. Same geometry, flipped horizontally. */
-.settings-corner-wrap{
+/* Persistent Settings gear — small circular button pinned to the top-left
+   of the cover, where the app-header (and its gear button) is hidden.
+   Vintage brass-grommet look: cream face, walnut ring, ink-colored gear. */
+.settings-corner-gear{
   position:fixed;
-  top:12px;
-  left:0;
-  width:82px;
-  height:82px;
+  top:16px;
+  left:16px;
   z-index:250;
-  overflow:hidden;
-  pointer-events:none;
-}
-.settings-corner-ribbon{
-  position:absolute;
-  top:14px;
-  left:-30px;
-  width:120px;
-  padding:3px 0 4px;
-  background:linear-gradient(135deg,#7a5b1f 0%,#a67c1e 55%,#d4a017 100%);
-  color:#fff8e2;
-  font-family:'Pinyon Script',serif;
-  font-size:16px;
-  text-align:center;
-  letter-spacing:1px;
-  line-height:1;
-  transform:rotate(-45deg);
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#f9f2e2 0%,#e9d9b3 100%);
+  border:1.5px solid #9c7c3c;
+  color:#3a2a18;
   cursor:pointer;
-  pointer-events:auto;
-  box-shadow:0 3px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.2);
-  border-top:1px solid rgba(255,255,255,.4);
-  border-bottom:1px solid rgba(0,0,0,.2);
-  transition:filter .18s;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:5px;
-  text-shadow:0 1px 0 rgba(0,0,0,.25);
+  box-shadow:0 3px 8px rgba(58,42,24,.32),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,0,0,.08);
+  transition:filter .18s,transform .18s;
 }
-.settings-corner-ribbon:hover{ filter:brightness(1.12); }
-.settings-corner-ribbon:active{ filter:brightness(.92); }
-.settings-corner-ribbon svg{
-  width:13px;height:13px;flex-shrink:0;color:#fff8e2;
-}
-.settings-corner-wrap::before,
-.settings-corner-wrap::after{
-  content:'';
-  position:absolute;
-  width:0;height:0;
-  border-style:solid;
-  pointer-events:none;
-}
-.settings-corner-wrap::before{
-  top:50px;left:2px;
-  border-width:0 0 6px 6px;
-  border-color:transparent transparent #6a4a15 transparent;
-  opacity:.7;
-}
-.settings-corner-wrap::after{
-  top:2px;left:50px;
-  border-width:6px 6px 0 0;
-  border-color:#6a4a15 transparent transparent transparent;
-  opacity:.7;
-}
+.settings-corner-gear:hover{ filter:brightness(1.06); }
+.settings-corner-gear:active{ filter:brightness(.94);transform:scale(.96); }
+.settings-corner-gear svg{ width:20px;height:20px; }
 
 /* Persistent Ask corner ribbon — a diagonal "Ask" banner pinned to the
    top-right corner of every page, always visible. Sits above the plate
@@ -7800,14 +7760,12 @@ function render() {
         <span class="q-glyph">✎</span>Ask
       </div>
     </div>`;
-    // Settings ribbon (top-left, mirror of Ask) only when the header —
-    // which normally contains the gear — is hidden, i.e. on the cover.
+    // Settings gear (top-left) only when the header — which normally
+    // contains the gear — is hidden, i.e. on the cover.
     if (_hideHeader) {
-      content += `<div class="settings-corner-wrap" aria-hidden="false">
-        <div class="settings-corner-ribbon" onclick="state.showSettings=true;render()" title="Settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </div>
-      </div>`;
+      content += `<button class="settings-corner-gear" onclick="state.showSettings=true;render()" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>`;
     }
   }
 
