@@ -1017,7 +1017,15 @@ button[onclick*="showAddPlant"]{
   perspective:1600px;
   border-radius:8px;
   overflow:visible;
+  /* pan-y lets Plates II–V scroll their long content natively.
+     Plate I (Habit) has no scrollable content — it overrides this to
+     pan-x pinch-zoom so vertical swipes reach our JS handler for the
+     "swipe up = next plant" gesture instead of getting eaten by iOS
+     rubber-band overscroll. */
   touch-action:pan-y;
+}
+.plate-pages .plate-page[data-idx="0"]{
+  touch-action:pan-x pinch-zoom;
 }
 .plate-page{
   position:absolute;
