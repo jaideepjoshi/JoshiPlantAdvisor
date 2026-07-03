@@ -1898,6 +1898,231 @@ button[onclick*="showAddPlant"]{
   font-size:16px !important;
   font-weight:500 !important;
 }
+
+/* =====================================================================
+   Journal Cover — the vintage front page. Replaces the browse grid when
+   state.browseMode === 'cover'. Scattered handwritten section labels on
+   an aged parchment page; tapping a label routes to the filtered grid
+   (browseMode → 'grid') or a dedicated view.
+   ===================================================================== */
+.journal-cover{
+  position:relative;
+  padding:34px 22px 90px;
+  min-height:calc(100vh - 200px);
+  background:url('plates/plate-blank.webp?v=1') center center / cover no-repeat;
+  color:#3a2a18;
+  overflow:hidden;
+}
+.journal-cover::before{
+  /* Subtle vignette so the edges feel deckle-book. */
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at center, transparent 40%, rgba(58,42,24,.10) 100%);
+  pointer-events:none;
+}
+.journal-cover .cover-inner{position:relative;z-index:1}
+.journal-cover .cover-eyebrow{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:13px;
+  color:#5c4226;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  text-align:center;
+  margin-bottom:4px;
+}
+.journal-cover .cover-title{
+  font-family:'Pinyon Script',serif;
+  font-size:44px;
+  line-height:1;
+  text-align:center;
+  color:#3a2a18;
+  margin-bottom:6px;
+}
+.journal-cover .cover-sub{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:14px;
+  text-align:center;
+  color:#5c4226;
+  letter-spacing:1px;
+  margin-bottom:24px;
+}
+/* Ask writing line: ruled parchment line + inkwell/quill glyph.
+   Taps open the existing Ask modal (state.showAsk). */
+.journal-cover .ask-line{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:6px 6px 8px;
+  margin:6px 8px 28px;
+  border-bottom:1.5px solid rgba(120,90,40,.35);
+  cursor:pointer;
+  transition:border-color .2s;
+}
+.journal-cover .ask-line:hover{ border-color:rgba(120,90,40,.7); }
+.journal-cover .ask-line .quill{
+  width:24px;height:24px;color:#664923;flex-shrink:0;
+}
+.journal-cover .ask-line .placeholder{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:16px;
+  color:#8a6d4a;
+  flex:1;
+  min-width:0;
+}
+.journal-cover .ask-line .caret{
+  color:#8a6d4a;font-size:12px;letter-spacing:2px;
+}
+/* Section groups — a script-title heading followed by scattered labels. */
+.journal-cover .cover-section{margin-top:24px;padding:0 6px;}
+.journal-cover .cover-section h2{
+  font-family:'Pinyon Script',serif;
+  font-size:28px;
+  color:#3a2a18;
+  margin-bottom:6px;
+  margin-left:4px;
+  line-height:1.1;
+}
+.journal-cover .cover-section .subhead{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:12px;
+  color:#8a6d4a;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  margin-left:4px;
+  margin-bottom:12px;
+}
+.journal-cover .cover-labels{
+  display:flex;flex-wrap:wrap;
+  gap:14px 22px;
+  padding:6px 4px;
+}
+.journal-cover .cover-label{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:18px;
+  color:#3a2a18;
+  cursor:pointer;
+  padding:2px 4px;
+  border-bottom:1px dotted rgba(120,90,40,.4);
+  white-space:nowrap;
+  transition:color .2s;
+  user-select:none;
+}
+.journal-cover .cover-label:hover{ color:#9c7c3c; border-bottom-color:#9c7c3c; }
+/* Give each label a slight rotation so the cover reads hand-annotated
+   rather than typeset. Nth-child cycling keeps it deterministic. */
+.journal-cover .cover-label:nth-child(4n+1){ transform:rotate(-1.5deg); }
+.journal-cover .cover-label:nth-child(4n+2){ transform:rotate(0.8deg); }
+.journal-cover .cover-label:nth-child(4n+3){ transform:rotate(-0.4deg); }
+.journal-cover .cover-label:nth-child(4n){ transform:rotate(1.2deg); }
+/* A few ink-doodle ornaments interspersed. Optional visual sugar. */
+.journal-cover .cover-label .dot{
+  color:#9c7c3c;
+  margin-right:4px;
+  font-size:14px;
+}
+/* Small decorative footer — date/ornament. */
+.journal-cover .cover-footer{
+  margin-top:36px;
+  text-align:center;
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:12px;
+  color:#8a6d4a;
+  letter-spacing:1.5px;
+}
+.journal-cover .cover-footer .flourish{
+  font-size:18px;color:#9c7c3c;margin:0 8px;
+}
+
+/* Back-to-cover ribbon shown at the top of the grid when the user
+   navigated in from a cover section. */
+.cover-back-ribbon{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin:6px 16px 4px;
+  padding:6px 14px 6px 8px;
+  background:rgba(255,250,235,.6);
+  border:1px solid var(--gold-light);
+  border-radius:20px;
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:13px;
+  color:var(--text);
+  cursor:pointer;
+  transition:background .2s;
+}
+.cover-back-ribbon:hover{ background:rgba(255,250,235,.9); }
+.cover-back-ribbon svg{ width:14px;height:14px;color:var(--gold); }
+
+/* Journal Entries — collated Plate IV notes for every planted plant. */
+.journal-entries{
+  padding:22px 22px 90px;
+  background:url('plates/plate-blank.webp?v=1') center center / cover no-repeat;
+  color:#3a2a18;
+  min-height:calc(100vh - 200px);
+}
+.journal-entries .je-title{
+  font-family:'Pinyon Script',serif;
+  font-size:36px;
+  text-align:center;
+  color:#3a2a18;
+  margin-bottom:6px;
+}
+.journal-entries .je-sub{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:13px;
+  color:#8a6d4a;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  text-align:center;
+  margin-bottom:22px;
+}
+.journal-entries .je-empty{
+  text-align:center;
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:15px;
+  color:#8a6d4a;
+  padding:60px 20px;
+}
+.journal-entries .je-entry{
+  padding:14px 16px;
+  margin-bottom:14px;
+  background:rgba(255,250,235,.35);
+  border:1px solid rgba(120,90,40,.25);
+  border-radius:4px;
+  cursor:pointer;
+  transition:background .2s;
+}
+.journal-entries .je-entry:hover{ background:rgba(255,250,235,.7); }
+.journal-entries .je-entry h3{
+  font-family:'Pinyon Script',serif;
+  font-size:24px;
+  color:#3a2a18;
+  margin-bottom:2px;
+  line-height:1;
+}
+.journal-entries .je-entry .je-bot{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:12px;
+  color:#8a6d4a;
+  margin-bottom:8px;
+}
+.journal-entries .je-entry .je-note{
+  font-family:'EB Garamond',Georgia,serif;
+  font-size:14px;
+  color:#3a2a18;
+  line-height:1.5;
+  white-space:pre-wrap;
+}
 </style>
 </head>
 <body>
@@ -1912,6 +2137,13 @@ const MONTH_FULL = ["January","February","March","April","May","June","July","Au
 
 let state = {
   view: "browse", // browse, garden, beds, wishlist
+  // When view === 'browse', browseMode picks what to show:
+  //   'cover'   → the vintage journal cover (scattered section labels)
+  //   'grid'    → the plant grid (filter chips + cards; the classic browse)
+  //   'entries' → collated Plate IV journal entries for every planted plant
+  browseMode: "cover",
+  // Recently-viewed plant IDs, most recent first. Persisted to pt_recent.
+  recentIds: JSON.parse(localStorage.getItem("pt_recent")||"[]"),
   search: "",
   filter: "all",
   gardenTab: "plants", // plants, calendar
@@ -3833,6 +4065,19 @@ function getFiltered() {
   else if (state.filter === "moistpart") list = list.filter(p => MOIST_PART_IDS.has(p.id));
   else if (state.filter === "raingarden") list = list.filter(p => RAINGARDEN_IDS.has(p.id));
   else if (state.filter === "woodland") list = list.filter(p => WOODLAND_IDS.has(p.id));
+  // Journal-cover filters — broader groupings than the existing chips.
+  else if (state.filter === "sunloving")
+    list = list.filter(p => p.sun && p.sun.includes("Full Sun"));
+  else if (state.filter === "shadeloving")
+    list = list.filter(p => p.sun && (p.sun.includes("Full Shade") || p.sun.includes("Shade to")));
+  else if (state.filter === "perennialborder")
+    list = list.filter(p => (p.type||"").includes("Perennial") && (p.gardenStyles||[]).includes("Border"));
+  else if (state.filter === "recent") {
+    // Preserve the recent order (most-recent first), not the alphabetical sort.
+    const ids = state.recentIds || [];
+    const map = new Map(list.map(p => [p.id, p]));
+    return ids.map(id => map.get(id)).filter(Boolean);
+  }
   else if (state.filter.startsWith("color:")) { const c = state.filter.split(":")[1]; list = list.filter(p => p.bloomColor === c); }
   const sunOrder = {"Part Sun to Full Sun":0, "Part Shade to Part Sun":1, "Shade to Part Shade":2};
   return list.sort((a,b) => {
@@ -3990,6 +4235,139 @@ function sunBadge(p) {
   if (p.sun === "Part Shade to Part Sun") return '<span class="badge badge-shade">⛅ Part Shade–Part Sun</span>';
   if (p.sun === "Shade to Part Shade") return '<span class="badge" style="background:#e0e7ff;color:#3730a3">🌥️ Shade to Part Shade</span>';
   return '<span class="badge badge-shade">'+p.sun+'</span>';
+}
+
+// ============================================================
+// Journal Cover — front page for the Browse tab. Scattered
+// handwritten section labels on a parchment page. Tapping a
+// label sets a filter + browseMode='grid' and re-renders.
+// ============================================================
+function openSection(filter) {
+  state.filter = filter;
+  state.browseMode = 'grid';
+  state.search = '';
+  render();
+  window.scrollTo(0, 0);
+}
+function openJournalEntries() {
+  state.browseMode = 'entries';
+  render();
+  window.scrollTo(0, 0);
+}
+function backToCover() {
+  state.browseMode = 'cover';
+  state.filter = 'all';
+  state.search = '';
+  render();
+  window.scrollTo(0, 0);
+}
+function pushRecent(id) {
+  if (!id) return;
+  const list = (state.recentIds || []).filter(x => x !== id);
+  list.unshift(id);
+  if (list.length > 20) list.length = 20;
+  state.recentIds = list;
+  try { localStorage.setItem('pt_recent', JSON.stringify(list)); } catch(e){}
+}
+
+// Inkwell/quill glyph used on the Ask writing line.
+const INKWELL_GLYPH = `<svg class="quill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M4 20L20 4"/>
+  <path d="M13 6l5 5"/>
+  <path d="M20 4l-2 5-3-3z" fill="currentColor"/>
+  <path d="M4 20l3-1 1-3"/>
+</svg>`;
+
+function renderJournalCover() {
+  const gardenName = (state.gardenName || 'My Garden').trim() || 'My Garden';
+  const date = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  // "My Journal" (personal) section labels — some route to tabs, some to
+  // filtered grids, and Journal Entries opens the collated notes view.
+  const myLabels = [
+    { text: 'My Beds',          onclick: `state.view='beds';render()` },
+    { text: 'My Wishlist',      onclick: `state.view='wishlist';render()` },
+    { text: 'Recently Viewed',  onclick: `openSection('recent')` },
+    { text: 'Journal Entries',  onclick: `openJournalEntries()` },
+  ];
+  // "Themes" section labels — each opens the grid with a specific filter.
+  const themeLabels = [
+    { text: 'Sun Loving',        onclick: `openSection('sunloving')` },
+    { text: 'Shade Loving',      onclick: `openSection('shadeloving')` },
+    { text: 'Perennial Border',  onclick: `openSection('perennialborder')` },
+    { text: 'Pollinators',       onclick: `openSection('pollinator')` },
+    { text: 'Ohio Natives',      onclick: `openSection('native')` },
+    { text: 'Blooming Now',      onclick: `openSection('blooming')` },
+    { text: 'Deer-Safe',         onclick: `openSection('deer')` },
+    { text: 'Rabbit-Safe',       onclick: `openSection('rabbit')` },
+    { text: 'Drought Tolerant',  onclick: `openSection('drought')` },
+    { text: 'Rain Garden',       onclick: `openSection('raingarden')` },
+    { text: 'Woodland',          onclick: `openSection('woodland')` },
+    { text: 'All Plants',        onclick: `openSection('all')` },
+  ];
+  const labelHtml = arr => arr.map(l =>
+    `<span class="cover-label" onclick="${l.onclick}"><span class="dot">·</span>${escHtml(l.text)}</span>`
+  ).join('');
+  return `
+    <div class="journal-cover">
+      <div class="cover-inner">
+        <div class="cover-eyebrow">Volume I</div>
+        <div class="cover-title">${escHtml(gardenName)}</div>
+        <div class="cover-sub">a field journal &nbsp;·&nbsp; ${escHtml(date)}</div>
+
+        <div class="ask-line" onclick="openAsk()" title="Ask a question">
+          ${INKWELL_GLYPH}
+          <span class="placeholder">Write a question…</span>
+          <span class="caret">✎</span>
+        </div>
+
+        <div class="cover-section">
+          <h2>My Journal</h2>
+          <div class="subhead">personal · saved</div>
+          <div class="cover-labels">${labelHtml(myLabels)}</div>
+        </div>
+
+        <div class="cover-section">
+          <h2>Themes</h2>
+          <div class="subhead">collections · by habit</div>
+          <div class="cover-labels">${labelHtml(themeLabels)}</div>
+        </div>
+
+        <div class="cover-footer">
+          <span class="flourish">✦</span>${escHtml(date)}<span class="flourish">✦</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Collated Plate IV journal entries for every plant that has notes AND
+// is planted in the garden. Tap an entry to jump to that plant's plate.
+function renderJournalEntries() {
+  const notes = state.notes || {};
+  const entries = Object.entries(notes)
+    .filter(([id, txt]) => (txt||'').trim())
+    .map(([id, txt]) => {
+      const p = PLANTS.find(pl => pl.id === Number(id));
+      return p ? { p, txt } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.p.name.localeCompare(b.p.name));
+  const body = entries.length
+    ? entries.map(({p, txt}) => `
+        <div class="je-entry" onclick="state.detailId=${p.id};state.currentPlate=3;render()">
+          <h3>${escHtml(commonName(p))}</h3>
+          <div class="je-bot">${escHtml(p.botanical||'')}</div>
+          <div class="je-note">${escHtml(txt)}</div>
+        </div>
+      `).join('')
+    : `<div class="je-empty">No journal entries yet. Open a plant and write on Plate IV to begin your journal.</div>`;
+  return `
+    <div class="journal-entries">
+      <div class="je-title">Journal Entries</div>
+      <div class="je-sub">notes from the field</div>
+      ${body}
+    </div>
+  `;
 }
 
 function renderBrowse() {
@@ -7134,9 +7512,17 @@ function renderAskModal() {
 }
 
 let _lastView = null;
+let _lastDetailId = null;
 function render() {
   const app = document.getElementById("app");
   let content = '';
+
+  // Track "Recently Viewed" — every time we open a different plant, push it
+  // to the front of state.recentIds. Cover pulls this into the personal list.
+  if (state.detailId && state.detailId !== _lastDetailId) {
+    pushRecent(state.detailId);
+  }
+  _lastDetailId = state.detailId;
 
   // Header
   const _viewing = isViewing();
@@ -7171,7 +7557,7 @@ function render() {
           <span style="flex:1">You're viewing a shared garden. Changes won't be saved.</span>
         </div>
       ` : ''}
-      ${state.view==='browse'?`
+      ${state.view==='browse' && state.browseMode==='grid' ?`
         <div class="search-bar">
           <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="search" id="searchInput" placeholder="Search 200+ plants..." value="${state.search}" oninput="state.search=this.value;searchUpdate()">
@@ -7180,8 +7566,18 @@ function render() {
     </div>
   `;
 
-  // Main content — only animate when the tab actually changes, not on every Firebase re-render
-  const _mainHTML = state.view === 'browse' ? renderBrowse()
+  // Main content — only animate when the tab actually changes, not on every Firebase re-render.
+  // On the Browse tab, browseMode picks the sub-view: 'cover' (default), 'grid' (filtered
+  // plant list, reached by tapping a cover section), or 'entries' (collated Plate IV notes).
+  const _backRibbon = `<div class="cover-back-ribbon" onclick="backToCover()">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+       back to journal
+     </div>`;
+  const _browseHTML =
+    state.browseMode === 'cover'   ? renderJournalCover()
+  : state.browseMode === 'entries' ? (_backRibbon + renderJournalEntries())
+  : (_backRibbon + renderBrowse());
+  const _mainHTML = state.view === 'browse' ? _browseHTML
     : state.view === 'garden' ? renderGarden()
     : state.view === 'wishlist' ? renderWishlist()
     : renderBeds();
@@ -7193,7 +7589,7 @@ function render() {
   const _v = state.view;
   content += `
     <div class="nav-bottom">
-      <div class="nav-item ${_v==='browse'?'active':''}" onclick="state.view='browse';render()">
+      <div class="nav-item ${_v==='browse'?'active':''}" onclick="state.view='browse';state.browseMode='cover';state.filter='all';state.search='';render()">
         <div class="ni-pill"></div>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span>Browse</span>
