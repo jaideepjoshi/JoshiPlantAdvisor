@@ -5270,23 +5270,74 @@ function goToPlate(idx) {
   refreshPlateStack(idx, oldIdx);
 }
 
+// Vertical swipe → next / previous plant in the current filtered list.
+// Only plants with an encyclopedia (plates array) are eligible, so the
+// swipe always lands on a plate view. Wraps around at the ends.
+function goToPlantByOffset(offset) {
+  const eligible = getFiltered().filter(p => p.plates && p.plates.length > 0);
+  if (eligible.length < 2) return;
+  let idx = eligible.findIndex(p => p.id === state.detailId);
+  // If the current plant isn't in the filtered list (rare — user changed
+  // filters after opening), fall back to the full PLANTS array with plates.
+  let source = eligible;
+  if (idx < 0) {
+    source = PLANTS.filter(p => p.plates && p.plates.length > 0);
+    idx = source.findIndex(p => p.id === state.detailId);
+    if (idx < 0) return;
+  }
+  const next = (idx + offset + source.length) % source.length;
+  const nextP = source[next];
+  if (!nextP || nextP.id === state.detailId) return;
+  state.detailId = nextP.id;
+  state.currentPlate = 0;   // start each plant on Plate I
+  render();
+  // Nudge the plate overlay to the top so the new plant reads fresh.
+  requestAnimationFrame(() => {
+    const overlay = document.querySelector('#platePages .plate-page[data-idx="0"] .plate-overlay');
+    if (overlay) overlay.scrollTop = 0;
+  });
+}
+
 // Attach swipe (left/right) + tap-zone (right half → next, left half → prev)
 // navigation to the plate stack. Called from render() after DOM insertion.
+// Also handles vertical swipes: up → next plant, down → prev plant.
 function initPlateFlip() {
   const stack = document.getElementById('platePages');
   if (!stack) return;
   refreshPlateStack(state.currentPlate || 0, state.currentPlate || 0);
   let startX = 0, startY = 0, moved = false;
+  // Tracks the plate-overlay's scrollTop at touchstart. If the overlay
+  // actually scrolled during the gesture we treat it as a scroll and
+  // suppress the vertical plant-change trigger.
+  let startScrollTop = 0;
+  let scrollTarget = null;
+  // True when the touch started inside a horizontal scroller (Monthly Care
+  // carousel, cultivar strip) OR an interactive element. In those zones we
+  // let the native scroller/handler own the gesture completely.
+  let ignoreSwipe = false;
   stack.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX; startY = e.touches[0].clientY; moved = false;
+    ignoreSwipe = !!e.target.closest(
+      '.plate-h-scroll, a, button, input, textarea, .plate-dot, .pgl-link, .plate-link, [onclick]'
+    );
+    scrollTarget = e.target.closest('.plate-overlay');
+    startScrollTop = scrollTarget ? scrollTarget.scrollTop : 0;
   }, { passive: true });
   stack.addEventListener('touchmove', e => { moved = true; }, { passive: true });
   stack.addEventListener('touchend', e => {
-    if (!moved) return;
+    if (!moved || ignoreSwipe) return;
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
+    // Horizontal → change plate (page turn).
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
       goToPlate((state.currentPlate || 0) + (dx < 0 ? 1 : -1));
+      return;
+    }
+    // Vertical → change plant, but only if the overlay didn't actually
+    // scroll. If it did, this was a scroll gesture; let it be.
+    const scrollDelta = scrollTarget ? scrollTarget.scrollTop - startScrollTop : 0;
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 80 && Math.abs(scrollDelta) < 6) {
+      goToPlantByOffset(dy < 0 ? 1 : -1);
     }
   }, { passive: true });
   // Tap zones for mouse/desktop and single-tap navigation.
