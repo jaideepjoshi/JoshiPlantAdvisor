@@ -1904,14 +1904,25 @@ button[onclick*="showAddPlant"]{
    state.browseMode === 'cover'. Scattered handwritten section labels on
    an aged parchment page; tapping a label routes to the filtered grid
    (browseMode → 'grid') or a dedicated view.
+   Aspect ratio matches the plates (1052:1820, close to 9:16) so the
+   cover reads as the first page of the same book.
    ===================================================================== */
+.journal-cover-wrap{
+  padding:12px 12px 12px;
+  display:flex;
+  justify-content:center;
+}
 .journal-cover{
   position:relative;
-  padding:34px 22px 90px;
-  min-height:calc(100vh - 200px);
+  width:100%;
+  aspect-ratio:1052/1820;
   background:url('plates/plate-blank.webp?v=1') center center / cover no-repeat;
+  background-color:#f9f2e2;
   color:#3a2a18;
   overflow:hidden;
+  border-radius:6px;
+  border:1px solid var(--gold-light);
+  box-shadow:0 12px 36px rgba(58,42,24,.32),0 2px 6px rgba(58,42,24,.2);
 }
 .journal-cover::before{
   /* Subtle vignette so the edges feel deckle-book. */
@@ -1920,7 +1931,19 @@ button[onclick*="showAddPlant"]{
   background:radial-gradient(ellipse at center, transparent 40%, rgba(58,42,24,.10) 100%);
   pointer-events:none;
 }
-.journal-cover .cover-inner{position:relative;z-index:1}
+.journal-cover .cover-inner{
+  position:absolute;
+  inset:0;
+  padding:6% 8.5% 5%;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:var(--gold-light) transparent;
+  z-index:1;
+}
+.journal-cover .cover-inner::-webkit-scrollbar{ width:4px }
+.journal-cover .cover-inner::-webkit-scrollbar-thumb{ background:var(--gold-light);border-radius:2px }
 .journal-cover .cover-eyebrow{
   font-family:'Cormorant Garamond',serif;
   font-style:italic;
@@ -2060,6 +2083,71 @@ button[onclick*="showAddPlant"]{
 .cover-back-ribbon:hover{ background:rgba(255,250,235,.9); }
 .cover-back-ribbon svg{ width:14px;height:14px;color:var(--gold); }
 
+/* Persistent Settings corner ribbon — mirrors the Ask ribbon on the
+   top-LEFT. Only rendered on the journal cover, where the app-header
+   (and its gear button) is hidden. Same geometry, flipped horizontally. */
+.settings-corner-wrap{
+  position:fixed;
+  top:12px;
+  left:0;
+  width:82px;
+  height:82px;
+  z-index:250;
+  overflow:hidden;
+  pointer-events:none;
+}
+.settings-corner-ribbon{
+  position:absolute;
+  top:14px;
+  left:-30px;
+  width:120px;
+  padding:3px 0 4px;
+  background:linear-gradient(135deg,#7a5b1f 0%,#a67c1e 55%,#d4a017 100%);
+  color:#fff8e2;
+  font-family:'Pinyon Script',serif;
+  font-size:16px;
+  text-align:center;
+  letter-spacing:1px;
+  line-height:1;
+  transform:rotate(-45deg);
+  cursor:pointer;
+  pointer-events:auto;
+  box-shadow:0 3px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.2);
+  border-top:1px solid rgba(255,255,255,.4);
+  border-bottom:1px solid rgba(0,0,0,.2);
+  transition:filter .18s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  text-shadow:0 1px 0 rgba(0,0,0,.25);
+}
+.settings-corner-ribbon:hover{ filter:brightness(1.12); }
+.settings-corner-ribbon:active{ filter:brightness(.92); }
+.settings-corner-ribbon svg{
+  width:13px;height:13px;flex-shrink:0;color:#fff8e2;
+}
+.settings-corner-wrap::before,
+.settings-corner-wrap::after{
+  content:'';
+  position:absolute;
+  width:0;height:0;
+  border-style:solid;
+  pointer-events:none;
+}
+.settings-corner-wrap::before{
+  top:50px;left:2px;
+  border-width:0 0 6px 6px;
+  border-color:transparent transparent #6a4a15 transparent;
+  opacity:.7;
+}
+.settings-corner-wrap::after{
+  top:2px;left:50px;
+  border-width:6px 6px 0 0;
+  border-color:#6a4a15 transparent transparent transparent;
+  opacity:.7;
+}
+
 /* Persistent Ask corner ribbon — a diagonal "Ask" banner pinned to the
    top-right corner of every page, always visible. Sits above the plate
    detail (z-index 200) but below modals (600+), so tapping it opens the
@@ -2067,9 +2155,9 @@ button[onclick*="showAddPlant"]{
 .ask-corner-wrap{
   position:fixed;
   /* Sit at the top-right corner of the CONTENT area (just below the app
-     header) so the settings gear in the header stays visible. On the
-     plate-detail overlay (z-index 200) the ribbon still floats above at
-     z-index 250. */
+     header) so the settings gear in the header stays visible. On pages
+     where the header is hidden (journal cover), the .no-header modifier
+     bumps it up to the true viewport corner. */
   top:72px;
   right:0;
   width:82px;
@@ -2078,6 +2166,7 @@ button[onclick*="showAddPlant"]{
   overflow:hidden;
   pointer-events:none;
 }
+.ask-corner-wrap.no-header{ top:12px; }
 .ask-corner-ribbon{
   position:absolute;
   top:14px;
@@ -4388,6 +4477,7 @@ function renderJournalCover() {
     `<span class="cover-label" onclick="${l.onclick}"><span class="dot">·</span>${escHtml(l.text)}</span>`
   ).join('');
   return `
+    <div class="journal-cover-wrap">
     <div class="journal-cover">
       <div class="cover-inner">
         <div class="cover-eyebrow">Volume I</div>
@@ -4416,6 +4506,7 @@ function renderJournalCover() {
           <span class="flourish">✦</span>${escHtml(date)}<span class="flourish">✦</span>
         </div>
       </div>
+    </div>
     </div>
   `;
 }
@@ -7609,7 +7700,12 @@ function render() {
   const _displayName = state.gardenName || (_viewing ? 'Shared Garden' : 'PlantBuddy');
   const _displayLoc = state.gardenLocation ? escHtml(state.gardenLocation) + ' &middot; ' : '';
   const _tagline = _viewing ? 'Shared Garden &middot; Read-Only View' : 'Over 200 Perennials &middot; Year-Round Care';
-  content += `
+  // Skip the top app-header on the journal cover — the cover has its own
+  // typeset garden name / subtitle, so the header block was redundant.
+  // Settings gear is preserved via the corner ribbon added at the bottom
+  // of render() (mirrors the Ask ribbon).
+  const _hideHeader = state.view === 'browse' && state.browseMode === 'cover';
+  if (!_hideHeader) content += `
     <div class="header">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
         <div style="min-width:0">
@@ -7699,11 +7795,20 @@ function render() {
   // while the setup / auth flow is active, since those are pre-app states
   // where an Ask sheet would confuse the user.
   if (!state.showSetup && !state.showAuth) {
-    content += `<div class="ask-corner-wrap" aria-hidden="false">
+    content += `<div class="ask-corner-wrap ${_hideHeader ? 'no-header' : ''}" aria-hidden="false">
       <div class="ask-corner-ribbon" onclick="openAsk()" title="Ask a question">
         <span class="q-glyph">✎</span>Ask
       </div>
     </div>`;
+    // Settings ribbon (top-left, mirror of Ask) only when the header —
+    // which normally contains the gear — is hidden, i.e. on the cover.
+    if (_hideHeader) {
+      content += `<div class="settings-corner-wrap" aria-hidden="false">
+        <div class="settings-corner-ribbon" onclick="state.showSettings=true;render()" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+      </div>`;
+    }
   }
 
   // Modals
