@@ -2060,6 +2060,86 @@ button[onclick*="showAddPlant"]{
 .cover-back-ribbon:hover{ background:rgba(255,250,235,.9); }
 .cover-back-ribbon svg{ width:14px;height:14px;color:var(--gold); }
 
+/* Persistent Ask corner ribbon — a diagonal "Ask" banner pinned to the
+   top-right corner of every page, always visible. Sits above the plate
+   detail (z-index 200) but below modals (600+), so tapping it opens the
+   Ask sheet from anywhere in the app. */
+.ask-corner-wrap{
+  position:fixed;
+  /* Sit at the top-right corner of the CONTENT area (just below the app
+     header) so the settings gear in the header stays visible. On the
+     plate-detail overlay (z-index 200) the ribbon still floats above at
+     z-index 250. */
+  top:72px;
+  right:0;
+  width:82px;
+  height:82px;
+  z-index:250;
+  overflow:hidden;
+  pointer-events:none;
+}
+.ask-corner-ribbon{
+  position:absolute;
+  top:14px;
+  right:-30px;
+  width:120px;
+  padding:3px 0 4px;
+  background:linear-gradient(135deg,#d4a017 0%,#a67c1e 55%,#7a5b1f 100%);
+  color:#fff8e2;
+  font-family:'Pinyon Script',serif;
+  font-size:18px;
+  text-align:center;
+  letter-spacing:1px;
+  line-height:1;
+  transform:rotate(45deg);
+  cursor:pointer;
+  pointer-events:auto;
+  box-shadow:0 3px 8px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.2);
+  border-top:1px solid rgba(255,255,255,.4);
+  border-bottom:1px solid rgba(0,0,0,.2);
+  transition:filter .18s,transform .18s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  text-shadow:0 1px 0 rgba(0,0,0,.25);
+}
+.ask-corner-ribbon:hover{
+  filter:brightness(1.12);
+}
+.ask-corner-ribbon:active{
+  filter:brightness(.92);
+}
+.ask-corner-ribbon .q-glyph{
+  display:inline-block;
+  color:#fff8e2;
+  font-size:12px;
+  line-height:1;
+  transform:translateY(1px);
+}
+/* Small "ribbon tail" — subtle folded-edge shadows so it reads as a
+   ribbon draped over the corner, not just a rotated pill. */
+.ask-corner-wrap::before,
+.ask-corner-wrap::after{
+  content:'';
+  position:absolute;
+  width:0;height:0;
+  border-style:solid;
+  pointer-events:none;
+}
+.ask-corner-wrap::before{
+  top:50px;right:2px;
+  border-width:0 6px 6px 0;
+  border-color:transparent #6a4a15 transparent transparent;
+  opacity:.7;
+}
+.ask-corner-wrap::after{
+  top:2px;right:50px;
+  border-width:6px 0 0 6px;
+  border-color:transparent transparent transparent #6a4a15;
+  opacity:.7;
+}
+
 /* Journal Entries — collated Plate IV notes for every planted plant. */
 .journal-entries{
   padding:22px 22px 90px;
@@ -7542,9 +7622,6 @@ function render() {
               <span>← Exit</span>
             </button>
           ` : `
-            <button onclick="openAsk()" title="Ask PlantBuddy" style="background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(74,222,128,.08));border:1px solid rgba(74,222,128,.35);border-radius:8px;cursor:pointer;color:#4ade80;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;transition:background .2s" onmouseover="this.style.filter='brightness(1.15)'" onmouseout="this.style.filter='none'">
-              <span style="font-size:13px">✨</span><span>Ask</span>
-            </button>
             <button onclick="state.showSettings=true;render()" title="Settings" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;cursor:pointer;color:rgba(255,255,255,.75);padding:7px 8px;display:flex;align-items:center;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
@@ -7616,6 +7693,17 @@ function render() {
   if (state.detailId) {
     try { content += renderDetail(); }
     catch(e) { console.error('renderDetail failed:', e); state.detailId = null; }
+  }
+
+  // Persistent Ask corner ribbon — top-right of every page. Hidden only
+  // while the setup / auth flow is active, since those are pre-app states
+  // where an Ask sheet would confuse the user.
+  if (!state.showSetup && !state.showAuth) {
+    content += `<div class="ask-corner-wrap" aria-hidden="false">
+      <div class="ask-corner-ribbon" onclick="openAsk()" title="Ask a question">
+        <span class="q-glyph">✎</span>Ask
+      </div>
+    </div>`;
   }
 
   // Modals
