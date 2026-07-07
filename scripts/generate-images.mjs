@@ -229,7 +229,43 @@ Format:
 
 FACT-SHEET FOR THIS PLANT — bind the rewrite to these:
 ${JSON.stringify(brief, null, 2)}` : '';
-  const userMsg = `Rewrite this ${side === 'front' ? 'plant-portrait (single plant, blank page around it, no text, no closeups)' : 'empty-page-with-top-right-inset'} prompt for a "${seed.common} (${seed.botanical})" plate.${briefBlock}
+
+  // Habit-specific staging. gpt-image-2 tends to default to "single upright
+  // plant portrait" regardless of what the prompt says — for vines and
+  // groundcovers we have to spell out CONCRETE staging (what's it climbing
+  // on, what angle we view from) or we get an upright shrub anyway.
+  const habit = (brief?.growth_habit || '').toLowerCase();
+  let stagingBlock = '';
+  if (habit === 'vine-climbing') {
+    stagingBlock = `
+
+VINE-STAGING (must appear in the rewrite for the front image):
+The plant is a CLIMBING VINE, not a standalone shrub. Depict it clearly
+climbing / twining on a support: a slender wooden lattice trellis, a
+thin garden stake, a bare weathered branch, or draped over a low stone
+wall. The support is minimal — just enough to establish the vine's
+climbing habit — and rendered in the same aged watercolor style. The
+plant must show:
+  • long twining stems that grasp the support with tendrils or leaf petioles
+  • foliage trailing sideways off the support, not standing upright
+  • the vine's characteristic reach — noticeably taller/longer than wide
+Do NOT paint this as a compact free-standing bush.`;
+  } else if (habit === 'groundcover-trailing') {
+    stagingBlock = `
+
+GROUNDCOVER-STAGING (must appear in the rewrite for the front image):
+The plant is a LOW SPREADING MAT, not an upright plant. Depict it from
+a slightly-elevated three-quarter angle showing:
+  • a wide horizontal carpet of foliage hugging the ground plane
+  • the plant spreading outward as a mat — noticeably wider than tall
+  • stems creeping sideways and rooting where they touch soil
+  • any flowers standing only a few inches above the leafy mat
+Total plant height in the illustration should look like a soft cushion
+of leaves, not a bushy upright specimen. Do NOT centre a tall plant on
+the page — spread the foliage horizontally across the middle band.`;
+  }
+
+  const userMsg = `Rewrite this ${side === 'front' ? 'plant-portrait (single plant, blank page around it, no text, no closeups)' : 'empty-page-with-top-right-inset'} prompt for a "${seed.common} (${seed.botanical})" plate.${briefBlock}${stagingBlock}
 
 --- ORIGINAL PROMPT ---
 ${promptText}

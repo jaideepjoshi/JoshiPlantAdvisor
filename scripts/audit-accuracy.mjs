@@ -166,7 +166,10 @@ async function main() {
   // Which plants to audit?
   let queue = plants.filter(p => plateById[String(p.id)]);
   if (flags.only) queue = queue.filter(p => String(p.id) === String(flags.only));
-  if (!flags.refresh) queue = queue.filter(p => !cache[p.id]);
+  // Skip only entries that already have a full score, not brief-only entries
+  // (the image-gen pipeline populates the brief before generating, so an entry
+  // may exist without scores yet).
+  if (!flags.refresh) queue = queue.filter(p => !cache[p.id]?.scores);
   if (flags.limit)   queue = queue.slice(0, flags.limit);
 
   console.log(`Auditing ${queue.length} plate(s); ${Object.keys(cache).length} already cached.`);

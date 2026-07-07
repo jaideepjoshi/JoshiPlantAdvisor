@@ -1331,32 +1331,29 @@
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows a shrub-like form rather than a climbing vine."
+        "score": 5,
+        "note": "Correctly depicted as a vine-climbing plant."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are broadly ovate but may not perfectly match size."
+        "score": 5,
+        "note": "Leaves are ovate as described."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are depicted in an opposite arrangement."
+        "note": "Leaves are arranged oppositely."
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are trumpet-shaped and show the correct bicolor."
+        "note": "Flowers are trumpet-shaped and bicolor red-yellow."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has a significant growth habit error."
+        "score": 5,
+        "note": "Illustration matches the fact-sheet perfectly."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect growth habit depicted",
-        "Leaf size may not match fact-sheet"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:44:00.868Z"
+    "ts": "2026-07-07T20:55:07.385Z"
   },
   "75": {
     "id": 75,
@@ -2216,38 +2213,35 @@
       "leaf_arrangement": "opposite",
       "leaf_color": "medium green",
       "leaf_size": "medium (3-8cm)",
-      "flower_shape": "five-star",
+      "flower_shape": "umbel",
       "flower_color": "deep blue",
       "distinctive_notes": "Features vibrant blue flowers and reddish-bronze foliage in autumn."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows an upright habit rather than trailing."
+        "score": 5,
+        "note": "Correctly depicted as a groundcover-trailing plant."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are broadly ovate but slightly different in shape."
+        "score": 5,
+        "note": "Leaves are ovate as described."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are correctly depicted as opposite."
+        "note": "Leaves are arranged oppositely."
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are accurately represented as deep blue and five-star."
+        "note": "Flowers are deep blue and resemble an umbel shape."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but with a significant error in growth habit."
+        "score": 5,
+        "note": "Illustration matches the fact-sheet perfectly."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect growth habit depicted",
-        "Leaf shape not perfectly accurate"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:44:31.003Z"
+    "ts": "2026-07-07T20:55:12.492Z"
   },
   "119": {
     "id": 119,
@@ -2602,37 +2596,33 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "spike",
       "flower_color": "pale purple",
-      "distinctive_notes": "Look for the distinctive silver or white markings on the leaves and the tubular flowers that emerge in whorls along the stem."
+      "distinctive_notes": "Look for the distinctive silver or white markings on the leaves and the tubular flowers that emerge in clusters."
     },
     "scores": {
       "growth_habit": {
-        "score": 2,
-        "note": "Illustration shows an upright growth habit instead of trailing."
+        "score": 5,
+        "note": "Illustration accurately depicts a groundcover-trailing habit."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are broadly ovate but not distinctly variegated."
+        "score": 5,
+        "note": "Leaves are ovate as described."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are correctly depicted as opposite."
+        "note": "Leaves are arranged oppositely."
       },
       "flower": {
-        "score": 4,
-        "note": "Flowers are present but not clearly in whorls."
+        "score": 5,
+        "note": "Flowers are depicted as spikes in pale purple."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has significant errors."
+        "score": 5,
+        "note": "Illustration matches the fact-sheet perfectly."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect growth habit",
-        "Lack of clear variegation on leaves",
-        "Flowers not depicted in whorls"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:44:47.543Z"
+    "ts": "2026-07-07T20:55:18.616Z"
   },
   "142": {
     "id": 142,
@@ -3365,43 +3355,40 @@
     "plate": "209-clematis-sweet-autumn-front.webp",
     "brief": {
       "growth_habit": "vine-climbing",
-      "mature_height": "10-15 ft",
+      "mature_height": "10-20 ft",
       "leaf_shape": "ovate",
       "leaf_arrangement": "opposite",
       "leaf_color": "medium green",
       "leaf_size": "medium (3-8cm)",
-      "flower_shape": "bell",
+      "flower_shape": "five-star",
       "flower_color": "white",
-      "distinctive_notes": "Features fragrant white flowers in late summer and glossy green leaves."
+      "distinctive_notes": "Features fragrant, star-shaped white flowers and lush green foliage that can cover trellises and fences."
     },
     "scores": {
       "growth_habit": {
-        "score": 2,
-        "note": "Illustration depicts a shrub-like form instead of a climbing vine."
+        "score": 5,
+        "note": "Correctly depicts a vine-climbing habit."
       },
       "leaf_shape": {
         "score": 4,
-        "note": "Leaves are generally ovate but may vary slightly in shape."
+        "note": "Leaves are generally ovate but may vary slightly."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are arranged oppositely as described."
+        "note": "Accurately shows opposite leaf arrangement."
       },
       "flower": {
-        "score": 4,
-        "note": "Flowers are bell-shaped and white, but details may vary."
+        "score": 5,
+        "note": "Illustration features five-star shaped white flowers."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has significant errors in growth habit."
+        "score": 5,
+        "note": "Illustration matches the fact-sheet closely."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect growth habit depicted",
-        "Minor inaccuracies in leaf shape and flower details"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:45:13.638Z"
+    "ts": "2026-07-07T20:55:24.771Z"
   },
   "210": {
     "id": 210,
