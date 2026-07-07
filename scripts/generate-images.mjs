@@ -40,8 +40,56 @@ const PROMPTS_DIR = path.join(ROOT, 'scripts/prompts');
 const INPUT_PATH = path.join(ROOT, 'plants-to-generate.txt');
 const PLATES_DIR = path.join(ROOT, 'plates');
 const INDEX_HTML = path.join(ROOT, 'index.html');
+const AUDIT_CACHE = path.join(ROOT, 'scripts/audit-accuracy.json');
 
 const BATCH_SIZE = 5;
+
+// Load the accuracy-audit cache once. It's an id-keyed dict of
+// { brief, scores, ... }. We reuse the `brief` field so we don't pay
+// gpt-4o-mini twice for the same plant.
+let _auditCache = null;
+async function loadAuditCache() {
+  if (_auditCache !== null) return _auditCache;
+  try { _auditCache = JSON.parse(await fs.readFile(AUDIT_CACHE, 'utf8')); }
+  catch { _auditCache = {}; }
+  return _auditCache;
+}
+async function saveAuditCache() {
+  if (_auditCache) await fs.writeFile(AUDIT_CACHE, JSON.stringify(_auditCache, null, 2));
+}
+
+// Fetch a compact botanical fact-sheet for the plant. Cached in the same
+// JSON file the accuracy auditor writes to, so the two scripts share data.
+async function botanicalBrief(openai, plant) {
+  const cache = await loadAuditCache();
+  if (cache[plant.id]?.brief) return cache[plant.id].brief;
+  const chat = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content:
+`You write concise botanical fact-sheets for horticultural illustration reference.
+Return ONLY compact JSON matching this shape (no markdown, no prose):
+{
+  "growth_habit": "one of: upright-clumping | mounding | groundcover-trailing | vine-climbing | shrub | tree | grass-tuft | rosette | bulb-emerging",
+  "mature_height": "e.g. 3-6 in / 24-36 in / 4-6 ft",
+  "leaf_shape": "e.g. rounded / ovate / lanceolate / linear-needle / palmately-lobed / pinnately-compound / heart-shaped / strap-like",
+  "leaf_arrangement": "e.g. opposite / alternate / basal-rosette / whorled / clasping",
+  "leaf_color": "e.g. medium green / silvery-gray / blue-green / variegated",
+  "leaf_size": "e.g. tiny (<1cm) / small (1-3cm) / medium (3-8cm) / large (>8cm)",
+  "flower_shape": "e.g. daisy-composite / bell / trumpet / spike / umbel / cross-4-petal / five-star",
+  "flower_color": "e.g. deep purple / white / pale blue / bicolor pink-yellow",
+  "distinctive_notes": "one sentence of visual identifiers a botanical artist should nail"
+}` },
+      { role: 'user', content: `${plant.name} — ${plant.botanical || 'unknown botanical'} — ${plant.type || 'unknown type'}` },
+    ],
+    temperature: 0.2,
+    response_format: { type: 'json_object' },
+  });
+  const brief = JSON.parse(chat.choices[0].message.content);
+  cache[plant.id] = { ...(cache[plant.id] || {}), id: plant.id, name: plant.name, botanical: plant.botanical, brief };
+  await saveAuditCache();
+  return brief;
+}
 
 // -----------------------------------------------------------------------------
 
@@ -154,7 +202,7 @@ function askYesNo(question) {
 // is the single biggest quality lift for image-generation from the API —
 // without it, you're sending the raw prompt while ChatGPT web is sending a
 // professionally-rewritten expansion under the hood.
-async function expandPrompt(openai, promptText, seed, side) {
+async function expandPrompt(openai, promptText, seed, side, brief) {
   const systemMsg = `You are an art director rewriting botanical illustration prompts.
 Take the user's prompt and rewrite it into a more vivid, specific image-generation prompt.
 
@@ -164,14 +212,24 @@ CRITICAL preservation rules — obey these exactly:
 - Preserve the exact composition footprint the original specifies (which part of the page is filled, which is blank).
 - Preserve the "Avoid" list — never contradict it.
 
+BOTANICAL ACCURACY — obey the fact-sheet exactly:
+- The GROWTH HABIT from the fact-sheet is not negotiable. If it says "groundcover-trailing" the plant must be low, spreading horizontally along the ground, NOT upright. If it says "vine-climbing" it must climb. If it says "shrub" it is woody and rounded. Depict what the fact-sheet says even if botanical plates traditionally show plants upright.
+- LEAF SHAPE from the fact-sheet must be honoured — "rounded" means rounded, "linear-needle" means needle-like. Do not draw pointy lanceolate leaves for a plant whose leaves are described as rounded.
+- LEAF ARRANGEMENT (opposite / alternate / basal-rosette / etc.) must match.
+- FLOWER SHAPE and COLOR must match.
+
 What TO add:
-- Concrete species-specific botanical detail: actual leaf shape, flower structure, growth habit, characteristic colors for THIS plant.
 - Watercolor pigment behavior, paper texture nuances.
+- Species-specific colouring and structural detail that anchors the fact-sheet.
 
 Format:
 - Keep the same overall structure and section headers as the original.
 - Return ONLY the rewritten prompt. No explanation, no preamble.`;
-  const userMsg = `Rewrite this ${side === 'front' ? 'plant-portrait (single plant, blank page around it, no text, no closeups)' : 'empty-page-with-top-right-inset'} prompt for a "${seed.common} (${seed.botanical})" plate.
+  const briefBlock = brief ? `
+
+FACT-SHEET FOR THIS PLANT — bind the rewrite to these:
+${JSON.stringify(brief, null, 2)}` : '';
+  const userMsg = `Rewrite this ${side === 'front' ? 'plant-portrait (single plant, blank page around it, no text, no closeups)' : 'empty-page-with-top-right-inset'} prompt for a "${seed.common} (${seed.botanical})" plate.${briefBlock}
 
 --- ORIGINAL PROMPT ---
 ${promptText}
@@ -231,8 +289,11 @@ async function generateOneSide(openai, plant, seed, side, templates, opts) {
   // ChatGPT web silently expands the user's prompt via GPT-4 before sending
   // it to the image model — that's why the same prompt produces richer output
   // in ChatGPT web than a raw API call. Replicate that pattern: expand first,
-  // then render.
-  const expanded = await expandPrompt(openai, prompt, seed, side);
+  // then render. We also pull a botanical fact-sheet for the plant so the
+  // expansion is fact-anchored (habit / leaf shape / flower shape) instead
+  // of leaning on the image model's guess about the species.
+  const brief = await botanicalBrief(openai, plant);
+  const expanded = await expandPrompt(openai, prompt, seed, side, brief);
 
   const response = await openai.images.generate({
     model: 'gpt-image-2',
