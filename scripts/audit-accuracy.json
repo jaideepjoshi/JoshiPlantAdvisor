@@ -125,6 +125,22 @@
     },
     "ts": "2026-07-07T19:54:44.440Z"
   },
+  "4": {
+    "id": 4,
+    "name": "Daylily",
+    "botanical": "Hemerocallis spp.",
+    "brief": {
+      "growth_habit": "clumping",
+      "mature_height": "1-4 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "trumpet",
+      "flower_color": "various colors including yellow, orange, and red",
+      "distinctive_notes": "Flowers have six petal-like tepals and bloom for only one day, often with a prominent throat."
+    }
+  },
   "5": {
     "id": 5,
     "name": "Bee Balm",
@@ -166,6 +182,22 @@
       "issues": []
     },
     "ts": "2026-07-07T19:54:50.653Z"
+  },
+  "7": {
+    "id": 7,
+    "name": "Catmint",
+    "botanical": "Nepeta faassenii",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "1-3 ft",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "gray-green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "lavender-blue",
+      "distinctive_notes": "Characterized by aromatic gray-green leaves and dense spikes of lavender-blue flowers that attract pollinators."
+    }
   },
   "8": {
     "id": 8,
@@ -419,6 +451,70 @@
     },
     "ts": "2026-07-07T19:55:24.278Z"
   },
+  "14": {
+    "id": 14,
+    "name": "Ornamental Grasses - Karl Foerster",
+    "botanical": "Calamagrostis x acutiflora",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-5 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "golden-brown",
+      "distinctive_notes": "Features tall, feathery flower spikes that rise above the foliage, creating a striking vertical accent."
+    }
+  },
+  "15": {
+    "id": 15,
+    "name": "Switchgrass",
+    "botanical": "Panicum virgatum",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-6 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "blue-green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "pale purple",
+      "distinctive_notes": "Characterized by its tall, slender stems and feathery flower panicles that sway gracefully in the wind."
+    }
+  },
+  "16": {
+    "id": 16,
+    "name": "Miscanthus (Maiden Grass)",
+    "botanical": "Miscanthus sinensis",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "4-6 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "pale pink",
+      "distinctive_notes": "Characterized by feathery flower plumes that emerge in late summer, adding a soft texture to the landscape."
+    }
+  },
+  "17": {
+    "id": 17,
+    "name": "Baptisia (False Indigo)",
+    "botanical": "Baptisia australis",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-4 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "deep blue",
+      "distinctive_notes": "Look for the tall spikes of blue flowers emerging from a bushy mound of trifoliate leaves."
+    }
+  },
   "18": {
     "id": 18,
     "name": "Salvia (Perennial Sage)",
@@ -628,6 +724,22 @@
       "issues": []
     },
     "ts": "2026-07-07T19:55:56.491Z"
+  },
+  "25": {
+    "id": 25,
+    "name": "Joe Pye Weed",
+    "botanical": "Eutrochium purpureum",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "4-6 ft",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "whorled",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "deep purple",
+      "distinctive_notes": "Tall stems topped with clusters of fluffy, purple flowers and large, broad leaves create a striking visual."
+    }
   },
   "26": {
     "id": 26,
@@ -884,6 +996,22 @@
     },
     "ts": "2026-07-07T20:43:36.111Z"
   },
+  "32": {
+    "id": 32,
+    "name": "Hardy Geranium (Cranesbill)",
+    "botanical": "Geranium spp.",
+    "brief": {
+      "growth_habit": "groundcover-trailing",
+      "mature_height": "12-18 in",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "five-star",
+      "flower_color": "bicolor pink-yellow",
+      "distinctive_notes": "Look for the deeply lobed leaves and star-shaped flowers that bloom in clusters."
+    }
+  },
   "33": {
     "id": 33,
     "name": "Goldenrod",
@@ -1058,6 +1186,118 @@
     },
     "ts": "2026-07-07T20:43:48.820Z"
   },
+  "37": {
+    "id": 37,
+    "name": "Toad Lily",
+    "botanical": "Tricyrtis spp.",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "1-3 ft",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "bell",
+      "flower_color": "white with purple spots",
+      "distinctive_notes": "Toad lilies feature unique, intricate flowers with a distinctive spotted pattern and arching stems."
+    }
+  },
+  "38": {
+    "id": 38,
+    "name": "Black Cohosh (Bugbane)",
+    "botanical": "Actaea racemosa",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-4 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "spike",
+      "flower_color": "white",
+      "distinctive_notes": "Tall spikes of delicate white flowers rise above large, deeply lobed leaves, creating a striking contrast."
+    }
+  },
+  "39": {
+    "id": 39,
+    "name": "Turtlehead",
+    "botanical": "Chelone lyonii",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-3 ft",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "pink",
+      "distinctive_notes": "Look for the unique turtle-shaped flowers that emerge in dense spikes atop sturdy stems."
+    }
+  },
+  "44": {
+    "id": 44,
+    "name": "Allium (Ornamental Onion)",
+    "botanical": "Allium spp.",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "1-3 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "purple",
+      "distinctive_notes": "Characterized by globe-shaped clusters of star-like flowers atop tall, slender stems."
+    }
+  },
+  "45": {
+    "id": 45,
+    "name": "Threadleaf Bluestar",
+    "botanical": "Amsonia hubrichtii",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "2-3 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pale blue",
+      "distinctive_notes": "The fine, thread-like foliage creates a soft, feathery appearance, especially striking in autumn when it turns golden-yellow."
+    }
+  },
+  "47": {
+    "id": 47,
+    "name": "Autumn Crocus (Colchicum)",
+    "botanical": "Colchicum autumnale",
+    "brief": {
+      "growth_habit": "bulb-emerging",
+      "mature_height": "6-12 in",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "bell",
+      "flower_color": "pale purple",
+      "distinctive_notes": "The large, cup-shaped flowers emerge before the leaves, creating a striking autumn display."
+    }
+  },
+  "48": {
+    "id": 48,
+    "name": "Blue False Indigo",
+    "botanical": "Baptisia 'Blueberry Sundae'",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-4 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "bicolor blue-purple-yellow",
+      "distinctive_notes": "Look for the unique bluish-green foliage and tall spikes of pea-like flowers that bloom in late spring."
+    }
+  },
   "49": {
     "id": 49,
     "name": "Dianthus (Pinks)",
@@ -1100,6 +1340,54 @@
     },
     "ts": "2026-07-07T19:56:57.164Z"
   },
+  "50": {
+    "id": 50,
+    "name": "Ornamental Grass - Little Bluestem",
+    "botanical": "Schizachyrium scoparium",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-4 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "blue-green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "silver-tan",
+      "distinctive_notes": "Characterized by its fine, upright stems that turn reddish-brown in fall and fluffy seed heads that catch the light."
+    }
+  },
+  "51": {
+    "id": 51,
+    "name": "Fountain Grass (Hardy)",
+    "botanical": "Pennisetum alopecuroides",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "2-4 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "pale pink",
+      "distinctive_notes": "Characterized by its fluffy, bottlebrush-like flower spikes and arching foliage."
+    }
+  },
+  "52": {
+    "id": 52,
+    "name": "Japanese Forest Grass",
+    "botanical": "Hakonechloa macra",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-24 in",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "variegated",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "pale green",
+      "distinctive_notes": "Features cascading, arching foliage with striking yellow and green stripes that create a soft, flowing appearance."
+    }
+  },
   "54": {
     "id": 54,
     "name": "Creeping Phlox",
@@ -1141,6 +1429,22 @@
       "issues": []
     },
     "ts": "2026-07-07T19:57:02.145Z"
+  },
+  "55": {
+    "id": 55,
+    "name": "Ajuga (Bugleweed)",
+    "botanical": "Ajuga reptans",
+    "brief": {
+      "growth_habit": "groundcover-trailing",
+      "mature_height": "4-12 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "deep purple",
+      "distinctive_notes": "Look for its dense mat of glossy leaves and spikes of tubular purple flowers in spring."
+    }
   },
   "56": {
     "id": 56,
@@ -1186,6 +1490,38 @@
       ]
     },
     "ts": "2026-07-07T20:43:55.244Z"
+  },
+  "57": {
+    "id": 57,
+    "name": "Ligularia",
+    "botanical": "Ligularia spp.",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-4 ft",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "spike",
+      "flower_color": "yellow",
+      "distinctive_notes": "Large, bold leaves with a prominent lobed shape and tall spikes of bright yellow flowers."
+    }
+  },
+  "58": {
+    "id": 58,
+    "name": "Veronica (Speedwell)",
+    "botanical": "Veronica spicata",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "12-24 in",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "deep purple",
+      "distinctive_notes": "Characterized by tall spikes of small, tubular flowers and narrow, elongated leaves."
+    }
   },
   "59": {
     "id": 59,
@@ -1355,6 +1691,86 @@
     },
     "ts": "2026-07-07T20:55:07.385Z"
   },
+  "64": {
+    "id": 64,
+    "name": "Hardy Hibiscus",
+    "botanical": "Hibiscus moscheutos",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-7 ft",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "white / deep pink / red",
+      "distinctive_notes": "Large, showy flowers with a prominent central stigma and broad lobed leaves."
+    }
+  },
+  "69": {
+    "id": 69,
+    "name": "Dwarf Goat's Beard",
+    "botanical": "Aruncus aethusifolius",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-18 in",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "white",
+      "distinctive_notes": "Characterized by feathery, fern-like foliage and airy clusters of white flowers that resemble a soft plume."
+    }
+  },
+  "70": {
+    "id": 70,
+    "name": "Japanese Spurge",
+    "botanical": "Pachysandra terminalis",
+    "brief": {
+      "growth_habit": "groundcover-trailing",
+      "mature_height": "6-12 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "whorled",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "white",
+      "distinctive_notes": "Look for glossy, dark green leaves with a dense, spreading habit and small white flower spikes in spring."
+    }
+  },
+  "71": {
+    "id": 71,
+    "name": "Hakone Grass",
+    "botanical": "Hakonechloa macra 'All Gold'",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-24 in",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "golden-yellow",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "greenish-brown",
+      "distinctive_notes": "Features cascading, arching golden-yellow foliage that creates a striking contrast in shady gardens."
+    }
+  },
+  "73": {
+    "id": 73,
+    "name": "Siberian Iris",
+    "botanical": "Iris sibirica",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-3 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "deep purple",
+      "distinctive_notes": "Features slender, upright leaves and striking, large purple flowers with intricate patterns."
+    }
+  },
   "75": {
     "id": 75,
     "name": "Sedge (Carex)",
@@ -1396,6 +1812,70 @@
       "issues": []
     },
     "ts": "2026-07-07T20:44:06.154Z"
+  },
+  "76": {
+    "id": 76,
+    "name": "Helenium (Sneezeweed)",
+    "botanical": "Helenium autumnale",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-4 ft",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "golden yellow",
+      "distinctive_notes": "Characterized by its bright yellow flowers with a prominent central disc and rough, hairy leaves."
+    }
+  },
+  "78": {
+    "id": 78,
+    "name": "Perennial Sunflower",
+    "botanical": "Helianthus 'Lemon Queen'",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-6 ft",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "pale yellow",
+      "distinctive_notes": "Features tall, sturdy stems topped with bright yellow, daisy-like flowers that attract pollinators."
+    }
+  },
+  "79": {
+    "id": 79,
+    "name": "Creeping Thyme",
+    "botanical": "Thymus serpyllum",
+    "brief": {
+      "growth_habit": "groundcover-trailing",
+      "mature_height": "2-4 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pale purple",
+      "distinctive_notes": "Characterized by tiny, aromatic leaves and clusters of small purple flowers that attract pollinators."
+    }
+  },
+  "80": {
+    "id": 80,
+    "name": "Ironweed",
+    "botanical": "Vernonia noveboracensis",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-6 ft",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "deep purple",
+      "distinctive_notes": "Characterized by tall, slender stems topped with clusters of vibrant purple flowers and lanceolate leaves."
+    }
   },
   "81": {
     "id": 81,
@@ -1439,6 +1919,22 @@
     },
     "ts": "2026-07-07T19:57:41.772Z"
   },
+  "82": {
+    "id": 82,
+    "name": "Itoh Peony",
+    "botanical": "Paeonia Itoh hybrids",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "2-3 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "bicolor pink-yellow",
+      "distinctive_notes": "Itoh Peonies feature large, lush flowers with a unique hybrid vigor and deeply lobed foliage."
+    }
+  },
   "84": {
     "id": 84,
     "name": "Autumn Fern",
@@ -1480,6 +1976,22 @@
       "issues": []
     },
     "ts": "2026-07-07T19:57:46.953Z"
+  },
+  "85": {
+    "id": 85,
+    "name": "Perennial Hibiscus - Summerific",
+    "botanical": "Hibiscus 'Cranberry Crush'",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-4 ft",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "bicolor pink-red",
+      "distinctive_notes": "Large, showy flowers with a striking bicolor pattern and deeply lobed leaves."
+    }
   },
   "86": {
     "id": 86,
@@ -1649,6 +2161,38 @@
     },
     "ts": "2026-07-07T19:58:09.243Z"
   },
+  "90": {
+    "id": 90,
+    "name": "Tall Garden Phlox - Jeana",
+    "botanical": "Phlox paniculata 'Jeana'",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-4 ft",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pink",
+      "distinctive_notes": "Features large clusters of fragrant pink flowers atop sturdy stems, with lanceolate leaves that provide a lush backdrop."
+    }
+  },
+  "91": {
+    "id": 91,
+    "name": "Eranthis (Winter Aconite)",
+    "botanical": "Eranthis hyemalis",
+    "brief": {
+      "growth_habit": "bulb-emerging",
+      "mature_height": "3-6 in",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "cup-shaped",
+      "flower_color": "bright yellow",
+      "distinctive_notes": "Look for bright yellow flowers emerging from a rosette of lobed leaves, often blooming in early spring."
+    }
+  },
   "92": {
     "id": 92,
     "name": "Doronicum (Leopard's Bane)",
@@ -1732,6 +2276,22 @@
       "issues": []
     },
     "ts": "2026-07-07T19:58:19.725Z"
+  },
+  "95": {
+    "id": 95,
+    "name": "Arabis (Rock Cress)",
+    "botanical": "Arabis spp.",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "6-12 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "white",
+      "distinctive_notes": "Look for clusters of small white flowers above a rosette of rounded, green leaves."
+    }
   },
   "96": {
     "id": 96,
@@ -1988,6 +2548,22 @@
     },
     "ts": "2026-07-07T19:58:51.955Z"
   },
+  "102": {
+    "id": 102,
+    "name": "Centranthus (Red Valerian)",
+    "botanical": "Centranthus ruber",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "1-2 ft",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "deep pink",
+      "distinctive_notes": "Features clusters of bright pink flowers atop sturdy stems, with narrow, elongated leaves."
+    }
+  },
   "103": {
     "id": 103,
     "name": "Physostegia (Obedient Plant)",
@@ -2030,6 +2606,38 @@
     },
     "ts": "2026-07-07T19:58:59.042Z"
   },
+  "104": {
+    "id": 104,
+    "name": "Tradescantia (Spiderwort)",
+    "botanical": "Tradescantia virginiana",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "1-2 ft",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "three-petal",
+      "flower_color": "deep purple",
+      "distinctive_notes": "Look for the striking purple flowers and the elongated, arching leaves that often have a glossy appearance."
+    }
+  },
+  "105": {
+    "id": 105,
+    "name": "Armeria (Sea Thrift)",
+    "botanical": "Armeria maritima",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "6-12 in",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pink",
+      "distinctive_notes": "Characterized by dense clusters of pink flowers atop slender stems, with narrow, grass-like leaves forming a tuft."
+    }
+  },
   "106": {
     "id": 106,
     "name": "Oenothera (Evening Primrose)",
@@ -2071,6 +2679,102 @@
       "issues": []
     },
     "ts": "2026-07-07T19:59:05.495Z"
+  },
+  "107": {
+    "id": 107,
+    "name": "Astrantia (Masterwort)",
+    "botanical": "Astrantia major",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "2-3 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "white",
+      "distinctive_notes": "Characterized by its unique, star-shaped flowers surrounded by prominent bracts."
+    }
+  },
+  "108": {
+    "id": 108,
+    "name": "Heliopsis (Perennial Sunflower)",
+    "botanical": "Heliopsis helianthoides",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-5 ft",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "yellow",
+      "distinctive_notes": "Features bright yellow, daisy-like flowers with a dark center and rough, serrated leaves."
+    }
+  },
+  "109": {
+    "id": 109,
+    "name": "Sidalcea (Prairie Mallow)",
+    "botanical": "Sidalcea malviflora",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-4 ft",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "five-star",
+      "flower_color": "pink",
+      "distinctive_notes": "Features delicate pink flowers with a hibiscus-like appearance and deeply lobed leaves."
+    }
+  },
+  "110": {
+    "id": 110,
+    "name": "Verbascum (Mullein)",
+    "botanical": "Verbascum spp.",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-5 ft",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "gray-green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "spike",
+      "flower_color": "yellow",
+      "distinctive_notes": "Tall spikes of yellow flowers emerge from a rosette of large, fuzzy leaves."
+    }
+  },
+  "111": {
+    "id": 111,
+    "name": "Tanacetum (Feverfew)",
+    "botanical": "Tanacetum spp.",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-24 in",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "white",
+      "distinctive_notes": "Characterized by its finely dissected leaves and clusters of small white flowers with yellow centers."
+    }
+  },
+  "112": {
+    "id": 112,
+    "name": "Scabiosa (Pincushion Flower)",
+    "botanical": "Scabiosa spp.",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "1-3 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "blue-purple",
+      "distinctive_notes": "Characterized by its rounded, pincushion-like flower heads and deeply lobed foliage."
+    }
   },
   "113": {
     "id": 113,
@@ -2243,6 +2947,38 @@
     },
     "ts": "2026-07-07T20:55:12.492Z"
   },
+  "117": {
+    "id": 117,
+    "name": "Chrysanthemum (Hardy Mum)",
+    "botanical": "Chrysanthemum spp.",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "1-3 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "bicolor pink-yellow",
+      "distinctive_notes": "Characterized by dense clusters of vibrant flowers atop sturdy stems, with deeply lobed foliage."
+    }
+  },
+  "118": {
+    "id": 118,
+    "name": "Corydalis",
+    "botanical": "Corydalis spp.",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-18 in",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "pale blue",
+      "distinctive_notes": "Look for delicate, fern-like foliage and tubular flowers that emerge in clusters."
+    }
+  },
   "119": {
     "id": 119,
     "name": "Narcissus (Daffodils)",
@@ -2284,6 +3020,22 @@
       "issues": []
     },
     "ts": "2026-07-07T19:59:37.027Z"
+  },
+  "120": {
+    "id": 120,
+    "name": "Muscari (Grape Hyacinth)",
+    "botanical": "Muscari armeniacum",
+    "brief": {
+      "growth_habit": "bulb-emerging",
+      "mature_height": "6-12 in",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "bell",
+      "flower_color": "deep purple",
+      "distinctive_notes": "Look for dense clusters of small, grape-like flowers atop slender stems, with narrow, strap-like leaves emerging from the base."
+    }
   },
   "121": {
     "id": 121,
@@ -2327,6 +3079,54 @@
     },
     "ts": "2026-07-07T19:59:43.805Z"
   },
+  "122": {
+    "id": 122,
+    "name": "Aconitum (Monkshood)",
+    "botanical": "Aconitum napellus",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-4 ft",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "whorled",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "deep purple",
+      "distinctive_notes": "The distinctive helmet-shaped flowers and deeply lobed leaves are key identifiers for botanical artists."
+    }
+  },
+  "123": {
+    "id": 123,
+    "name": "Tiarella (Foam Flower)",
+    "botanical": "Tiarella cordifolia",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-18 in",
+      "leaf_shape": "heart-shaped",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "white",
+      "distinctive_notes": "Features deeply lobed, glossy leaves and airy spikes of small white flowers that resemble foam."
+    }
+  },
+  "124": {
+    "id": 124,
+    "name": "Trollius (Globe Flower)",
+    "botanical": "Trollius spp.",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "1-3 ft",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "cup-shaped",
+      "flower_color": "bright yellow",
+      "distinctive_notes": "Characterized by its bright yellow, cup-shaped flowers and deeply lobed leaves."
+    }
+  },
   "125": {
     "id": 125,
     "name": "Polemonium (Jacob's Ladder)",
@@ -2368,6 +3168,22 @@
       "issues": []
     },
     "ts": "2026-07-07T19:59:49.571Z"
+  },
+  "126": {
+    "id": 126,
+    "name": "Epimedium (Barrenwort)",
+    "botanical": "Epimedium spp.",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-24 in",
+      "leaf_shape": "heart-shaped",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pale yellow",
+      "distinctive_notes": "Look for the unique heart-shaped leaves and delicate, nodding flowers that rise above the foliage."
+    }
   },
   "127": {
     "id": 127,
@@ -2497,6 +3313,70 @@
       "issues": []
     },
     "ts": "2026-07-07T20:00:06.817Z"
+  },
+  "130": {
+    "id": 130,
+    "name": "Echinops (Globe Thistle)",
+    "botanical": "Echinops ritro",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-4 ft",
+      "leaf_shape": "pinnately-lobed",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "globular",
+      "flower_color": "deep blue",
+      "distinctive_notes": "The striking spherical flower heads are surrounded by spiky, silvery-green bracts."
+    }
+  },
+  "131": {
+    "id": 131,
+    "name": "Filipendula (Queen of the Prairie)",
+    "botanical": "Filipendula rubra",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "3-6 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pink",
+      "distinctive_notes": "Characterized by its tall, feathery plumes of pink flowers and large, deeply lobed leaves."
+    }
+  },
+  "132": {
+    "id": 132,
+    "name": "Alcea (Hollyhock)",
+    "botanical": "Alcea rosea",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "4-6 ft",
+      "leaf_shape": "palmately-lobed",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "bell",
+      "flower_color": "bicolor pink-yellow",
+      "distinctive_notes": "Tall spikes of large, showy flowers with deeply lobed leaves at the base."
+    }
+  },
+  "133": {
+    "id": 133,
+    "name": "Platycodon (Balloon Flower)",
+    "botanical": "Platycodon grandiflorus",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "1-2 ft",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "bell",
+      "flower_color": "pale blue",
+      "distinctive_notes": "The balloon-like buds that swell before opening into star-shaped flowers are key identifiers."
+    }
   },
   "135": {
     "id": 135,
