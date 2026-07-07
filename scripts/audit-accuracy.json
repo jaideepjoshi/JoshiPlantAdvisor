@@ -181,36 +181,33 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "umbel",
       "flower_color": "yellow",
-      "distinctive_notes": "Fleshy, succulent leaves with a waxy texture and clusters of star-shaped yellow flowers."
+      "distinctive_notes": "Look for fleshy, succulent leaves and clusters of star-shaped yellow flowers atop sturdy stems."
     },
     "scores": {
       "growth_habit": {
         "score": 4,
-        "note": "Illustration shows a mounding habit but with some upright stems."
+        "note": "Illustration shows a mounding habit, but appears slightly taller than typical."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are broadly ovate but not distinctly fleshy."
+        "score": 5,
+        "note": "Leaves are ovate as described."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are correctly depicted as opposite."
+        "note": "Leaves are arranged oppositely."
       },
       "flower": {
-        "score": 3,
-        "note": "Flowers are present but pink instead of yellow."
+        "score": 5,
+        "note": "Flowers are yellow and in an umbel shape."
       },
       "overall": {
         "score": 4,
-        "note": "Generally accurate representation with minor color issues."
+        "note": "Overall representation is strong, with minor height discrepancies."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect flower color",
-        "Slightly upright growth habit"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T19:54:57.000Z"
+    "ts": "2026-07-07T20:43:19.222Z"
   },
   "9": {
     "id": 9,
@@ -562,36 +559,33 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "daisy-composite",
       "flower_color": "white",
-      "distinctive_notes": "Features delicate, cup-shaped white flowers with a prominent yellow center, often blooming in late summer to fall."
+      "distinctive_notes": "Features delicate, cup-shaped flowers with prominent yellow stamens and deeply lobed foliage."
     },
     "scores": {
       "growth_habit": {
-        "score": 4,
-        "note": "Illustration shows an upright clumping habit, but may appear slightly more spread out."
+        "score": 5,
+        "note": "Illustration shows an upright-clumping growth habit."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are lobed but may not fully capture the palmate shape."
+        "score": 5,
+        "note": "Leaves are palmately-lobed as described."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are depicted in an alternate arrangement."
+        "note": "Leaves are arranged alternately."
       },
       "flower": {
-        "score": 3,
-        "note": "Flowers are pink instead of white, which is a significant deviation."
+        "score": 5,
+        "note": "Flowers are daisy-composite in shape and white."
       },
       "overall": {
-        "score": 4,
-        "note": "Generally accurate representation but with notable color and shape discrepancies."
+        "score": 5,
+        "note": "Illustration accurately represents the Japanese Anemone."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Flowers are pink instead of white.",
-        "Leaf shape not fully palmate."
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T19:55:50.996Z"
+    "ts": "2026-07-07T20:43:25.349Z"
   },
   "24": {
     "id": 24,
@@ -774,37 +768,34 @@
       "leaf_color": "medium green",
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "bell",
-      "flower_color": "deep purple",
-      "distinctive_notes": "Large, showy flowers with prominent stamens and a climbing habit."
+      "flower_color": "bicolor purple-white",
+      "distinctive_notes": "Large, showy flowers with distinct petal shapes and a climbing growth habit."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows a bushy form rather than a climbing vine."
+        "score": 5,
+        "note": "Correctly depicts a climbing vine."
       },
       "leaf_shape": {
         "score": 4,
-        "note": "Leaves are broad but not distinctly pinnately compound."
+        "note": "Leaves are compound but not distinctly pinnate."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are arranged oppositely as described."
+        "note": "Leaves are arranged oppositely."
       },
       "flower": {
-        "score": 5,
-        "note": "Flowers are large and bell-shaped with deep purple color."
+        "score": 4,
+        "note": "Flowers are bell-shaped but not bicolor."
       },
       "overall": {
         "score": 4,
-        "note": "Overall representation is strong but growth habit is incorrect."
+        "note": "Generally accurate representation with minor artistic liberties."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect growth habit as a bush instead of a vine.",
-        "Leaf shape not accurately depicted."
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T19:56:18.681Z"
+    "ts": "2026-07-07T20:43:30.590Z"
   },
   "30": {
     "id": 30,
@@ -864,8 +855,8 @@
       "leaf_color": "medium green",
       "leaf_size": "large (>8cm)",
       "flower_shape": "cup-shaped",
-      "flower_color": "white / pale pink / deep purple",
-      "distinctive_notes": "Features leathery, dark green leaves and nodding flowers that bloom in early spring."
+      "flower_color": "white",
+      "distinctive_notes": "Features leathery, deeply lobed leaves and nodding flowers that bloom in early spring."
     },
     "scores": {
       "growth_habit": {
@@ -873,8 +864,8 @@
         "note": "Illustration shows a mounding growth habit."
       },
       "leaf_shape": {
-        "score": 3,
-        "note": "Leaves appear broad but not distinctly pinnately-compound."
+        "score": 4,
+        "note": "Leaves are broad and lobed, but not distinctly pinnately-compound."
       },
       "leaf_arrangement": {
         "score": 5,
@@ -882,19 +873,16 @@
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are cup-shaped and match the color description."
+        "note": "Flowers are cup-shaped and include multiple colors."
       },
       "overall": {
         "score": 4,
-        "note": "Overall representation is strong but leaf shape is not precise."
+        "note": "Overall representation is strong with minor leaf shape inaccuracies."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Leaf shape does not clearly represent pinnately-compound.",
-        "Minor inaccuracies in leaf detail."
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T19:56:30.146Z"
+    "ts": "2026-07-07T20:43:36.111Z"
   },
   "33": {
     "id": 33,
@@ -952,16 +940,16 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "daisy-composite",
       "flower_color": "bicolor red-yellow",
-      "distinctive_notes": "Characterized by its vibrant, large, and daisy-like flowers with a striking red and yellow coloration."
+      "distinctive_notes": "Characterized by its vibrant, bicolor flowers and deeply lobed, hairy leaves."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows an upright growth habit instead of mounding."
+        "score": 4,
+        "note": "Illustration shows a mounding habit but slightly upright."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are lanceolate but may not match size or color exactly."
+        "score": 3,
+        "note": "Leaves are somewhat lanceolate but not distinctly lobed."
       },
       "leaf_arrangement": {
         "score": 5,
@@ -969,19 +957,19 @@
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are daisy-like and match the color description."
+        "note": "Flowers match the daisy-composite shape and bicolor color."
       },
       "overall": {
         "score": 4,
-        "note": "Overall representation is strong but has a growth habit error."
+        "note": "Overall representation is strong with minor inaccuracies."
       },
       "recommend_regenerate": true,
       "issues": [
-        "Incorrect growth habit depicted.",
-        "Potential mismatch in leaf size and color."
+        "Growth habit slightly upright instead of fully mounding.",
+        "Leaves lack distinct lobing."
       ]
     },
-    "ts": "2026-07-07T19:56:40.636Z"
+    "ts": "2026-07-07T20:43:42.130Z"
   },
   "35": {
     "id": 35,
@@ -1033,42 +1021,42 @@
     "brief": {
       "growth_habit": "mounding",
       "mature_height": "12-18 in",
-      "leaf_shape": "pinnately-compound",
-      "leaf_arrangement": "basal-rosette",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "alternate",
       "leaf_color": "variegated",
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "n/a",
       "flower_color": "n/a",
-      "distinctive_notes": "Characterized by its striking silvery-gray fronds with deep green margins and a delicate, lacy appearance."
+      "distinctive_notes": "Characterized by its striking silver and green fronds with a delicate, feathery texture."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows a more upright growth than the mounding habit."
+        "score": 4,
+        "note": "Illustration shows a mounding habit but slightly more upright than typical."
       },
       "leaf_shape": {
         "score": 5,
-        "note": "Leaves are pinnately-compound as described."
+        "note": "Leaves are lanceolate as described."
       },
       "leaf_arrangement": {
-        "score": 4,
-        "note": "Basal-rosette is suggested but not clearly defined."
+        "score": 5,
+        "note": "Leaves are arranged alternately."
       },
       "flower": {
-        "score": 5,
-        "note": "No flowers depicted, consistent with 'n/a'."
+        "score": 1,
+        "note": "No flowers depicted, but noted as n/a."
       },
       "overall": {
         "score": 4,
-        "note": "Generally accurate but with some growth habit issues."
+        "note": "Overall representation is strong, with minor artistic license."
       },
       "recommend_regenerate": true,
       "issues": [
-        "Upright growth habit does not match mounding.",
-        "Basal-rosette arrangement is not clearly depicted."
+        "Flower depiction is not applicable but noted as missing.",
+        "Growth habit slightly misrepresented."
       ]
     },
-    "ts": "2026-07-07T19:56:51.878Z"
+    "ts": "2026-07-07T20:43:48.820Z"
   },
   "49": {
     "id": 49,
@@ -1168,36 +1156,36 @@
       "leaf_size": "large (>8cm)",
       "flower_shape": "spike",
       "flower_color": "pale purple",
-      "distinctive_notes": "The soft, fuzzy, silvery leaves and tall spikes of purple flowers create a striking contrast in the garden."
+      "distinctive_notes": "Soft, fuzzy, silvery leaves with a low-growing habit and tall flower spikes."
     },
     "scores": {
       "growth_habit": {
         "score": 3,
-        "note": "Illustration shows a clumping habit rather than a trailing groundcover."
+        "note": "Illustration shows upright growth rather than trailing."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are broadly ovate but may not be large enough."
+        "score": 5,
+        "note": "Leaves are ovate as described."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are correctly depicted as opposite."
+        "note": "Leaves are arranged oppositely."
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are accurately shown as spikes with pale purple color."
+        "note": "Flowers are depicted as spikes and are pale purple."
       },
       "overall": {
         "score": 4,
-        "note": "Overall representation is strong, but growth habit is misrepresented."
+        "note": "Right species but growth habit is incorrect."
       },
       "recommend_regenerate": true,
       "issues": [
-        "Growth habit misrepresented as clumping instead of trailing.",
-        "Leaf size may not be adequately depicted."
+        "Incorrect growth habit",
+        "Upright instead of groundcover"
       ]
     },
-    "ts": "2026-07-07T19:57:07.628Z"
+    "ts": "2026-07-07T20:43:55.244Z"
   },
   "59": {
     "id": 59,
@@ -1339,36 +1327,36 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "trumpet",
       "flower_color": "bicolor red-yellow",
-      "distinctive_notes": "Look for tubular flowers with a sweet fragrance and bright coral-red color, often attracting hummingbirds."
+      "distinctive_notes": "Look for tubular flowers that attract hummingbirds and glossy green leaves."
     },
     "scores": {
       "growth_habit": {
-        "score": 2,
-        "note": "Illustration depicts a shrub-like form instead of a vine."
+        "score": 3,
+        "note": "Illustration shows a shrub-like form rather than a climbing vine."
       },
       "leaf_shape": {
         "score": 4,
-        "note": "Leaves are broadly ovate but may not match size."
+        "note": "Leaves are broadly ovate but may not perfectly match size."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are arranged oppositely as described."
+        "note": "Leaves are depicted in an opposite arrangement."
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are trumpet-shaped and bicolor red-yellow."
+        "note": "Flowers are trumpet-shaped and show the correct bicolor."
       },
       "overall": {
         "score": 3,
-        "note": "Right species but growth habit is incorrect."
+        "note": "Recognizably related but has a significant growth habit error."
       },
       "recommend_regenerate": true,
       "issues": [
         "Incorrect growth habit depicted",
-        "Potential leaf size mismatch"
+        "Leaf size may not match fact-sheet"
       ]
     },
-    "ts": "2026-07-07T19:57:30.350Z"
+    "ts": "2026-07-07T20:44:00.868Z"
   },
   "75": {
     "id": 75,
@@ -1384,37 +1372,33 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "spike",
       "flower_color": "brown",
-      "distinctive_notes": "Characterized by its grass-like appearance with slender, arching leaves and dense flower spikes."
+      "distinctive_notes": "Characterized by its grass-like appearance with triangular stems and dense flower spikes."
     },
     "scores": {
       "growth_habit": {
-        "score": 4,
-        "note": "Illustration shows a grass-tuft habit, but slightly taller than typical."
+        "score": 5,
+        "note": "Illustration accurately depicts a grass-tuft growth habit."
       },
       "leaf_shape": {
         "score": 4,
-        "note": "Leaves are linear but appear broader than needle-like."
+        "note": "Leaves are linear but may not be as needle-like as described."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are arranged alternately as described."
+        "note": "Leaves are arranged alternately as per the fact-sheet."
       },
       "flower": {
-        "score": 3,
-        "note": "Flowers depicted as spikes, but not dense as described."
+        "score": 5,
+        "note": "Flower spikes are present and match the description."
       },
       "overall": {
         "score": 4,
-        "note": "Generally matches Carex but with some execution flaws."
+        "note": "Overall representation is strong with minor artistic license."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Growth habit slightly off",
-        "Leaf shape broader than expected",
-        "Flower density not accurate"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T19:57:36.290Z"
+    "ts": "2026-07-07T20:44:06.154Z"
   },
   "81": {
     "id": 81,
@@ -1591,7 +1575,7 @@
     "plate": "088-penstemon-beardtongue-front.webp",
     "brief": {
       "growth_habit": "upright-clumping",
-      "mature_height": "2-4 ft",
+      "mature_height": "2-3 ft",
       "leaf_shape": "lanceolate",
       "leaf_arrangement": "opposite",
       "leaf_color": "medium green",
@@ -1602,32 +1586,29 @@
     },
     "scores": {
       "growth_habit": {
-        "score": 4,
-        "note": "Illustration shows an upright clumping habit, but may appear slightly less dense."
+        "score": 5,
+        "note": "Illustration shows an upright-clumping growth habit."
       },
       "leaf_shape": {
-        "score": 3,
-        "note": "Leaves are somewhat lanceolate but appear broader than typical."
+        "score": 5,
+        "note": "Leaves are lanceolate as described."
       },
       "leaf_arrangement": {
-        "score": 4,
-        "note": "Leaves are mostly opposite, but some may appear alternate."
+        "score": 5,
+        "note": "Leaves are arranged oppositely."
       },
       "flower": {
-        "score": 2,
-        "note": "Flowers are purple instead of the expected white and differ in shape."
+        "score": 5,
+        "note": "Flowers are trumpet-shaped and white."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related to Penstemon but with notable errors in flower color and shape."
+        "score": 5,
+        "note": "Illustration accurately represents Penstemon digitalis."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect flower color (purple instead of white)",
-        "Flower shape does not match description"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T19:58:02.431Z"
+    "ts": "2026-07-07T20:44:11.380Z"
   },
   "89": {
     "id": 89,
@@ -1811,37 +1792,33 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "umbel",
       "flower_color": "pale blue",
-      "distinctive_notes": "Look for spotted leaves and clusters of small, tubular flowers that change color as they mature."
+      "distinctive_notes": "Look for the distinctive spotted leaves and clusters of small, tubular flowers that change color as they mature."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows an upright growth habit instead of mounding."
+        "score": 5,
+        "note": "Illustration accurately depicts a mounding growth habit."
       },
       "leaf_shape": {
         "score": 5,
         "note": "Leaves are ovate as described."
       },
       "leaf_arrangement": {
-        "score": 4,
-        "note": "Basal-rosette is present but not clearly defined."
+        "score": 5,
+        "note": "Basal-rosette arrangement is clearly shown."
       },
       "flower": {
         "score": 4,
-        "note": "Flowers are similar but not strictly umbel-shaped."
+        "note": "Flowers are similar but may not fully represent the umbel shape."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has notable errors."
+        "score": 5,
+        "note": "Illustration closely matches the fact-sheet."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect growth habit",
-        "Ambiguous leaf arrangement",
-        "Flower shape not accurate"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T19:58:31.648Z"
+    "ts": "2026-07-07T20:44:16.640Z"
   },
   "98": {
     "id": 98,
@@ -2106,43 +2083,42 @@
     "brief": {
       "growth_habit": "mounding",
       "mature_height": "1-2 ft",
-      "leaf_shape": "linear-needle",
+      "leaf_shape": "lanceolate",
       "leaf_arrangement": "basal-rosette",
       "leaf_color": "medium green",
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "daisy-composite",
-      "flower_color": "blue-purple",
-      "distinctive_notes": "Features large, showy blue-purple flowers with a prominent central disc and narrow, strap-like leaves."
+      "flower_color": "pale blue",
+      "distinctive_notes": "Features large, fringed, daisy-like flowers atop sturdy stems with narrow, elongated leaves."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows an upright growth habit instead of mounding."
+        "score": 4,
+        "note": "Illustration shows a mounding habit, but appears slightly taller than expected."
       },
       "leaf_shape": {
-        "score": 2,
-        "note": "Leaves are broader than the linear-needle shape described."
+        "score": 4,
+        "note": "Leaves are lanceolate but may be broader than typical."
       },
       "leaf_arrangement": {
-        "score": 4,
-        "note": "Basal arrangement is present, but leaf shape is incorrect."
+        "score": 3,
+        "note": "Leaves are basal but not distinctly rosette-like."
       },
       "flower": {
-        "score": 4,
-        "note": "Flowers resemble daisy-composite but may not match the blue-purple color exactly."
+        "score": 5,
+        "note": "Flowers are daisy-like and match the description."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has significant errors in growth habit and leaf shape."
+        "score": 4,
+        "note": "Overall representation is strong with minor discrepancies."
       },
-      "recommend_regenerate": true,
+      "recommend_regenerate": false,
       "issues": [
-        "Incorrect growth habit",
-        "Leaf shape does not match",
-        "Potential color mismatch in flowers"
+        "Slight height discrepancy in growth habit",
+        "Leaf arrangement not distinctly rosette"
       ]
     },
-    "ts": "2026-07-07T19:59:11.920Z"
+    "ts": "2026-07-07T20:44:24.176Z"
   },
   "114": {
     "id": 114,
@@ -2240,38 +2216,38 @@
       "leaf_arrangement": "opposite",
       "leaf_color": "medium green",
       "leaf_size": "medium (3-8cm)",
-      "flower_shape": "umbel",
+      "flower_shape": "five-star",
       "flower_color": "deep blue",
-      "distinctive_notes": "Features bright blue flowers that bloom in late summer, contrasting with its lush green foliage."
+      "distinctive_notes": "Features vibrant blue flowers and reddish-bronze foliage in autumn."
     },
     "scores": {
       "growth_habit": {
-        "score": 2,
-        "note": "Illustration depicts an upright habit instead of groundcover."
+        "score": 3,
+        "note": "Illustration shows an upright habit rather than trailing."
       },
       "leaf_shape": {
         "score": 4,
-        "note": "Leaves appear broadly ovate but may not match size."
+        "note": "Leaves are broadly ovate but slightly different in shape."
       },
       "leaf_arrangement": {
-        "score": 4,
-        "note": "Leaves are arranged oppositely, but details may vary."
+        "score": 5,
+        "note": "Leaves are correctly depicted as opposite."
       },
       "flower": {
-        "score": 4,
-        "note": "Flowers are blue but not distinctly umbel-shaped."
+        "score": 5,
+        "note": "Flowers are accurately represented as deep blue and five-star."
       },
       "overall": {
         "score": 3,
-        "note": "Recognizably related but has significant errors."
+        "note": "Recognizably related but with a significant error in growth habit."
       },
       "recommend_regenerate": true,
       "issues": [
-        "Wrong growth habit",
-        "Flower shape not accurate"
+        "Incorrect growth habit depicted",
+        "Leaf shape not perfectly accurate"
       ]
     },
-    "ts": "2026-07-07T19:59:30.861Z"
+    "ts": "2026-07-07T20:44:31.003Z"
   },
   "119": {
     "id": 119,
@@ -2413,36 +2389,36 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "spike",
       "flower_color": "purple",
-      "distinctive_notes": "Features arching, grass-like leaves with dense spikes of purple flowers emerging in late summer."
+      "distinctive_notes": "Features arching, grass-like leaves with dense spikes of small purple flowers emerging above."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows upright growth, not trailing."
+        "score": 2,
+        "note": "Illustration shows an upright growth habit instead of trailing."
       },
       "leaf_shape": {
         "score": 4,
-        "note": "Leaves are linear but may not fully represent 'needle' shape."
+        "note": "Leaves are linear but appear broader than typical needle shape."
       },
       "leaf_arrangement": {
-        "score": 5,
-        "note": "Correctly depicts basal rosette arrangement."
+        "score": 4,
+        "note": "Basal rosette is present but not clearly defined."
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are spikes and match the color description."
+        "note": "Flowers are accurately depicted as spikes with purple color."
       },
       "overall": {
-        "score": 4,
-        "note": "Right species but with a notable growth habit error."
+        "score": 3,
+        "note": "Recognizably related but has significant errors in growth habit."
       },
       "recommend_regenerate": true,
       "issues": [
         "Incorrect growth habit depicted",
-        "Leaf shape not fully accurate"
+        "Leaf shape not accurately represented"
       ]
     },
-    "ts": "2026-07-07T19:59:55.365Z"
+    "ts": "2026-07-07T20:44:36.653Z"
   },
   "128": {
     "id": 128,
@@ -2583,37 +2559,34 @@
       "leaf_color": "medium green",
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "cup-shaped",
-      "flower_color": "yellow-orange",
-      "distinctive_notes": "Look for the distinctive cup-shaped flowers atop wiry stems and the deeply lobed, serrated leaves."
+      "flower_color": "golden yellow",
+      "distinctive_notes": "Look for the distinctive, finely divided leaves and bright yellow flowers that appear in clusters atop sturdy stems."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows upright stems, not clearly mounding."
+        "score": 4,
+        "note": "Illustration shows a mounding habit but with some upright stems."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are lobed but not distinctly pinnately-compound."
+        "score": 5,
+        "note": "Leaves are pinnately-compound as described."
       },
       "leaf_arrangement": {
-        "score": 3,
-        "note": "Basal leaves are present but not clearly a rosette."
+        "score": 5,
+        "note": "Basal-rosette arrangement is clearly depicted."
       },
       "flower": {
-        "score": 4,
-        "note": "Flowers are cup-shaped but color varies from fact-sheet."
+        "score": 5,
+        "note": "Flowers are cup-shaped and golden yellow."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably Geum but with notable errors."
+        "score": 4,
+        "note": "Overall representation is strong with minor artistic license."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Growth habit not accurately depicted.",
-        "Leaf shape and arrangement not precise."
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:00:19.812Z"
+    "ts": "2026-07-07T20:44:42.150Z"
   },
   "138": {
     "id": 138,
@@ -2634,7 +2607,7 @@
     "scores": {
       "growth_habit": {
         "score": 2,
-        "note": "Illustration depicts an upright habit instead of trailing."
+        "note": "Illustration shows an upright growth habit instead of trailing."
       },
       "leaf_shape": {
         "score": 4,
@@ -2642,23 +2615,24 @@
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are arranged oppositely as described."
+        "note": "Leaves are correctly depicted as opposite."
       },
       "flower": {
         "score": 4,
-        "note": "Flowers are tubular and pale purple, but not in distinct whorls."
+        "note": "Flowers are present but not clearly in whorls."
       },
       "overall": {
         "score": 3,
-        "note": "Recognizably related but has notable errors in growth habit."
+        "note": "Recognizably related but has significant errors."
       },
       "recommend_regenerate": true,
       "issues": [
-        "Wrong growth habit depicted",
-        "Lack of distinctive variegation on leaves"
+        "Incorrect growth habit",
+        "Lack of clear variegation on leaves",
+        "Flowers not depicted in whorls"
       ]
     },
-    "ts": "2026-07-07T20:00:26.700Z"
+    "ts": "2026-07-07T20:44:47.543Z"
   },
   "142": {
     "id": 142,
@@ -2758,36 +2732,33 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "umbel",
       "flower_color": "yellow",
-      "distinctive_notes": "Features bright yellow flowers and round, coin-like leaves that turn golden in fall."
+      "distinctive_notes": "Features bright yellow flowers and round, coin-like leaves that create a lush carpet effect."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows an upright growth habit instead of trailing."
+        "score": 4,
+        "note": "Illustration shows a trailing habit but appears slightly upright."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are rounded but not distinctly coin-like."
+        "score": 5,
+        "note": "Leaves are rounded as described."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are arranged oppositely as described."
+        "note": "Leaves are depicted as opposite."
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are yellow and resemble the umbel shape."
+        "note": "Flowers are yellow and in an umbel shape."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has a significant growth habit error."
+        "score": 4,
+        "note": "Overall representation is strong with minor deviations."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect growth habit depicted",
-        "Leaves not distinctly coin-like"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:00:47.576Z"
+    "ts": "2026-07-07T20:44:55.737Z"
   },
   "147": {
     "id": 147,
@@ -2921,7 +2892,7 @@
     "botanical": "Silene regia",
     "plate": "154-silene-catchfly-front.webp",
     "brief": {
-      "growth_habit": "mounding",
+      "growth_habit": "upright-clumping",
       "mature_height": "2-3 ft",
       "leaf_shape": "lanceolate",
       "leaf_arrangement": "opposite",
@@ -2929,36 +2900,33 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "bell",
       "flower_color": "deep red",
-      "distinctive_notes": "Look for the unique, sticky stems and bright red flowers that attract pollinators."
+      "distinctive_notes": "Look for the unique, tubular flowers with a fringed edge and hairy stems."
     },
     "scores": {
       "growth_habit": {
-        "score": 4,
-        "note": "Illustration shows a mounding habit, but appears slightly upright."
+        "score": 5,
+        "note": "Illustration shows an upright-clumping growth habit."
       },
       "leaf_shape": {
         "score": 4,
-        "note": "Leaves are lanceolate but may be broader than typical."
+        "note": "Leaves are lanceolate but slightly broader than typical."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are depicted as opposite."
+        "note": "Leaves are arranged oppositely as described."
       },
       "flower": {
-        "score": 3,
-        "note": "Flowers are pink instead of deep red and not bell-shaped."
+        "score": 4,
+        "note": "Flowers are red but not distinctly bell-shaped."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but with notable errors in flower color and shape."
+        "score": 4,
+        "note": "Overall representation is strong with minor artistic license."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Flower color is incorrect",
-        "Flower shape does not match description"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:01:13.801Z"
+    "ts": "2026-07-07T20:45:01.870Z"
   },
   "158": {
     "id": 158,
@@ -3141,44 +3109,40 @@
     "plate": "185-goats-beard-chantilly-lace-front.webp",
     "brief": {
       "growth_habit": "upright-clumping",
-      "mature_height": "3-4 ft",
+      "mature_height": "3-5 ft",
       "leaf_shape": "pinnately-compound",
       "leaf_arrangement": "alternate",
       "leaf_color": "medium green",
       "leaf_size": "large (>8cm)",
       "flower_shape": "spike",
       "flower_color": "white",
-      "distinctive_notes": "Characterized by feathery, plume-like white flower spikes and large, deeply lobed green leaves."
+      "distinctive_notes": "Characterized by feathery, plume-like white flowers and large, deeply lobed green leaves."
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows a clumping habit but lacks the upright nature."
+        "score": 5,
+        "note": "Illustration shows an upright-clumping growth habit."
       },
       "leaf_shape": {
-        "score": 2,
-        "note": "Leaves appear more finely divided than pinnately compound."
+        "score": 5,
+        "note": "Leaves are pinnately-compound as described."
       },
       "leaf_arrangement": {
-        "score": 4,
-        "note": "Leaves are alternate but not clearly defined as large."
+        "score": 5,
+        "note": "Leaves are arranged alternately."
       },
       "flower": {
-        "score": 3,
-        "note": "Flowers are present but not in the plume-like spike form."
+        "score": 5,
+        "note": "Flowers are depicted as spikes and are white."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but with significant errors."
+        "score": 5,
+        "note": "Illustration accurately represents the plant."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Incorrect growth habit",
-        "Leaf shape not matching",
-        "Flower shape not accurate"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:01:45.781Z"
+    "ts": "2026-07-07T20:45:08.366Z"
   },
   "188": {
     "id": 188,
@@ -3401,43 +3365,43 @@
     "plate": "209-clematis-sweet-autumn-front.webp",
     "brief": {
       "growth_habit": "vine-climbing",
-      "mature_height": "10-20 ft",
-      "leaf_shape": "pinnately-compound",
+      "mature_height": "10-15 ft",
+      "leaf_shape": "ovate",
       "leaf_arrangement": "opposite",
       "leaf_color": "medium green",
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "bell",
       "flower_color": "white",
-      "distinctive_notes": "Features fragrant white flowers and lush green foliage, with a vigorous climbing habit."
+      "distinctive_notes": "Features fragrant white flowers in late summer and glossy green leaves."
     },
     "scores": {
       "growth_habit": {
         "score": 2,
-        "note": "Illustration depicts a bushy form rather than a climbing vine."
+        "note": "Illustration depicts a shrub-like form instead of a climbing vine."
       },
       "leaf_shape": {
-        "score": 3,
-        "note": "Leaves appear broad but not distinctly pinnately compound."
+        "score": 4,
+        "note": "Leaves are generally ovate but may vary slightly in shape."
       },
       "leaf_arrangement": {
-        "score": 4,
-        "note": "Leaves are mostly opposite but some variation is present."
+        "score": 5,
+        "note": "Leaves are arranged oppositely as described."
       },
       "flower": {
         "score": 4,
-        "note": "Flowers are bell-shaped and white, but not all are fully depicted."
+        "note": "Flowers are bell-shaped and white, but details may vary."
       },
       "overall": {
         "score": 3,
-        "note": "Recognizably related but significant errors in growth habit."
+        "note": "Recognizably related but has significant errors in growth habit."
       },
       "recommend_regenerate": true,
       "issues": [
         "Incorrect growth habit depicted",
-        "Leaf shape not accurately represented"
+        "Minor inaccuracies in leaf shape and flower details"
       ]
     },
-    "ts": "2026-07-07T20:02:22.146Z"
+    "ts": "2026-07-07T20:45:13.638Z"
   },
   "210": {
     "id": 210,
@@ -3499,32 +3463,29 @@
     },
     "scores": {
       "growth_habit": {
-        "score": 3,
-        "note": "Illustration shows a more upright growth habit than trailing."
+        "score": 5,
+        "note": "Illustration accurately depicts a groundcover-trailing habit."
       },
       "leaf_shape": {
         "score": 4,
-        "note": "Leaves are somewhat ovate but not distinctly so."
+        "note": "Leaves are generally ovate but may vary slightly in shape."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Leaves are arranged oppositely as described."
+        "note": "Leaves are shown in an opposite arrangement."
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are star-shaped and white, matching the description."
+        "note": "Flowers are accurately depicted as five-star and white."
       },
       "overall": {
-        "score": 4,
-        "note": "Overall representation is strong but with some growth habit issues."
+        "score": 5,
+        "note": "Illustration matches the fact-sheet closely."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Upright growth habit instead of groundcover",
-        "Leaves not distinctly ovate"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:02:34.596Z"
+    "ts": "2026-07-07T20:45:18.834Z"
   },
   "214": {
     "id": 214,
@@ -3540,36 +3501,36 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "spike",
       "flower_color": "deep purple",
-      "distinctive_notes": "Features tall spikes of tubular flowers with a striking color that attracts hummingbirds."
+      "distinctive_notes": "Features tall spikes of tubular flowers with a striking color that attract hummingbirds."
     },
     "scores": {
       "growth_habit": {
         "score": 4,
-        "note": "Illustration shows an upright clumping habit, but may appear slightly bushy."
+        "note": "Illustration shows upright clumping growth, but may appear slightly bushy."
       },
       "leaf_shape": {
-        "score": 4,
-        "note": "Leaves are lanceolate but may be broader than typical."
+        "score": 3,
+        "note": "Leaves are somewhat lanceolate but appear broader than typical."
       },
       "leaf_arrangement": {
-        "score": 5,
-        "note": "Leaves are arranged alternately as described."
+        "score": 4,
+        "note": "Leaves are arranged alternately, though some overlap is visible."
       },
       "flower": {
-        "score": 2,
-        "note": "Flowers are red instead of deep purple, which is a significant error."
+        "score": 5,
+        "note": "Flowers are depicted as spikes with deep purple color, matching the description."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has a major color error in flowers."
+        "score": 4,
+        "note": "Overall representation is strong, with minor discrepancies in leaf shape."
       },
-      "recommend_regenerate": true,
+      "recommend_regenerate": false,
       "issues": [
-        "Flower color is incorrect.",
-        "Leaves may not match typical size."
+        "Slightly broader leaves than expected",
+        "Bushy appearance may misrepresent clumping habit"
       ]
     },
-    "ts": "2026-07-07T20:02:40.685Z"
+    "ts": "2026-07-07T20:45:24.169Z"
   },
   "224": {
     "id": 224,
@@ -3585,36 +3546,33 @@
       "leaf_size": "large (>8cm)",
       "flower_shape": "spike",
       "flower_color": "white",
-      "distinctive_notes": "The large, deeply lobed leaves and tall flower spikes with tubular blooms are key identifiers."
+      "distinctive_notes": "Large, deeply lobed leaves with tall spikes of white flowers that have purple bracts."
     },
     "scores": {
       "growth_habit": {
-        "score": 4,
-        "note": "Illustration shows upright growth but lacks clear clumping representation."
+        "score": 5,
+        "note": "Correctly depicted as upright-clumping."
       },
       "leaf_shape": {
-        "score": 3,
-        "note": "Leaves are lobed but not distinctly pinnately compound."
+        "score": 4,
+        "note": "Leaves are lobed but not distinctly pinnately-compound."
       },
       "leaf_arrangement": {
         "score": 5,
-        "note": "Correctly depicts a basal rosette arrangement."
+        "note": "Accurately shows a basal-rosette arrangement."
       },
       "flower": {
         "score": 4,
-        "note": "Flowers are present and resemble spikes, but color details are not fully accurate."
+        "note": "Flowers are present but not fully detailed as spikes."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has notable errors in leaf shape and growth habit."
+        "score": 4,
+        "note": "Generally accurate representation with minor artistic license."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Growth habit not clearly clumping",
-        "Leaf shape does not match pinnately compound"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:02:47.831Z"
+    "ts": "2026-07-07T20:45:30.167Z"
   },
   "225": {
     "id": 225,
@@ -3630,36 +3588,36 @@
       "leaf_size": "small (1-3cm)",
       "flower_shape": "umbel",
       "flower_color": "white",
-      "distinctive_notes": "Look for the dense rosettes of rounded leaves and clusters of small white flowers that rise above the foliage."
+      "distinctive_notes": "Features dense rosettes of rounded leaves and clusters of small white flowers that rise above the foliage."
     },
     "scores": {
       "growth_habit": {
         "score": 3,
-        "note": "Illustration shows a more upright growth habit than trailing."
+        "note": "Illustration shows a more upright growth than trailing."
       },
       "leaf_shape": {
         "score": 5,
         "note": "Leaves are rounded as described."
       },
       "leaf_arrangement": {
-        "score": 5,
-        "note": "Basal rosette arrangement is evident."
+        "score": 4,
+        "note": "Basal rosette is present but not clearly defined."
       },
       "flower": {
-        "score": 3,
-        "note": "Flowers are present but not white; they are pink."
+        "score": 5,
+        "note": "Flowers are white and resemble umbel shape."
       },
       "overall": {
-        "score": 3,
-        "note": "Recognizably related but has notable errors."
+        "score": 4,
+        "note": "Generally accurate but with some growth habit issues."
       },
       "recommend_regenerate": true,
       "issues": [
-        "Incorrect growth habit",
-        "Flower color does not match"
+        "Upright growth habit instead of trailing",
+        "Basal rosette not clearly defined"
       ]
     },
-    "ts": "2026-07-07T20:02:55.691Z"
+    "ts": "2026-07-07T20:45:35.914Z"
   },
   "226": {
     "id": 226,
@@ -3675,16 +3633,16 @@
       "leaf_size": "medium (3-8cm)",
       "flower_shape": "five-star",
       "flower_color": "pink",
-      "distinctive_notes": "Features fleshy, succulent leaves in a rosette with vibrant pink flowers that bloom in clusters."
+      "distinctive_notes": "Features fleshy, succulent leaves in a rosette with vibrant star-shaped flowers that bloom in clusters."
     },
     "scores": {
       "growth_habit": {
         "score": 4,
-        "note": "Illustration shows a mounding habit but with some upright elements."
+        "note": "Illustration shows a mounding habit, but may appear slightly upright."
       },
       "leaf_shape": {
         "score": 3,
-        "note": "Leaves are broader than typical linear-needle shape."
+        "note": "Leaves are somewhat linear but not distinctly needle-like."
       },
       "leaf_arrangement": {
         "score": 5,
@@ -3692,18 +3650,15 @@
       },
       "flower": {
         "score": 5,
-        "note": "Flowers are pink and have a five-star shape."
+        "note": "Flowers are pink and star-shaped as described."
       },
       "overall": {
         "score": 4,
-        "note": "Generally accurate representation with minor deviations."
+        "note": "Generally accurate representation with minor artistic liberties."
       },
-      "recommend_regenerate": true,
-      "issues": [
-        "Leaf shape not accurately represented",
-        "Growth habit slightly misrepresented"
-      ]
+      "recommend_regenerate": false,
+      "issues": []
     },
-    "ts": "2026-07-07T20:03:03.757Z"
+    "ts": "2026-07-07T20:45:41.532Z"
   }
 }
