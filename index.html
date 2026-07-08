@@ -1916,9 +1916,11 @@ button[onclick*="showAddPlant"]{
 .journal-closed-wrap{
   position:fixed;
   inset:0;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+  /* Grid centers reliably with a single track — flex + align-items:center
+     had a visible one-frame layout shift on iOS Safari while aspect-ratio
+     resolved against the flex track. Grid resolves both axes together. */
+  display:grid;
+  place-items:center;
   padding:14px;
   background:radial-gradient(ellipse at center, #1a0f08 0%, #050301 100%);
   perspective:2000px;
@@ -1926,114 +1928,45 @@ button[onclick*="showAddPlant"]{
 }
 .journal-closed{
   position:relative;
-  width:100%;
-  max-width:420px;
+  /* Bound BOTH dimensions so the initial paint is stable — never a moment
+     where width resolves before height (or vice-versa) and we see a squat
+     "half-cover" flash. width derives from height so tall phones don't
+     crop the leather; max-height keeps short viewports honest. */
+  height:min(calc(100dvh - 28px), calc(min(420px, 92vw) * 1820 / 1052));
   aspect-ratio:1052/1820;
   cursor:pointer;
   transform-origin:left center;
   transform-style:preserve-3d;
-  transition:transform .6s cubic-bezier(.4,0,.15,1), opacity .55s ease-out;
-  background:
-    radial-gradient(ellipse at 30% 30%, rgba(120,68,32,.35) 0%, transparent 55%),
-    radial-gradient(ellipse at 70% 70%, rgba(80,42,18,.25) 0%, transparent 60%),
-    linear-gradient(135deg, #4a2814 0%, #3a1e0e 40%, #2a140a 100%);
-  border-radius:5px 8px 8px 5px;
+  will-change:transform, opacity;
+  transition:transform .65s cubic-bezier(.55,0,.25,1), opacity .5s ease-in .18s;
+  /* Worn leather-bound cover image generated via gpt-image-2. The image
+     supplies the leather grain, gold frame, corner filigree, and crimson
+     silk ribbon — CSS only overlays the title text and drop shadow. */
+  background:url('plates/leather-cover.webp?v=1') center center / cover no-repeat, #2a140a;
+  border-radius:4px 7px 7px 4px;
   box-shadow:
     0 26px 60px rgba(0,0,0,.65),
-    0 8px 20px rgba(0,0,0,.5),
-    inset 6px 0 0 0 #1a0a04,          /* the spine binding on the left */
-    inset 7px 0 0 0 rgba(212,160,23,.25),  /* thin gold rule beside spine */
-    inset 0 0 60px rgba(0,0,0,.55),
-    inset 0 2px 4px rgba(210,150,80,.18);
+    0 8px 20px rgba(0,0,0,.5);
   overflow:hidden;
-}
-.journal-closed::before{
-  /* Leather grain — fine pebbled texture. */
-  content:'';
-  position:absolute;inset:0;
-  background:
-    repeating-linear-gradient(37deg, transparent, transparent 3px, rgba(255,220,180,.020) 3px, rgba(255,220,180,.020) 5px),
-    repeating-linear-gradient(-31deg, transparent, transparent 4px, rgba(0,0,0,.045) 4px, rgba(0,0,0,.045) 7px),
-    radial-gradient(circle at 15% 25%, rgba(255,255,255,.03) 0 1px, transparent 1px),
-    radial-gradient(circle at 82% 41%, rgba(255,255,255,.02) 0 1px, transparent 1px),
-    radial-gradient(circle at 47% 78%, rgba(255,255,255,.025) 0 1px, transparent 1px);
-  background-size: auto, auto, 30px 30px, 45px 45px, 22px 22px;
-  pointer-events:none;
-  mix-blend-mode:overlay;
-}
-.journal-closed::after{
-  /* Vignette + inner edge shadow. */
-  content:'';
-  position:absolute;inset:0;
-  background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
-  pointer-events:none;
 }
 .journal-closed.opening{
   transform:rotateY(-155deg);
   opacity:0;
   transition:transform .7s cubic-bezier(.55,0,.2,1), opacity .5s ease-in .25s;
 }
-.journal-closed .jc-ribbon{
-  /* Silk bookmark tail hanging out the top. */
-  position:absolute;
-  top:0;
-  right:22%;
-  width:20px;
-  height:56%;
-  background:linear-gradient(90deg, #4a0f14 0%, #8a1a1f 30%, #a02128 55%, #6a1015 100%);
-  clip-path:polygon(0 0, 100% 0, 100% 92%, 50% 100%, 0 92%);
-  box-shadow:0 3px 8px rgba(0,0,0,.5);
-  z-index:2;
-}
-.journal-closed .jc-frame{
-  position:absolute;
-  inset:5.5% 5.5% 5.5% 8%;   /* leave extra room on the left for the spine binding */
-  border:1.5px solid rgba(212,160,23,.60);
-  border-radius:2px;
-  box-shadow:
-    inset 0 0 0 3.5px rgba(0,0,0,.4),
-    inset 0 0 0 4.5px rgba(212,160,23,.28),
-    0 0 12px rgba(212,160,23,.08);
-  z-index:1;
-}
-.journal-closed .jc-frame::before,
-.journal-closed .jc-frame::after{
-  /* Ornate corner flourishes — small L-shaped brass fittings. */
-  content:'';
-  position:absolute;
-  width:34px;height:34px;
-  border:1.5px solid rgba(212,160,23,.75);
-  pointer-events:none;
-}
-.journal-closed .jc-frame::before{
-  top:-2px;left:-2px;
-  border-right:none;border-bottom:none;
-  border-radius:3px 0 0 0;
-  box-shadow:inset 3px 3px 0 rgba(212,160,23,.35);
-}
-.journal-closed .jc-frame::after{
-  bottom:-2px;right:-2px;
-  border-left:none;border-top:none;
-  border-radius:0 0 3px 0;
-  box-shadow:inset -3px -3px 0 rgba(212,160,23,.35);
-}
 .journal-closed .jc-inner{
-  position:absolute;inset:0;
+  /* The leather image already has the gold frame and a crimson bookmark
+     ribbon in the upper-right (extending ~55% down the page). Position
+     the title BELOW the ribbon end so it sits on clean leather. */
+  position:absolute;
+  top:55%;
+  left:12%;
+  right:12%;
+  transform:translateY(-50%);
   display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  padding:9% 8%;
+  align-items:center;
   text-align:center;
-  color:#e8c47a;
-}
-.journal-closed .jc-emblem{
-  font-size:38px;
-  color:#f5c842;
-  line-height:1;
-  margin-bottom:26px;
-  text-shadow:
-    0 1px 0 rgba(0,0,0,.9),
-    0 2px 4px rgba(0,0,0,.6),
-    0 0 18px rgba(212,160,23,.4);
+  color:#f5d78a;
 }
 .journal-closed .jc-eyebrow{
   font-family:'Cormorant Garamond', serif;
@@ -2041,47 +1974,52 @@ button[onclick*="showAddPlant"]{
   font-size:11.5px;
   letter-spacing:4px;
   text-transform:uppercase;
-  color:rgba(232,196,122,.75);
+  color:rgba(245,215,138,.85);
   margin-bottom:14px;
+  text-shadow:0 1px 2px rgba(0,0,0,.85);
 }
 .journal-closed .jc-title{
   font-family:'Pinyon Script', serif;
-  font-size:52px;
+  font-size:48px;
   line-height:1;
   color:#f5c842;
   text-shadow:
-    0 1px 0 rgba(0,0,0,.85),
-    0 2px 5px rgba(0,0,0,.65),
-    0 0 22px rgba(212,160,23,.4);
-  margin-bottom:16px;
+    0 1px 0 rgba(0,0,0,.9),
+    0 2px 5px rgba(0,0,0,.7),
+    0 0 22px rgba(212,160,23,.35);
+  margin-bottom:14px;
   word-break:break-word;
 }
 .journal-closed .jc-sub{
   font-family:'Cormorant Garamond', serif;
   font-style:italic;
-  font-size:15px;
-  color:rgba(232,196,122,.9);
+  font-size:14px;
+  color:rgba(245,215,138,.9);
   letter-spacing:2px;
+  text-shadow:0 1px 2px rgba(0,0,0,.85);
 }
 .journal-closed .jc-hint{
+  /* Sits inside the frame's clean centre area, above the bottom-corner
+     filigree (which starts ~85% down in the leather image). */
   position:absolute;
   bottom:11%;
   left:0;right:0;
   font-family:'Cormorant Garamond', serif;
   font-style:italic;
   font-size:12px;
-  color:rgba(232,196,122,.55);
+  color:rgba(245,215,138,.70);
   letter-spacing:3px;
   text-transform:lowercase;
+  text-align:center;
+  text-shadow:0 1px 3px rgba(0,0,0,.9);
   animation:jcPulse 2.2s ease-in-out infinite;
 }
 @keyframes jcPulse{
-  0%,100%{opacity:.4;transform:translateY(0)}
-  50%{opacity:.85;transform:translateY(-2px)}
+  0%,100%{opacity:.5;transform:translateY(0)}
+  50%{opacity:.95;transform:translateY(-2px)}
 }
 @media (max-width: 380px){
-  .journal-closed .jc-title{font-size:42px}
-  .journal-closed .jc-emblem{font-size:32px;margin-bottom:20px}
+  .journal-closed .jc-title{font-size:40px}
 }
 
 /* =====================================================================
@@ -2271,10 +2209,10 @@ button[onclick*="showAddPlant"]{
 /* Persistent Settings gear — small circular button pinned to the top-left
    of the cover, where the app-header (and its gear button) is hidden.
    Vintage brass-grommet look: cream face, walnut ring, ink-colored gear. */
-.settings-corner-gear{
+.settings-corner-gear,
+.close-corner-book{
   position:fixed;
   top:16px;
-  left:16px;
   z-index:250;
   width:38px;
   height:38px;
@@ -2288,10 +2226,17 @@ button[onclick*="showAddPlant"]{
   justify-content:center;
   box-shadow:0 3px 8px rgba(58,42,24,.32),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,0,0,.08);
   transition:filter .18s,transform .18s;
+  padding:0;
+  font-family:inherit;
 }
-.settings-corner-gear:hover{ filter:brightness(1.06); }
-.settings-corner-gear:active{ filter:brightness(.94);transform:scale(.96); }
-.settings-corner-gear svg{ width:20px;height:20px; }
+.settings-corner-gear{ left:16px; }
+.close-corner-book{ left:64px; }
+.settings-corner-gear:hover,
+.close-corner-book:hover{ filter:brightness(1.06); }
+.settings-corner-gear:active,
+.close-corner-book:active{ filter:brightness(.94);transform:scale(.96); }
+.settings-corner-gear svg,
+.close-corner-book svg{ width:20px;height:20px; }
 
 /* Persistent Ask corner ribbon — a diagonal "Ask" banner pinned to the
    top-right corner of every page, always visible. Sits above the plate
@@ -4594,24 +4539,34 @@ function pushRecent(id) {
 function openJournal() {
   const el = document.querySelector('.journal-closed');
   if (!el) { state.journalOpen = true; render(); return; }
-  el.classList.add('opening');
-  setTimeout(() => { state.journalOpen = true; render(); }, 620);
+  // iOS Safari needs a forced reflow + next frame or the transition
+  // silently skips: adding a class in the same frame the element was
+  // painted collapses the from/to states into one.
+  void el.offsetHeight;
+  requestAnimationFrame(() => {
+    el.classList.add('opening');
+    // Match the CSS transition (0.65s) plus a small safety pad.
+    setTimeout(() => { state.journalOpen = true; render(); }, 720);
+  });
+}
+// Called from the parchment cover's close-book affordance — takes the
+// user back to the leather-bound launch screen.
+function closeJournal() {
+  state.journalOpen = false;
+  render();
+  window.scrollTo(0, 0);
 }
 function renderJournalClosed() {
   const gardenName = state.gardenName || 'My Garden';
   return `
     <div class="journal-closed-wrap">
       <div class="journal-closed" onclick="openJournal()">
-        <div class="jc-ribbon"></div>
-        <div class="jc-frame">
-          <div class="jc-inner">
-            <div class="jc-emblem">✦</div>
-            <div class="jc-eyebrow">Volume I</div>
-            <div class="jc-title">${escHtml(gardenName)}</div>
-            <div class="jc-sub">a field journal</div>
-            <div class="jc-hint">tap to open</div>
-          </div>
+        <div class="jc-inner">
+          <div class="jc-eyebrow">Volume I</div>
+          <div class="jc-title">${escHtml(gardenName)}</div>
+          <div class="jc-sub">a field journal</div>
         </div>
+        <div class="jc-hint">tap to open</div>
       </div>
     </div>
   `;
@@ -7992,6 +7947,13 @@ function render() {
       content += `<button class="settings-corner-gear" onclick="state.showSettings=true;render()" title="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>`;
+      // Close-book — only on the parchment cover (not the plate detail),
+      // so the user can go back to the leather-bound launch screen.
+      if (state.view === 'browse' && state.browseMode === 'cover' && state.journalOpen) {
+        content += `<button class="close-corner-book" onclick="closeJournal()" title="Close journal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.2"/><path d="M9 3v18"/><path d="M12 8h4"/><path d="M12 12h4"/></svg>
+        </button>`;
+      }
     }
   }
 
