@@ -1907,6 +1907,191 @@ button[onclick*="showAddPlant"]{
    Aspect ratio matches the plates (1052:1820, close to 9:16) so the
    cover reads as the first page of the same book.
    ===================================================================== */
+/* =====================================================================
+   Closed leather-bound cover — the ritual launch screen. Fills the
+   viewport, dark oxblood-brown leather with a gold-embossed frame and
+   the garden name in Pinyon Script. Tap fires openJournal() which
+   animates the cover swinging open (rotateY) then flips journalOpen.
+   ===================================================================== */
+.journal-closed-wrap{
+  position:fixed;
+  inset:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:14px;
+  background:radial-gradient(ellipse at center, #1a0f08 0%, #050301 100%);
+  perspective:2000px;
+  z-index:180;
+}
+.journal-closed{
+  position:relative;
+  width:100%;
+  max-width:420px;
+  aspect-ratio:1052/1820;
+  cursor:pointer;
+  transform-origin:left center;
+  transform-style:preserve-3d;
+  transition:transform .6s cubic-bezier(.4,0,.15,1), opacity .55s ease-out;
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(120,68,32,.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 70%, rgba(80,42,18,.25) 0%, transparent 60%),
+    linear-gradient(135deg, #4a2814 0%, #3a1e0e 40%, #2a140a 100%);
+  border-radius:5px 8px 8px 5px;
+  box-shadow:
+    0 26px 60px rgba(0,0,0,.65),
+    0 8px 20px rgba(0,0,0,.5),
+    inset 6px 0 0 0 #1a0a04,          /* the spine binding on the left */
+    inset 7px 0 0 0 rgba(212,160,23,.25),  /* thin gold rule beside spine */
+    inset 0 0 60px rgba(0,0,0,.55),
+    inset 0 2px 4px rgba(210,150,80,.18);
+  overflow:hidden;
+}
+.journal-closed::before{
+  /* Leather grain — fine pebbled texture. */
+  content:'';
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(37deg, transparent, transparent 3px, rgba(255,220,180,.020) 3px, rgba(255,220,180,.020) 5px),
+    repeating-linear-gradient(-31deg, transparent, transparent 4px, rgba(0,0,0,.045) 4px, rgba(0,0,0,.045) 7px),
+    radial-gradient(circle at 15% 25%, rgba(255,255,255,.03) 0 1px, transparent 1px),
+    radial-gradient(circle at 82% 41%, rgba(255,255,255,.02) 0 1px, transparent 1px),
+    radial-gradient(circle at 47% 78%, rgba(255,255,255,.025) 0 1px, transparent 1px);
+  background-size: auto, auto, 30px 30px, 45px 45px, 22px 22px;
+  pointer-events:none;
+  mix-blend-mode:overlay;
+}
+.journal-closed::after{
+  /* Vignette + inner edge shadow. */
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+  pointer-events:none;
+}
+.journal-closed.opening{
+  transform:rotateY(-155deg);
+  opacity:0;
+  transition:transform .7s cubic-bezier(.55,0,.2,1), opacity .5s ease-in .25s;
+}
+.journal-closed .jc-ribbon{
+  /* Silk bookmark tail hanging out the top. */
+  position:absolute;
+  top:0;
+  right:22%;
+  width:20px;
+  height:56%;
+  background:linear-gradient(90deg, #4a0f14 0%, #8a1a1f 30%, #a02128 55%, #6a1015 100%);
+  clip-path:polygon(0 0, 100% 0, 100% 92%, 50% 100%, 0 92%);
+  box-shadow:0 3px 8px rgba(0,0,0,.5);
+  z-index:2;
+}
+.journal-closed .jc-frame{
+  position:absolute;
+  inset:5.5% 5.5% 5.5% 8%;   /* leave extra room on the left for the spine binding */
+  border:1.5px solid rgba(212,160,23,.60);
+  border-radius:2px;
+  box-shadow:
+    inset 0 0 0 3.5px rgba(0,0,0,.4),
+    inset 0 0 0 4.5px rgba(212,160,23,.28),
+    0 0 12px rgba(212,160,23,.08);
+  z-index:1;
+}
+.journal-closed .jc-frame::before,
+.journal-closed .jc-frame::after{
+  /* Ornate corner flourishes — small L-shaped brass fittings. */
+  content:'';
+  position:absolute;
+  width:34px;height:34px;
+  border:1.5px solid rgba(212,160,23,.75);
+  pointer-events:none;
+}
+.journal-closed .jc-frame::before{
+  top:-2px;left:-2px;
+  border-right:none;border-bottom:none;
+  border-radius:3px 0 0 0;
+  box-shadow:inset 3px 3px 0 rgba(212,160,23,.35);
+}
+.journal-closed .jc-frame::after{
+  bottom:-2px;right:-2px;
+  border-left:none;border-top:none;
+  border-radius:0 0 3px 0;
+  box-shadow:inset -3px -3px 0 rgba(212,160,23,.35);
+}
+.journal-closed .jc-inner{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:9% 8%;
+  text-align:center;
+  color:#e8c47a;
+}
+.journal-closed .jc-emblem{
+  font-size:38px;
+  color:#f5c842;
+  line-height:1;
+  margin-bottom:26px;
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.9),
+    0 2px 4px rgba(0,0,0,.6),
+    0 0 18px rgba(212,160,23,.4);
+}
+.journal-closed .jc-eyebrow{
+  font-family:'Cormorant Garamond', serif;
+  font-style:italic;
+  font-size:11.5px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:rgba(232,196,122,.75);
+  margin-bottom:14px;
+}
+.journal-closed .jc-title{
+  font-family:'Pinyon Script', serif;
+  font-size:52px;
+  line-height:1;
+  color:#f5c842;
+  text-shadow:
+    0 1px 0 rgba(0,0,0,.85),
+    0 2px 5px rgba(0,0,0,.65),
+    0 0 22px rgba(212,160,23,.4);
+  margin-bottom:16px;
+  word-break:break-word;
+}
+.journal-closed .jc-sub{
+  font-family:'Cormorant Garamond', serif;
+  font-style:italic;
+  font-size:15px;
+  color:rgba(232,196,122,.9);
+  letter-spacing:2px;
+}
+.journal-closed .jc-hint{
+  position:absolute;
+  bottom:11%;
+  left:0;right:0;
+  font-family:'Cormorant Garamond', serif;
+  font-style:italic;
+  font-size:12px;
+  color:rgba(232,196,122,.55);
+  letter-spacing:3px;
+  text-transform:lowercase;
+  animation:jcPulse 2.2s ease-in-out infinite;
+}
+@keyframes jcPulse{
+  0%,100%{opacity:.4;transform:translateY(0)}
+  50%{opacity:.85;transform:translateY(-2px)}
+}
+@media (max-width: 380px){
+  .journal-closed .jc-title{font-size:42px}
+  .journal-closed .jc-emblem{font-size:32px;margin-bottom:20px}
+}
+
+/* =====================================================================
+   Journal Cover — the vintage front page. Replaces the browse grid when
+   state.browseMode === 'cover'. Scattered handwritten section labels on
+   an aged parchment page; tapping a label routes to the filtered grid
+   (browseMode → 'grid') or a dedicated view.
+   Aspect ratio matches the plates (1052:1820, close to 9:16) so the
+   cover reads as the first page of the same book.
+   ===================================================================== */
 .journal-cover-wrap{
   padding:12px 12px 12px;
   display:flex;
@@ -2271,6 +2456,10 @@ let state = {
   //   'grid'    → the plant grid (filter chips + cards; the classic browse)
   //   'entries' → collated Plate IV journal entries for every planted plant
   browseMode: "cover",
+  // Journal launch: false on every fresh page-load so the user gets the
+  // ritual "open the book" tap. Flips to true on tap; stays open until
+  // reload. Not persisted — the ritual is the point.
+  journalOpen: false,
   // Recently-viewed plant IDs, most recent first. Persisted to pt_recent.
   recentIds: JSON.parse(localStorage.getItem("pt_recent")||"[]"),
   search: "",
@@ -4397,6 +4586,35 @@ function pushRecent(id) {
   if (list.length > 20) list.length = 20;
   state.recentIds = list;
   try { localStorage.setItem('pt_recent', JSON.stringify(list)); } catch(e){}
+}
+
+// Closed leather-bound cover. Renders instead of the parchment cover on
+// first render of a session. Tapping triggers the "opening" animation
+// then flips state.journalOpen so the parchment cover replaces it.
+function openJournal() {
+  const el = document.querySelector('.journal-closed');
+  if (!el) { state.journalOpen = true; render(); return; }
+  el.classList.add('opening');
+  setTimeout(() => { state.journalOpen = true; render(); }, 620);
+}
+function renderJournalClosed() {
+  const gardenName = state.gardenName || 'My Garden';
+  return `
+    <div class="journal-closed-wrap">
+      <div class="journal-closed" onclick="openJournal()">
+        <div class="jc-ribbon"></div>
+        <div class="jc-frame">
+          <div class="jc-inner">
+            <div class="jc-emblem">✦</div>
+            <div class="jc-eyebrow">Volume I</div>
+            <div class="jc-title">${escHtml(gardenName)}</div>
+            <div class="jc-sub">a field journal</div>
+            <div class="jc-hint">tap to open</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 // Inkwell/quill glyph used on the Ask writing line.
@@ -7706,9 +7924,15 @@ function render() {
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
        back to journal
      </div>`;
+  // Closed-journal ritual: on first render of the session, the journal
+  // is closed. Tapping it flips journalOpen=true and reveals the cover.
+  const _showClosedJournal = state.view === 'browse'
+    && state.browseMode === 'cover'
+    && !state.journalOpen;
   const _browseHTML =
-    state.browseMode === 'cover'   ? renderJournalCover()
-  : state.browseMode === 'entries' ? (_backRibbon + renderJournalEntries())
+    _showClosedJournal              ? renderJournalClosed()
+  : state.browseMode === 'cover'    ? renderJournalCover()
+  : state.browseMode === 'entries'  ? (_backRibbon + renderJournalEntries())
   : (_backRibbon + renderBrowse());
   const _mainHTML = state.view === 'browse' ? _browseHTML
     : state.view === 'garden' ? renderGarden()
@@ -7718,9 +7942,10 @@ function render() {
   _lastView = state.view;
   content += `<div class="${_viewChanged ? 'page-anim' : ''}">${_mainHTML}</div>`;
 
-  // Bottom nav — 4 tabs
+  // Bottom nav — 4 tabs. Hidden on the closed leather cover so the
+  // launch screen is nothing but the book.
   const _v = state.view;
-  content += `
+  if (!_showClosedJournal) content += `
     <div class="nav-bottom">
       <div class="nav-item ${_v==='browse'?'active':''}" onclick="state.view='browse';state.browseMode='cover';state.filter='all';state.search='';render()">
         <div class="ni-pill"></div>
@@ -7753,8 +7978,9 @@ function render() {
 
   // Persistent Ask corner ribbon — top-right of every page. Hidden only
   // while the setup / auth flow is active, since those are pre-app states
-  // where an Ask sheet would confuse the user.
-  if (!state.showSetup && !state.showAuth) {
+  // where an Ask sheet would confuse the user. Also hidden on the closed
+  // leather cover — that's the ritual launch, nothing else on screen.
+  if (!state.showSetup && !state.showAuth && !_showClosedJournal) {
     content += `<div class="ask-corner-wrap ${_hideHeader ? 'no-header' : ''}" aria-hidden="false">
       <div class="ask-corner-ribbon" onclick="openAsk()" title="Ask a question">
         <span class="q-glyph">✎</span>Ask
