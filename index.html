@@ -1955,11 +1955,11 @@ button[onclick*="showAddPlant"]{
   transition:transform .7s cubic-bezier(.55,0,.2,1), opacity .5s ease-in .25s;
 }
 .journal-closed .jc-inner{
-  /* The leather image already has the gold frame and a crimson bookmark
-     ribbon in the upper-right (extending ~55% down the page). Position
-     the title BELOW the ribbon end so it sits on clean leather. */
+  /* The leather image has a short bookmark ribbon that ends in the
+     upper third (~27% from top), then clean leather until the bottom
+     filigree (~85%). Centre the title in that middle band. */
   position:absolute;
-  top:55%;
+  top:56%;
   left:12%;
   right:12%;
   transform:translateY(-50%);
@@ -1974,52 +1974,46 @@ button[onclick*="showAddPlant"]{
   font-size:11.5px;
   letter-spacing:4px;
   text-transform:uppercase;
-  color:rgba(245,215,138,.85);
-  margin-bottom:14px;
-  text-shadow:0 1px 2px rgba(0,0,0,.85);
+  color:rgba(215,175,110,.75);
+  margin-bottom:16px;
+  text-shadow:
+    0 1px 1px rgba(0,0,0,.8),
+    0.5px 0.5px 0 rgba(50,25,10,.5);
 }
+/* Worn embossed gold — the letters look slightly rubbed and unevenly
+   pressed into the leather. Achieved with:
+     • a warmer, muted gold instead of bright #f5c842
+     • a light drop-shadow above-left (raised catch of light) plus a
+       darker drop-shadow below-right (recessed shadow)
+     • mix-blend-mode: overlay so the letters interact with the leather
+       grain beneath instead of sitting flatly on top
+     • a slight text-stroke in near-black for softened edges. */
 .journal-closed .jc-title{
   font-family:'Pinyon Script', serif;
-  font-size:48px;
+  font-size:50px;
   line-height:1;
-  color:#f5c842;
-  text-shadow:
-    0 1px 0 rgba(0,0,0,.9),
-    0 2px 5px rgba(0,0,0,.7),
-    0 0 22px rgba(212,160,23,.35);
-  margin-bottom:14px;
+  color:#c9a24a;
+  margin-bottom:16px;
   word-break:break-word;
+  mix-blend-mode:overlay;
+  filter:contrast(0.92) brightness(1.05);
+  text-shadow:
+    -0.5px -0.5px 0 rgba(230,190,110,.35),   /* highlight edge, upper-left */
+    0.5px  0.5px 0 rgba(40,18,6,.7),          /* dark recess, lower-right   */
+    0 1px 1px rgba(20,10,3,.85),
+    0 2px 6px rgba(0,0,0,.55);
+  opacity:.92;
 }
 .journal-closed .jc-sub{
   font-family:'Cormorant Garamond', serif;
   font-style:italic;
   font-size:14px;
-  color:rgba(245,215,138,.9);
+  color:rgba(215,175,110,.85);
   letter-spacing:2px;
   text-shadow:0 1px 2px rgba(0,0,0,.85);
 }
-.journal-closed .jc-hint{
-  /* Sits inside the frame's clean centre area, above the bottom-corner
-     filigree (which starts ~85% down in the leather image). */
-  position:absolute;
-  bottom:11%;
-  left:0;right:0;
-  font-family:'Cormorant Garamond', serif;
-  font-style:italic;
-  font-size:12px;
-  color:rgba(245,215,138,.70);
-  letter-spacing:3px;
-  text-transform:lowercase;
-  text-align:center;
-  text-shadow:0 1px 3px rgba(0,0,0,.9);
-  animation:jcPulse 2.2s ease-in-out infinite;
-}
-@keyframes jcPulse{
-  0%,100%{opacity:.5;transform:translateY(0)}
-  50%{opacity:.95;transform:translateY(-2px)}
-}
 @media (max-width: 380px){
-  .journal-closed .jc-title{font-size:40px}
+  .journal-closed .jc-title{font-size:42px}
 }
 
 /* =====================================================================
@@ -2206,37 +2200,28 @@ button[onclick*="showAddPlant"]{
 .cover-back-ribbon:hover{ background:rgba(255,250,235,.9); }
 .cover-back-ribbon svg{ width:14px;height:14px;color:var(--gold); }
 
-/* Persistent Settings gear — small circular button pinned to the top-left
-   of the cover, where the app-header (and its gear button) is hidden.
-   Vintage brass-grommet look: cream face, walnut ring, ink-colored gear. */
-.settings-corner-gear,
-.close-corner-book{
-  position:fixed;
-  top:16px;
-  z-index:250;
-  width:38px;
-  height:38px;
-  border-radius:50%;
-  background:linear-gradient(135deg,#f9f2e2 0%,#e9d9b3 100%);
-  border:1.5px solid #9c7c3c;
-  color:#3a2a18;
+/* Embossed settings glyph on the parchment cover — replaces the old
+   floating circular button. Sits inline in the top-left of the cover
+   page, styled to look pressed into the paper: soft light on the
+   upper-left, deeper shadow on the lower-right. */
+.cover-stamp{
+  position:absolute;
+  top:3.5%;
+  left:5%;
+  width:30px;
+  height:30px;
+  color:rgba(80,55,30,.55);
   cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 3px 8px rgba(58,42,24,.32),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,0,0,.08);
-  transition:filter .18s,transform .18s;
-  padding:0;
-  font-family:inherit;
+  z-index:3;
+  filter:
+    drop-shadow(0.5px 0.5px 0 rgba(255,250,235,.7))
+    drop-shadow(-0.4px -0.4px 0 rgba(0,0,0,.18));
+  opacity:.9;
+  transition:opacity .18s, color .18s;
+  -webkit-tap-highlight-color:transparent;
 }
-.settings-corner-gear{ left:16px; }
-.close-corner-book{ left:64px; }
-.settings-corner-gear:hover,
-.close-corner-book:hover{ filter:brightness(1.06); }
-.settings-corner-gear:active,
-.close-corner-book:active{ filter:brightness(.94);transform:scale(.96); }
-.settings-corner-gear svg,
-.close-corner-book svg{ width:20px;height:20px; }
+.cover-stamp:hover{ opacity:1; color:rgba(60,40,20,.7); }
+.cover-stamp svg{ width:100%; height:100%; display:block; }
 
 /* Persistent Ask corner ribbon — a diagonal "Ask" banner pinned to the
    top-right corner of every page, always visible. Sits above the plate
@@ -4560,16 +4545,40 @@ function renderJournalClosed() {
   const gardenName = state.gardenName || 'My Garden';
   return `
     <div class="journal-closed-wrap">
-      <div class="journal-closed" onclick="openJournal()">
+      <div class="journal-closed">
         <div class="jc-inner">
           <div class="jc-eyebrow">Volume I</div>
           <div class="jc-title">${escHtml(gardenName)}</div>
           <div class="jc-sub">a field journal</div>
         </div>
-        <div class="jc-hint">tap to open</div>
       </div>
     </div>
   `;
+}
+// Wire swipe gestures for opening (right→left on the leather cover) and
+// closing (left→right on the parchment cover). Called after each render.
+function initJournalSwipe() {
+  const bind = (el, isClose) => {
+    if (!el || el.dataset.jSwipe) return;
+    el.dataset.jSwipe = '1';
+    let x0=0, y0=0, moved=false;
+    el.addEventListener('touchstart', e => {
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; moved = false;
+    }, { passive: true });
+    el.addEventListener('touchmove', e => { moved = true; }, { passive: true });
+    el.addEventListener('touchend', e => {
+      if (!moved) return;
+      // Don't hijack swipes that started inside a tappable label / control.
+      if (e.target.closest('.cover-label, .ask-line, a, button, input, textarea, [onclick]')) return;
+      const dx = e.changedTouches[0].clientX - x0;
+      const dy = e.changedTouches[0].clientY - y0;
+      if (Math.abs(dx) < Math.abs(dy) * 1.2 || Math.abs(dx) < 55) return;
+      if (isClose && dx > 55)  closeJournal();
+      if (!isClose && dx < -55) openJournal();
+    }, { passive: true });
+  };
+  bind(document.querySelector('.journal-closed'), false);
+  bind(document.querySelector('.journal-cover'), true);
 }
 
 // Inkwell/quill glyph used on the Ask writing line.
@@ -4612,6 +4621,9 @@ function renderJournalCover() {
   return `
     <div class="journal-cover-wrap">
     <div class="journal-cover">
+      <div class="cover-stamp" onclick="event.stopPropagation();state.showSettings=true;render()" title="Settings" role="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
       <div class="cover-inner">
         <div class="cover-eyebrow">Volume I</div>
         <div class="cover-title">${escHtml(gardenName)}</div>
@@ -7941,20 +7953,9 @@ function render() {
         <span class="q-glyph">✎</span>Ask
       </div>
     </div>`;
-    // Settings gear (top-left) only when the header — which normally
-    // contains the gear — is hidden, i.e. on the cover.
-    if (_hideHeader) {
-      content += `<button class="settings-corner-gear" onclick="state.showSettings=true;render()" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>`;
-      // Close-book — only on the parchment cover (not the plate detail),
-      // so the user can go back to the leather-bound launch screen.
-      if (state.view === 'browse' && state.browseMode === 'cover' && state.journalOpen) {
-        content += `<button class="close-corner-book" onclick="closeJournal()" title="Close journal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.2"/><path d="M9 3v18"/><path d="M12 8h4"/><path d="M12 12h4"/></svg>
-        </button>`;
-      }
-    }
+    // (Settings is reached via the embossed cover-stamp inside the
+    // parchment cover, and via the header gear elsewhere. No floating
+    // gear button. Closing the journal is a left→right swipe.)
   }
 
   // Modals
@@ -7969,6 +7970,7 @@ function render() {
   app.innerHTML = content;
   if (state.view === 'beds' && state.bedView === 'edit') setTimeout(initBedCanvas, 50);
   if (state.detailId) setTimeout(() => { initHeroSwipe(); initMonthlyCareCenter(); initPlateFlip(); }, 0);
+  if (state.view === 'browse' && state.browseMode === 'cover') setTimeout(initJournalSwipe, 0);
 }
 
 // If we just bounced back from a failed Google redirect, surface the error
