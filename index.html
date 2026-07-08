@@ -1956,12 +1956,15 @@ button[onclick*="showAddPlant"]{
 }
 .journal-closed .jc-inner{
   /* The leather image has a short bookmark ribbon that ends in the
-     upper third (~27% from top), then clean leather until the bottom
-     filigree (~85%). Centre the title in that middle band. */
+     upper third (~30-35% from top depending on the actual generation),
+     then clean leather until the bottom filigree (~85%). Sit the
+     title block ~65% down so it clears the ribbon on all viewport
+     sizes, even short iPhone screens where the book compresses and
+     the ribbon end effectively sits lower on the visible page. */
   position:absolute;
-  top:56%;
-  left:12%;
-  right:12%;
+  top:65%;
+  left:14%;
+  right:14%;
   transform:translateY(-50%);
   display:flex;flex-direction:column;
   align-items:center;
