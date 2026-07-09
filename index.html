@@ -1925,6 +1925,23 @@ button[onclick*="showAddPlant"]{
   justify-content:center;
   perspective:2000px;
 }
+/* Closed state renders both covers so the parchment sits behind the
+   leather from first paint. The parchment establishes the height in
+   flow; the leather is absolutely positioned over it. When the leather
+   swings open (rotateY + fade), the parchment is already there behind
+   it — no white flash between animation end and render(). */
+.cover-stack{
+  position:relative;
+}
+.cover-stack .journal-closed-wrap{
+  position:absolute;
+  top:0;left:0;right:0;bottom:0;
+}
+.cover-stack .journal-cover .cover-inner{
+  /* The parchment behind is inert while the leather is on top — kill
+     tap highlights so nothing flashes through. */
+  pointer-events:none;
+}
 .journal-closed{
   position:relative;
   width:100%;
@@ -7895,7 +7912,12 @@ function render() {
     && state.browseMode === 'cover'
     && !state.journalOpen;
   const _browseHTML =
-    _showClosedJournal              ? renderJournalClosed()
+    // When closed, render the parchment cover BEHIND the leather so the
+    // opening animation reveals the parchment already in place — no
+    // white-page flash between the leather fading out and render()
+    // re-emitting the parchment. CSS pins .journal-closed-wrap absolutely
+    // over the parchment when both are present.
+    _showClosedJournal              ? `<div class="cover-stack">${renderJournalCover()}${renderJournalClosed()}</div>`
   : state.browseMode === 'cover'    ? renderJournalCover()
   : state.browseMode === 'entries'  ? (_backRibbon + renderJournalEntries())
   : (_backRibbon + renderBrowse());
