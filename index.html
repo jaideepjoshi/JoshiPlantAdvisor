@@ -1932,17 +1932,26 @@ button[onclick*="showAddPlant"]{
    it — no white flash between animation end and render(). */
 .cover-stack{
   position:relative;
+  /* Clip anything that might otherwise render beyond the stack's box. */
+  overflow:hidden;
 }
 .cover-stack .journal-closed-wrap{
   position:absolute;
   top:0;left:0;right:0;bottom:0;
-  /* Above the parchment's .cover-inner (z-index:1) — otherwise the
-     parchment's labels would paint on top of the leather cover. */
-  z-index:5;
+  /* Well above any z-indexed content inside the parchment cover. */
+  z-index:100;
 }
-.cover-stack .journal-cover .cover-inner{
+.cover-stack .journal-closed{
+  /* Own stacking context — nothing behind can leak through even if a
+     parchment descendant has a very high z-index. */
+  isolation:isolate;
+}
+.cover-stack .journal-cover .cover-inner,
+.cover-stack .journal-cover .cover-stamp{
   /* The parchment behind is inert while the leather is on top — kill
-     tap highlights so nothing flashes through. */
+     tap highlights so nothing flashes through, and disable the embossed
+     stamp's clickability (it's not the interactive one until the leather
+     is gone). */
   pointer-events:none;
 }
 .journal-closed{
