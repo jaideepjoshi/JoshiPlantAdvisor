@@ -1914,25 +1914,20 @@ button[onclick*="showAddPlant"]{
    animates the cover swinging open (rotateY) then flips journalOpen.
    ===================================================================== */
 .journal-closed-wrap{
-  position:fixed;
-  inset:0;
-  /* Grid centers reliably with a single track — flex + align-items:center
-     had a visible one-frame layout shift on iOS Safari while aspect-ratio
-     resolved against the flex track. Grid resolves both axes together. */
-  display:grid;
-  place-items:center;
-  padding:14px;
-  background:radial-gradient(ellipse at center, #1a0f08 0%, #050301 100%);
+  /* Match the parchment cover + Plate I sizing exactly: same padding,
+     same in-flow layout — the leather book takes the same visible slot
+     as the parchment cover so opening / closing doesn't change the
+     book's size or position on the page. Not fixed, not full-viewport,
+     no dark overlay: the app's parchment body background shows around
+     the book, so there's no white-flash / reposition on iPhone load. */
+  padding:12px 12px 12px;
+  display:flex;
+  justify-content:center;
   perspective:2000px;
-  z-index:180;
 }
 .journal-closed{
   position:relative;
-  /* Bound BOTH dimensions so the initial paint is stable — never a moment
-     where width resolves before height (or vice-versa) and we see a squat
-     "half-cover" flash. width derives from height so tall phones don't
-     crop the leather; max-height keeps short viewports honest. */
-  height:min(calc(100dvh - 28px), calc(min(420px, 92vw) * 1820 / 1052));
+  width:100%;
   aspect-ratio:1052/1820;
   cursor:pointer;
   transform-origin:left center;
@@ -7946,20 +7941,11 @@ function render() {
     catch(e) { console.error('renderDetail failed:', e); state.detailId = null; }
   }
 
-  // Persistent Ask corner ribbon — top-right of every page. Hidden only
-  // while the setup / auth flow is active, since those are pre-app states
-  // where an Ask sheet would confuse the user. Also hidden on the closed
-  // leather cover — that's the ritual launch, nothing else on screen.
-  if (!state.showSetup && !state.showAuth && !_showClosedJournal) {
-    content += `<div class="ask-corner-wrap ${_hideHeader ? 'no-header' : ''}" aria-hidden="false">
-      <div class="ask-corner-ribbon" onclick="openAsk()" title="Ask a question">
-        <span class="q-glyph">✎</span>Ask
-      </div>
-    </div>`;
-    // (Settings is reached via the embossed cover-stamp inside the
-    // parchment cover, and via the header gear elsewhere. No floating
-    // gear button. Closing the journal is a left→right swipe.)
-  }
+  // (Ask ribbon removed — the "Write a question…" line on the parchment
+  // cover already exposes Ask directly, so the floating corner ribbon
+  // was redundant and clashed with the leather cover's baked-in ribbon.
+  // Settings is reached via the embossed cover-stamp on the parchment
+  // cover and via the header gear elsewhere.)
 
   // Modals
   if (state.showSetup) content += renderSetupModal();
