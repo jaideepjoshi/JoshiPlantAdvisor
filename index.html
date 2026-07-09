@@ -1936,6 +1936,9 @@ button[onclick*="showAddPlant"]{
 .cover-stack .journal-closed-wrap{
   position:absolute;
   top:0;left:0;right:0;bottom:0;
+  /* Above the parchment's .cover-inner (z-index:1) — otherwise the
+     parchment's labels would paint on top of the leather cover. */
+  z-index:5;
 }
 .cover-stack .journal-cover .cover-inner{
   /* The parchment behind is inert while the leather is on top — kill
