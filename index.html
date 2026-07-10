@@ -1349,7 +1349,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
    pollinator row in the clear parchment area at the bottom of the plate. */
 .plate-habit-name{
   position:absolute;
-  bottom:18%;
+  bottom:21%;
   left:8%;
   right:8%;
   text-align:center;
@@ -1380,7 +1380,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
    and butterflies. */
 .plate-habit-pollinators{
   position:absolute;
-  bottom:14%;
+  bottom:17%;
   left:8%;
   right:8%;
   display:flex;
@@ -1405,7 +1405,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
 }
 .plate-habit-stats{
   position:absolute;
-  bottom:10%;
+  bottom:9.5%;
   left:8%;
   right:8%;
   display:flex;
@@ -1466,6 +1466,54 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
 }
 .plate-habit-flags .flag{
   white-space:nowrap;
+}
+/* Catalog-style 5-symbol sun/shade legend on Plate I. Mirrors the
+   Great Garden Plants "Sun/Shade" legend: full sun → deep shade circles
+   read left-to-right, and the plant's preferred level(s) are highlighted
+   with a pink pill (same treatment as the bloom-strip peak). Sits on its
+   own row just above the stat/bloom line. */
+.plate-habit-sun{
+  position:absolute;
+  bottom:13.5%;
+  left:8%;
+  right:8%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:9px;
+  font-family:'EB Garamond',Georgia,serif;
+  font-style:italic;
+  font-size:12px;
+  color:var(--text);
+  letter-spacing:.2px;
+  pointer-events:none;
+  text-shadow:0 1px 0 rgba(255,250,235,.65);
+}
+.plate-sun-scale{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 4px;
+  border:1px solid rgba(120,90,40,.35);
+  border-radius:12px;
+  background:rgba(255,250,235,.35);
+  pointer-events:auto;
+}
+.plate-sun-scale .sun-cell{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;
+  border-radius:50%;
+  color:var(--text);
+}
+.plate-sun-scale .sun-cell.peak{
+  background:rgba(220,110,150,.35);
+  box-shadow:0 0 0 1px rgba(180,80,120,.35) inset;
+}
+.plate-sun-scale .sun-cell svg{
+  width:12px;height:12px;
+  vertical-align:middle;
+}
+.plate-habit-sun .sun-label{
+  font-style:italic;
+  color:var(--text);
 }
 /* Catalog-style bloom-time strip (Sp | S | F) — pink pill highlights the
    peak-bloom season(s) inferred from bloomMonths. Small and inline; sits
@@ -5920,6 +5968,43 @@ function sunGlyph(sunStr){
   return lvl == null ? '' : SUN_GLYPHS[lvl];
 }
 
+// Return an inclusive set of sun/shade levels the plant prefers.
+// - "Part Shade to Part Sun" spans levels 1..3, so highlight three circles.
+// - Single-value strings ("Full Sun") highlight just that circle.
+// - Falls back to the single sunLevel() answer for unrecognized strings.
+function sunPreferredLevels(sunStr){
+  if (!sunStr) return new Set();
+  const key = sunStr.toLowerCase().trim();
+  const parts = key.split(/\s+to\s+/).map(t => {
+    if (t.includes('full sun'))   return 0;
+    if (t.includes('part sun'))   return 1;
+    if (t.includes('full shade')) return 4;
+    if (t.includes('part shade')) return 3;
+    if (t.includes('shade'))      return 4;
+    if (t.includes('sun'))        return 0;
+    return null;
+  }).filter(v => v !== null);
+  if (!parts.length) {
+    const lvl = sunLevel(sunStr);
+    return lvl == null ? new Set() : new Set([lvl]);
+  }
+  const lo = Math.min(...parts), hi = Math.max(...parts);
+  const out = new Set();
+  for (let i = lo; i <= hi; i++) out.add(i);
+  return out;
+}
+
+// Catalog-style 5-circle sun/shade scale: Full sun → Deep shade, left to
+// right. Cells matching the plant's preferred range get a pink pill
+// background — mirrors the bloom-strip aesthetic on the same row.
+const SUN_LEVEL_LABELS = ['Full sun','Mostly sunny','Half sun / half shade','Mostly shady','Deep shade'];
+function sunShadeScale(sunStr){
+  const on = sunPreferredLevels(sunStr);
+  return `<div class="plate-sun-scale">${SUN_GLYPHS.map((glyph, i) =>
+    `<span class="sun-cell${on.has(i)?' peak':''}" title="${SUN_LEVEL_LABELS[i]}">${glyph}</span>`
+  ).join('')}</div>`;
+}
+
 // Bloom-time strip: Sp | S | F letters, pink pill on peak-bloom seasons.
 // Mirrors the catalog legend at the top of Great Garden Plants pages.
 function bloomStrip(p){
@@ -6036,8 +6121,8 @@ function renderEncyclopedia(p) {
         ${habitBeeIcon ? `<span class="bee">${habitBeeIcon}</span>` : ''}
         ${habitButterflyIcon ? `<span class="butterfly">${habitButterflyIcon}</span>` : ''}
       </div>` : ''}
+      ${p.sun ? `<div class="plate-habit-sun">${sunShadeScale(p.sun)}<span class="sun-label">${escHtml(p.sun)}</span></div>` : ''}
       <div class="plate-habit-stats">
-        ${p.sun ? `<div class="stat"><span class="sun-ico">${sunGlyph(p.sun)}</span><span>${escHtml(p.sun)}</span></div>` : ''}
         ${fmtBloom() && fmtBloom() !== '—' ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(fmtBloom())}</span></div>` : ''}
         ${bloomStrip(p)}
       </div>
