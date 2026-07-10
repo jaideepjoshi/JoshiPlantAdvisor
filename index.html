@@ -1063,7 +1063,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon):not(.plate-action-btn){
    the right of the plate. Each glyph is a 28px square with 10px gaps. */
 .plate-topright-actions{
   position:absolute;top:35px;right:15px;z-index:20;
-  display:flex;flex-direction:row;align-items:center;gap:10px;
+  display:flex;flex-direction:row;align-items:center;gap:8px;
 }
 .plate-action-btn{
   width:28px;height:28px;padding:2px;
@@ -6344,9 +6344,8 @@ const PLATE_GLYPHS = {
   back:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16 L26 16"/><path d="M12 10 L6 16 L12 22"/><path d="M25 14 L27 16 L25 18"/></svg>`,
   // Search — classic engraved magnifying glass: circle + diagonal handle.
   search:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="13" r="7"/><path d="M18.5 18.5 L26 26"/></svg>`,
-  // Add — a plus inside a thin outer frame; balances visually with the
-  // ornate framed glyphs (gallery, etc.) rather than a bare +.
-  add:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="10"/><path d="M11 16 L21 16 M16 11 L16 21"/></svg>`,
+  // Add — a bare plus sign, no outer frame.
+  add:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16 L24 16 M16 8 L16 24"/></svg>`,
   // Settings — a proper cog silhouette: 8 rectangular teeth around a
   // circular body with a hollow hub in the middle. Kept as a single
   // closed path so it reads as a gear even at small sizes (thin radial
