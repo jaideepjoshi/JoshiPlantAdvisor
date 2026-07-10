@@ -2007,29 +2007,28 @@ button[onclick*="showAddPlant"]{
     0 1px 1px rgba(0,0,0,.8),
     0.5px 0.5px 0 rgba(50,25,10,.5);
 }
-/* Worn embossed gold — the letters look slightly rubbed and unevenly
-   pressed into the leather. Achieved with:
-     • a warmer, muted gold instead of bright #f5c842
-     • a light drop-shadow above-left (raised catch of light) plus a
-       darker drop-shadow below-right (recessed shadow)
-     • mix-blend-mode: overlay so the letters interact with the leather
-       grain beneath instead of sitting flatly on top
-     • a slight text-stroke in near-black for softened edges. */
+/* Worn faded gold — the lettering looks like antique gold leaf that
+   has been rubbed away by decades of handling. Achieved with:
+     • a tarnished antique-brass color instead of bright gold
+     • overlay blend so the leather grain shows THROUGH the letters
+       (as if the gold has worn thin and the leather beneath shows)
+     • a slight blur (0.4px) for softened, abraded edges
+     • lower contrast + slightly reduced brightness for a dulled patina
+     • low opacity so the leather grain reads through the strokes. */
 .journal-closed .jc-title{
   font-family:'Pinyon Script', serif;
   font-size:50px;
   line-height:1;
-  color:#c9a24a;
+  color:#8f6d2d;
   margin-bottom:16px;
   word-break:break-word;
   mix-blend-mode:overlay;
-  filter:contrast(0.92) brightness(1.05);
+  filter:contrast(0.72) brightness(0.9) blur(0.35px) saturate(0.85);
   text-shadow:
-    -0.5px -0.5px 0 rgba(230,190,110,.35),   /* highlight edge, upper-left */
-    0.5px  0.5px 0 rgba(40,18,6,.7),          /* dark recess, lower-right   */
-    0 1px 1px rgba(20,10,3,.85),
-    0 2px 6px rgba(0,0,0,.55);
-  opacity:.92;
+    0.4px 0.4px 1px rgba(15,8,3,.55),    /* soft recessed shadow */
+    -0.3px -0.3px 0 rgba(120,90,40,.18), /* faint upper highlight */
+    0 0 3px rgba(0,0,0,.35);              /* soft glow into the leather */
+  opacity:0.68;
 }
 .journal-closed .jc-sub{
   font-family:'Cormorant Garamond', serif;
