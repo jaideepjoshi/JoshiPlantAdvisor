@@ -2023,8 +2023,11 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   position:absolute;inset:0;opacity:0;cursor:pointer;
 }
 .plate-photo-add svg{
-  width:36%;height:36%;
+  width:44%;height:44%;
   pointer-events:none;
+  /* Override .plate-glyph's own sizing/color so the camera glyph matches
+     the tile's hover state and scales with the tile. */
+  color:inherit;
 }
 /* Full-screen lightbox for tapping a gallery thumbnail. */
 .plate-photo-lightbox{
@@ -6014,6 +6017,11 @@ const PLATE_GLYPHS = {
   rabbit:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12Q11 5 13 3Q14.5 4 14 12"/><path d="M20 12Q21 5 19 3Q17.5 4 18 12"/><ellipse cx="16" cy="18" rx="6" ry="5.5"/><path d="M11 22Q9 26 13 27Q16 28 19 27Q23 26 21 22"/></svg>`,
   // Drought resistant: saguaro cactus in outline — trunk with two arms.
   drought:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M14 27L14 10Q14 6 16 6Q18 6 18 10L18 27"/><path d="M14 16L11 16Q9 16 9 14L9 10Q9 8 11 8Q13 8 13 10"/><path d="M18 14L21 14Q23 14 23 12L23 8Q23 6 21 6Q19 6 19 8"/><path d="M6 27L26 27"/></svg>`,
+  // Old-fashioned bellows folding camera — box body on the right with a
+  // small winder on top, accordion bellows in the middle, and a circular
+  // lens on the left. Matches the engraving line-art conventions of the
+  // rest of the vocabulary.
+  camera:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="9" width="11" height="16" rx="1.5"/><rect x="21" y="6" width="4" height="3" rx="0.5"/><path d="M9 12 L18 10 L18 24 L9 22 Z"/><path d="M11 12 L12 22 M13.5 11.6 L14.5 22.4 M16 11.2 L17 22.8"/><circle cx="6" cy="17" r="2"/><path d="M8 17 L9 17"/></svg>`,
 };
 
 function plateGlyph(name){ return PLATE_GLYPHS[name] || ''; }
@@ -6479,10 +6487,7 @@ function renderEncyclopedia(p) {
               </div>`).join('')}
             <label class="plate-photo-add" title="Add photo">
               <input type="file" accept="image/*" capture="environment" onchange="if(this.files&&this.files[0]){compressAndStorePhoto(${p.id},this.files[0]);}this.value=''">
-              <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M6 10h4l2-3h8l2 3h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2z"/>
-                <circle cx="16" cy="17" r="4.5"/>
-              </svg>
+              ${plateGlyph('camera')}
             </label>
           </div>
         </div>
