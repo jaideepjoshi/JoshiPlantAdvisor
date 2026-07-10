@@ -174,6 +174,11 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .badge-bloom{background:rgba(244,114,182,.12);color:#f472b6;border:1px solid rgba(244,114,182,.25)}
 .detail{position:fixed;inset:0;background:rgba(7,26,18,.98);z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none}
 .detail.open{display:block;animation:slideInRight .32s cubic-bezier(.16,1,.3,1)}
+/* Emitted by renderDetail() when we're re-rendering the same plant (a state
+   update, not a fresh open) — kills the slideInRight replay so toggling a
+   checkbox or committing a cultivar row doesn't wash the plate view in a
+   32ms flicker. */
+.detail.open.detail-noanim{animation:none !important}
 .detail.closing{display:block;animation:slideOutRight .22s cubic-bezier(.4,0,1,1) forwards;pointer-events:none}
 @keyframes slideInRight{from{transform:translateX(100%);opacity:.6}to{transform:translateX(0);opacity:1}}
 @keyframes slideOutRight{from{transform:translateX(0);opacity:1}to{transform:translateX(72%);opacity:0}}
@@ -6812,7 +6817,7 @@ function renderEncyclopedia(p) {
   ).join('');
 
   return `
-    <div class="detail open ${p.plateImage ? 'plate-detail' : ''}" style="background:#f4ebd9">
+    <div class="detail open ${p.plateImage ? 'plate-detail' : ''}${window._detailNoAnim ? ' detail-noanim' : ''}" style="background:#f4ebd9">
       <div class="encyclopedia">
         <div class="encyc-back-btn" onclick="closeDetail()">
           <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -6965,9 +6970,22 @@ function initPlateFlip() {
   });
 }
 
+let _lastRenderedDetailId = null;
+function _detailAnimSuppress() {
+  // True whenever we're re-rendering the SAME plant that was already on
+  // screen — every mutating state update (checkbox toggle, cultivar add,
+  // photo add, …) calls render(), which nukes .detail.open and re-inserts
+  // it, replaying the CSS `slideInRight` animation and any downstream
+  // transitions. Emit a "detail-noanim" class in that case so the CSS
+  // override strips the animation.
+  return _lastRenderedDetailId === state.detailId;
+}
 function renderDetail() {
   const p = PLANTS.find(x=>x.id===state.detailId);
   if (!p) return '';
+  const suppress = _detailAnimSuppress();
+  _lastRenderedDetailId = state.detailId;
+  window._detailNoAnim = suppress;   // read by the render sites below
   // Encyclopedia view: plants with a 'plates' array get the multi-page swipe UI
   if (p.plates && Array.isArray(p.plates) && p.plates.length > 0) {
     return renderEncyclopedia(p);
@@ -7334,7 +7352,7 @@ function renderDetail() {
     </div>` : '';
 
   return `
-    <div class="detail open ${p.plateImage ? 'plate-detail' : ''}">
+    <div class="detail open ${p.plateImage ? 'plate-detail' : ''}${window._detailNoAnim ? ' detail-noanim' : ''}">
       <div class="detail-hero ${p.plateImage ? 'plate-hero' : ''}" id="hero-wrap">
         ${p.plateImage
           ? `<img class="plate-hero-img" src="${p.plateImage}" alt="${p.name}">`
