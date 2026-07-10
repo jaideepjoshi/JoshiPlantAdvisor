@@ -1963,16 +1963,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
 }
 /* Plate IV Gallery — user-added plant photos. Uses the same visual grammar
    as the rest of the plate-journal (parchment fill, gold-light border). */
-.plate-gallery .heading{
-  margin-bottom:8px;
-  display:inline-flex;align-items:center;gap:6px;
-}
-.plate-gallery-icon{
-  display:inline-flex;align-items:center;
-  width:20px;height:20px;
-  color:var(--text-mid);
-}
-.plate-gallery-icon svg{width:100%;height:100%;color:inherit}
+.plate-gallery .heading{margin-bottom:8px}
 .plate-gallery-count{
   font-family:'EB Garamond',serif;font-style:italic;
   color:var(--text-mid);font-size:12px;font-weight:400;
@@ -6597,7 +6588,7 @@ function renderEncyclopedia(p) {
         </div>` : ''}
         <div class="plate-section-divider"></div>
         <div class="plate-prose-block plate-gallery">
-          <div class="heading"><span class="plate-gallery-icon">${plateGlyph('gallery')}</span>Gallery <span class="plate-gallery-count">${(getPhotos(p.id)||[]).length ? '· '+(getPhotos(p.id)||[]).length : ''}</span></div>
+          <div class="heading">Gallery <span class="plate-gallery-count">${(getPhotos(p.id)||[]).length ? '· '+(getPhotos(p.id)||[]).length : ''}</span></div>
           <div class="plate-gallery-grid">
             ${(getPhotos(p.id)||[]).map((src,idx) => `
               <div class="plate-photo-thumb">
