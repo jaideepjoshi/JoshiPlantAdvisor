@@ -2340,23 +2340,22 @@ button[onclick*="showAddPlant"]{
    .cover-stamp; a small on-page bookplate, not app chrome. */
 .browse-corner-gear{
   position:fixed;
-  top:14px;
-  right:14px;
+  top:16px;
+  right:16px;
   z-index:250;
-  width:34px;height:34px;
+  width:18px;height:18px;
   border-radius:50%;
-  background:rgba(255,250,235,.65);
-  border:1px solid var(--gold-light);
-  color:rgba(80,55,30,.7);
+  background:transparent;
+  border:none;
+  color:rgba(80,55,30,.6);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;
-  box-shadow:0 2px 6px rgba(120,90,40,.15);
-  transition:background .18s, filter .18s;
+  transition:color .18s, filter .18s;
   padding:0;
 }
-.browse-corner-gear:hover{ background:rgba(255,250,235,.9); }
+.browse-corner-gear:hover{ color:rgba(60,40,20,.8); }
 .browse-corner-gear:active{ filter:brightness(.94); }
-.browse-corner-gear svg{ width:18px;height:18px; }
+.browse-corner-gear svg{ width:16px;height:16px; }
 .cover-back-ribbon:hover{ background:rgba(255,250,235,.9); }
 .cover-back-ribbon svg{ width:14px;height:14px;color:var(--gold); }
 
