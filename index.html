@@ -2014,13 +2014,10 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   color:var(--text-mid);
   transition:background .12s, color .12s, border-color .12s;
 }
-.plate-photo-add:hover,.plate-photo-add:focus-within{
+.plate-photo-add:hover,.plate-photo-add:focus-visible{
   background:rgba(255,250,235,.7);
   color:var(--text);
   border-color:var(--gold);
-}
-.plate-photo-add input{
-  position:absolute;inset:0;opacity:0;cursor:pointer;
 }
 .plate-photo-add svg{
   width:44%;height:44%;
@@ -2028,6 +2025,66 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   /* Override .plate-glyph's own sizing/color so the camera glyph matches
      the tile's hover state and scales with the tile. */
   color:inherit;
+}
+/* Photo-source picker modal — asks whether the user wants the camera or the
+   library. Bottom-sheet on mobile, centred card on desktop. */
+.plate-photo-picker{
+  position:fixed;inset:0;z-index:10001;
+  background:rgba(20,14,6,.55);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:16px;
+}
+.plate-photo-picker .picker-card{
+  width:100%;max-width:360px;
+  background:#faf2e0;
+  border:1px solid var(--gold-light);
+  border-radius:10px;
+  padding:14px 14px 10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;gap:8px;
+  font-family:'EB Garamond',serif;color:var(--text);
+}
+.plate-photo-picker .picker-title{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-weight:600;
+  font-size:15px;color:var(--text-mid);
+  text-align:center;
+  padding:4px 0 6px;
+  border-bottom:1px solid var(--gold-light);
+  margin-bottom:2px;
+}
+.plate-photo-picker .picker-btn{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  background:rgba(255,250,235,.55);
+  border:1px solid var(--gold-light);
+  border-radius:6px;
+  font-family:inherit;color:inherit;
+  font-size:15px;font-style:italic;
+  cursor:pointer;
+  transition:background .12s;
+}
+.plate-photo-picker .picker-btn:hover,.plate-photo-picker .picker-btn:focus-visible{
+  background:rgba(255,250,235,.85);
+}
+.plate-photo-picker .picker-icon{
+  flex:none;width:32px;height:32px;
+  display:inline-flex;align-items:center;justify-content:center;
+  color:var(--text-mid);
+}
+.plate-photo-picker .picker-icon svg{width:100%;height:100%;color:inherit}
+.plate-photo-picker .picker-label{flex:1;text-align:left}
+.plate-photo-picker .picker-cancel{
+  padding:10px;margin-top:2px;
+  background:transparent;border:none;
+  font-family:inherit;color:var(--text-mid);
+  font-size:14px;font-style:italic;
+  cursor:pointer;
+  border-radius:6px;
+}
+.plate-photo-picker .picker-cancel:hover{background:rgba(255,250,235,.5);color:var(--text)}
+@media (min-width: 640px){
+  .plate-photo-picker{align-items:center}
 }
 /* Full-screen lightbox for tapping a gallery thumbnail. */
 .plate-photo-lightbox{
@@ -2922,6 +2979,52 @@ function deletePhoto(plantId, index) {
     render();
   }
 }
+
+// Present a bottom-sheet picker asking whether the user wants to take a
+// photo with the camera or pick one from their photo library. Each choice
+// programmatically clicks a freshly-built <input type="file"> so we can
+// selectively include `capture="environment"` — with capture the OS opens
+// the camera directly; without it, the OS shows the photo library.
+function triggerPlantPhotoInput(plantId, useCamera) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  if (useCamera) input.setAttribute('capture', 'environment');
+  input.style.display = 'none';
+  input.addEventListener('change', () => {
+    if (input.files && input.files[0]) compressAndStorePhoto(plantId, input.files[0]);
+    input.remove();
+  });
+  document.body.appendChild(input);
+  input.click();
+}
+function openPlantPhotoPicker(plantId) {
+  document.getElementById('__photo_picker')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = '__photo_picker';
+  overlay.className = 'plate-photo-picker';
+  overlay.innerHTML = `
+    <div class="picker-card" role="dialog" aria-label="Add a photo">
+      <div class="picker-title">Add a photo</div>
+      <button type="button" class="picker-btn" data-source="camera">
+        <span class="picker-icon">${plateGlyph('camera')}</span>
+        <span class="picker-label">Take a photo</span>
+      </button>
+      <button type="button" class="picker-btn" data-source="library">
+        <span class="picker-icon">${plateGlyph('photos')}</span>
+        <span class="picker-label">Choose from library</span>
+      </button>
+      <button type="button" class="picker-cancel">Cancel</button>
+    </div>`;
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('[data-source="camera"]').addEventListener('click', () => { close(); triggerPlantPhotoInput(plantId, true); });
+  overlay.querySelector('[data-source="library"]').addEventListener('click', () => { close(); triggerPlantPhotoInput(plantId, false); });
+  overlay.querySelector('.picker-cancel').addEventListener('click', close);
+  document.body.appendChild(overlay);
+}
+window.openPlantPhotoPicker = openPlantPhotoPicker;
+window.triggerPlantPhotoInput = triggerPlantPhotoInput;
 
 // Full-screen viewer for tapping a Plate IV gallery thumbnail. Reuses
 // state.photos as the source of truth so it always shows the current image.
@@ -6022,6 +6125,9 @@ const PLATE_GLYPHS = {
   // lens on the left. Matches the engraving line-art conventions of the
   // rest of the vocabulary.
   camera:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="9" width="11" height="16" rx="1.5"/><rect x="21" y="6" width="4" height="3" rx="0.5"/><path d="M9 12 L18 10 L18 24 L9 22 Z"/><path d="M11 12 L12 22 M13.5 11.6 L14.5 22.4 M16 11.2 L17 22.8"/><circle cx="6" cy="17" r="2"/><path d="M8 17 L9 17"/></svg>`,
+  // Photo library — stacked picture frames with a simple mountain / sun
+  // scene inside the front frame. Signals "choose from your photos".
+  photos:`<svg class="plate-glyph" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="20" height="16" rx="1.5"/><path d="M8 10 L8 6 L28 6 L28 22"/><circle cx="10" cy="15" r="1.5"/><path d="M6 22 L11 17 L15 21 L19 16 L22 20 L22 24"/></svg>`,
 };
 
 function plateGlyph(name){ return PLATE_GLYPHS[name] || ''; }
@@ -6485,10 +6591,9 @@ function renderEncyclopedia(p) {
                 <img src="${src}" alt="Photo ${idx+1}" onclick="openPlantPhotoLightbox(${p.id},${idx})">
                 <button class="plate-photo-del" onclick="event.stopPropagation();if(confirm('Remove this photo?'))deletePhoto(${p.id},${idx})" title="Remove photo">×</button>
               </div>`).join('')}
-            <label class="plate-photo-add" title="Add photo">
-              <input type="file" accept="image/*" capture="environment" onchange="if(this.files&&this.files[0]){compressAndStorePhoto(${p.id},this.files[0]);}this.value=''">
+            <button type="button" class="plate-photo-add" title="Add photo" onclick="openPlantPhotoPicker(${p.id})" aria-label="Add photo">
               ${plateGlyph('camera')}
-            </label>
+            </button>
           </div>
         </div>
         ${userCultivarsHtml ? `
