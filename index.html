@@ -6008,18 +6008,37 @@ function sunShadeScale(sunStr){
   ).join('')}</div>`;
 }
 
-// 12-month bloom strip: J F M A M J J A S O N D letters, peak-bloom months
-// rendered larger and sepia-dark; non-bloom months are muted. Mirrors the
-// sun-shade scale aesthetic (no pink pill — size/weight carry the signal).
-const MONTH_LETTERS = ['J','F','M','A','M','J','J','A','S','O','N','D'];
-function bloomStrip(p){
-  const months = new Set(p.bloomMonths || []);
-  if (!months.size) return '';
-  return `<div class="plate-bloom-strip-legend">${MONTH_LETTERS.map((ltr, i) => {
-    const m = i + 1;
-    const on = months.has(m);
-    return `<span class="bloom-cell${on?' peak':''}" title="${MONTHS[i]}">${ltr}</span>`;
-  }).join('')}</div>`;
+// Descriptive bloom-season phrase for Plate I (the month calendar lives
+// on Plate II, so Plate I keeps a single readable label). Derives a
+// sub-season for the first and last bloomMonth. Common shortcuts:
+//   - single month → the sub-season alone ("Mid-Spring")
+//   - full 3-month season → the season name alone ("Spring")
+//   - otherwise → "<start sub-season> to <end sub-season>"
+const SUB_SEASON_LABELS = [
+  null, 'Mid-Winter','Late Winter',
+  'Early Spring','Mid-Spring','Late Spring',
+  'Early Summer','Mid-Summer','Late Summer',
+  'Early Fall','Mid-Fall','Late Fall',
+  'Early Winter'
+];
+function seasonOf(m){
+  if (m>=3 && m<=5) return 'Spring';
+  if (m>=6 && m<=8) return 'Summer';
+  if (m>=9 && m<=11) return 'Fall';
+  return 'Winter';
+}
+function bloomSeason(p){
+  const months = (p.bloomMonths||[]).slice().sort((a,b)=>a-b);
+  if (!months.length) return '';
+  const first = months[0], last = months[months.length-1];
+  if (first === last) return SUB_SEASON_LABELS[first];
+  const s = seasonOf(first);
+  // "Spring" iff all three spring months present and nothing outside them.
+  if (s === seasonOf(last) && months.length === 3) {
+    const start = s==='Spring' ? 3 : s==='Summer' ? 6 : s==='Fall' ? 9 : 12;
+    if (months[0] === start && months[2] === start+2) return s;
+  }
+  return `${SUB_SEASON_LABELS[first]} to ${SUB_SEASON_LABELS[last]}`;
 }
 
 // Catalog-style plant-symbol row. Each entry: {key, glyph, title, present}.
@@ -6129,7 +6148,7 @@ function renderEncyclopedia(p) {
       </div>` : ''}
       ${p.sun ? `<div class="plate-habit-sun">${sunShadeScale(p.sun)}</div>` : ''}
       <div class="plate-habit-stats">
-        ${bloomStrip(p) ? `<div class="stat"><span class="ico">✿</span>${bloomStrip(p)}</div>` : ''}
+        ${bloomSeason(p) ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(bloomSeason(p))}</span></div>` : ''}
       </div>
       ${plantSymbolRow(p)}
       ${habitFlags ? `<div class="plate-habit-flags">${habitFlags}</div>` : ''}
