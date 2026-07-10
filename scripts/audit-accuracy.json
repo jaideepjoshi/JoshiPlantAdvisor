@@ -2277,6 +2277,22 @@
     },
     "ts": "2026-07-07T19:58:19.725Z"
   },
+  "94": {
+    "id": 94,
+    "name": "Bergenia (Heartleaf Bergenia)",
+    "botanical": "Bergenia cordifolia",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-18 in",
+      "leaf_shape": "heart-shaped",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pink",
+      "distinctive_notes": "Thick, glossy, heart-shaped leaves with clusters of pink flowers on sturdy stems."
+    }
+  },
   "95": {
     "id": 95,
     "name": "Arabis (Rock Cress)",
@@ -3378,6 +3394,22 @@
       "distinctive_notes": "The balloon-like buds that swell before opening into star-shaped flowers are key identifiers."
     }
   },
+  "134": {
+    "id": 134,
+    "name": "Crocosmia",
+    "botanical": "Crocosmia x crocosmiiflora",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-4 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "trumpet",
+      "flower_color": "orange-red",
+      "distinctive_notes": "Features sword-like leaves and vibrant, tubular flowers that attract hummingbirds."
+    }
+  },
   "135": {
     "id": 135,
     "name": "Papaver (Oriental Poppy)",
@@ -3419,6 +3451,22 @@
       "issues": []
     },
     "ts": "2026-07-07T20:00:13.043Z"
+  },
+  "136": {
+    "id": 136,
+    "name": "Lupinus (Lupine)",
+    "botanical": "Lupinus polyphyllus",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-4 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "whorled",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "bicolor purple-yellow",
+      "distinctive_notes": "Characterized by tall, dense flower spikes and palmate leaves with multiple leaflets."
+    }
   },
   "137": {
     "id": 137,
@@ -3504,6 +3552,54 @@
     },
     "ts": "2026-07-07T20:55:18.616Z"
   },
+  "139": {
+    "id": 139,
+    "name": "Thalictrum (Meadow Rue)",
+    "botanical": "Thalictrum spp.",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-4 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pale yellow",
+      "distinctive_notes": "Characterized by delicate, feathery foliage and airy clusters of small flowers atop tall stems."
+    }
+  },
+  "140": {
+    "id": 140,
+    "name": "Convallaria (Lily of the Valley)",
+    "botanical": "Convallaria majalis",
+    "brief": {
+      "growth_habit": "groundcover-trailing",
+      "mature_height": "6-12 in",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "whorled",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "bell",
+      "flower_color": "white",
+      "distinctive_notes": "Characterized by its arching lanceolate leaves and fragrant, nodding white flowers arranged in a raceme."
+    }
+  },
+  "141": {
+    "id": 141,
+    "name": "Gypsophila (Baby's Breath)",
+    "botanical": "Gypsophila paniculata",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-3 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "white",
+      "distinctive_notes": "Characterized by delicate, airy clusters of small white flowers atop slender stems, creating a cloud-like effect."
+    }
+  },
   "142": {
     "id": 142,
     "name": "Centaurea (Bachelor's Button/Cornflower)",
@@ -3587,6 +3683,38 @@
       "issues": []
     },
     "ts": "2026-07-07T20:00:38.886Z"
+  },
+  "144": {
+    "id": 144,
+    "name": "Myosotis (Forget-Me-Not)",
+    "botanical": "Myosotis sylvatica",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "6-12 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pale blue",
+      "distinctive_notes": "Look for small clusters of delicate, pale blue flowers with a yellow center, surrounded by lush green, ovate leaves."
+    }
+  },
+  "145": {
+    "id": 145,
+    "name": "Bellis (English Daisy)",
+    "botanical": "Bellis perennis",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "6-12 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "daisy-composite",
+      "flower_color": "white",
+      "distinctive_notes": "Characterized by its bright white petals surrounding a yellow center, often blooming in early spring."
+    }
   },
   "146": {
     "id": 146,
@@ -3756,6 +3884,22 @@
     },
     "ts": "2026-07-07T20:01:06.967Z"
   },
+  "151": {
+    "id": 151,
+    "name": "Verbena (Trailing Verbena)",
+    "botanical": "Verbena canadensis",
+    "brief": {
+      "growth_habit": "groundcover-trailing",
+      "mature_height": "6-12 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "bicolor pink-yellow",
+      "distinctive_notes": "Characterized by its sprawling growth and clusters of small, vibrant flowers that attract pollinators."
+    }
+  },
   "154": {
     "id": 154,
     "name": "Silene (Catchfly)",
@@ -3798,6 +3942,38 @@
     },
     "ts": "2026-07-07T20:45:01.870Z"
   },
+  "155": {
+    "id": 155,
+    "name": "Lilium (Lily)",
+    "botanical": "Lilium spp.",
+    "brief": {
+      "growth_habit": "bulb-emerging",
+      "mature_height": "1-6 ft",
+      "leaf_shape": "lanceolate",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "trumpet",
+      "flower_color": "varies widely (e.g. orange, yellow, white, pink)",
+      "distinctive_notes": "Lily flowers are characterized by their large, showy blooms and often have a pleasant fragrance."
+    }
+  },
+  "156": {
+    "id": 156,
+    "name": "Sweet Woodruff",
+    "botanical": "Galium odoratum",
+    "brief": {
+      "growth_habit": "groundcover-trailing",
+      "mature_height": "6-12 in",
+      "leaf_shape": "whorled",
+      "leaf_arrangement": "whorled",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "white",
+      "distinctive_notes": "Look for the whorled leaves and delicate white flowers that appear in clusters above the foliage."
+    }
+  },
   "158": {
     "id": 158,
     "name": "Woodland Phlox",
@@ -3839,6 +4015,22 @@
       "issues": []
     },
     "ts": "2026-07-07T20:01:20.076Z"
+  },
+  "174": {
+    "id": 174,
+    "name": "Suwannee Blue-Eyed Grass",
+    "botanical": "Sisyrinchium angustifolium 'Suwannee'",
+    "brief": {
+      "growth_habit": "grass-tuft",
+      "mature_height": "12-18 in",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pale blue",
+      "distinctive_notes": "Features slender, grass-like leaves with delicate pale blue flowers that have a prominent yellow center."
+    }
   },
   "176": {
     "id": 176,
@@ -3927,6 +4119,22 @@
     },
     "ts": "2026-07-07T20:01:33.467Z"
   },
+  "178": {
+    "id": 178,
+    "name": "Elfin Thyme",
+    "botanical": "Thymus serpyllum 'Elfin'",
+    "brief": {
+      "growth_habit": "groundcover-trailing",
+      "mature_height": "2-4 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "umbel",
+      "flower_color": "pale purple",
+      "distinctive_notes": "This variety features tiny, aromatic leaves and clusters of small lavender flowers that attract pollinators."
+    }
+  },
   "180": {
     "id": 180,
     "name": "Montauk Daisy",
@@ -3972,6 +4180,22 @@
     },
     "ts": "2026-07-07T20:01:39.120Z"
   },
+  "183": {
+    "id": 183,
+    "name": "Eucomis Pineapple Lily",
+    "botanical": "Eucomis bicolor",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "1-2 ft",
+      "leaf_shape": "strap-like",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "spike",
+      "flower_color": "bicolor pink-yellow",
+      "distinctive_notes": "The inflorescence resembles a pineapple, with a dense cluster of star-shaped flowers atop a tall stalk."
+    }
+  },
   "185": {
     "id": 185,
     "name": "Goat's Beard Chantilly Lace",
@@ -4014,6 +4238,22 @@
     },
     "ts": "2026-07-07T20:45:08.366Z"
   },
+  "187": {
+    "id": 187,
+    "name": "Liatris microcephala",
+    "botanical": "Liatris microcephala",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-3 ft",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "spike",
+      "flower_color": "purple",
+      "distinctive_notes": "Characterized by its tall, slender spikes of purple flowers and narrow, grass-like leaves."
+    }
+  },
   "188": {
     "id": 188,
     "name": "Liatris ligulistylis",
@@ -4055,6 +4295,38 @@
       "issues": []
     },
     "ts": "2026-07-07T20:01:51.242Z"
+  },
+  "197": {
+    "id": 197,
+    "name": "Daylily - Happy Returns",
+    "botanical": "Hemerocallis 'Happy Returns'",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-18 in",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "trumpet",
+      "flower_color": "yellow",
+      "distinctive_notes": "Features bright yellow flowers with a prominent, ruffled edge and arching, strap-like leaves."
+    }
+  },
+  "199": {
+    "id": 199,
+    "name": "Daylily - South Seas",
+    "botanical": "Hemerocallis 'South Seas'",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "24-36 in",
+      "leaf_shape": "linear-needle",
+      "leaf_arrangement": "basal-rosette",
+      "leaf_color": "medium green",
+      "leaf_size": "large (>8cm)",
+      "flower_shape": "trumpet",
+      "flower_color": "bicolor pink-yellow",
+      "distinctive_notes": "Features large, ruffled, trumpet-shaped flowers with a striking bicolor pattern and arching foliage."
+    }
   },
   "200": {
     "id": 200,
@@ -4139,6 +4411,22 @@
       "issues": []
     },
     "ts": "2026-07-07T20:02:02.797Z"
+  },
+  "204": {
+    "id": 204,
+    "name": "Senorita Rosalita Spider Flower",
+    "botanical": "Cleome 'Senorita Rosalita'",
+    "brief": {
+      "growth_habit": "upright-clumping",
+      "mature_height": "2-3 ft",
+      "leaf_shape": "pinnately-compound",
+      "leaf_arrangement": "alternate",
+      "leaf_color": "medium green",
+      "leaf_size": "medium (3-8cm)",
+      "flower_shape": "spike",
+      "flower_color": "bicolor pink-purple",
+      "distinctive_notes": "Features delicate, long-stemmed flowers with a striking pink-purple hue and a bushy, upright growth habit."
+    }
   },
   "207": {
     "id": 207,
@@ -4398,6 +4686,22 @@
       ]
     },
     "ts": "2026-07-07T20:45:24.169Z"
+  },
+  "215": {
+    "id": 215,
+    "name": "Calamint (Lesser Calamint)",
+    "botanical": "Calamintha nepeta",
+    "brief": {
+      "growth_habit": "mounding",
+      "mature_height": "12-24 in",
+      "leaf_shape": "ovate",
+      "leaf_arrangement": "opposite",
+      "leaf_color": "medium green",
+      "leaf_size": "small (1-3cm)",
+      "flower_shape": "spike",
+      "flower_color": "pale blue",
+      "distinctive_notes": "Features small, aromatic leaves and clusters of delicate pale blue flowers that attract pollinators."
+    }
   },
   "224": {
     "id": 224,
