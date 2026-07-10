@@ -1349,7 +1349,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
    pollinator row in the clear parchment area at the bottom of the plate. */
 .plate-habit-name{
   position:absolute;
-  bottom:17%;
+  bottom:20%;
   left:8%;
   right:8%;
   text-align:center;
@@ -1474,7 +1474,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
    own row just above the stat/bloom line. */
 .plate-habit-sun{
   position:absolute;
-  bottom:13.5%;
+  bottom:16.5%;
   left:8%;
   right:8%;
   display:flex;
@@ -1509,27 +1509,36 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   width:100%;height:100%;
   vertical-align:middle;
 }
-/* Catalog-style bloom-time strip (Sp | S | F) — pink pill highlights the
-   peak-bloom season(s) inferred from bloomMonths. Small and inline; sits
-   at the right edge of the .plate-habit-stats row. */
+/* 12-month bloom strip on Plate I. Every month gets a single-letter
+   cell; peak-bloom months are enlarged and darker so the range reads
+   at a glance — same visual language as the sun-shade scale (no pink
+   pill, size/weight carry the signal). */
 .plate-bloom-strip-legend{
-  display:inline-flex;align-items:center;gap:0;
+  display:inline-flex;align-items:baseline;gap:5px;
   font-family:'EB Garamond',Georgia,serif;
-  font-size:9.5px;font-style:normal;font-weight:700;
-  letter-spacing:.6px;color:var(--text-mid);
-  border:1px solid rgba(120,90,40,.35);
-  border-radius:3px;overflow:hidden;
+  font-style:normal;
+  color:var(--text-mid);
   margin-left:2px;
 }
 .plate-bloom-strip-legend .bloom-cell{
-  padding:1.5px 5px;line-height:1;
-  border-right:1px solid rgba(120,90,40,.25);
+  display:inline-block;line-height:1;
+  min-width:10px;text-align:center;
+  font-size:11px;font-weight:500;
+  opacity:.55;
+  transition:opacity .12s;
+  /* Reset properties inherited from the generic .bloom-cell / .plate-detail
+     .bloom-cell rules used by Plate II's bloom bar. */
+  background:none !important;
+  border:none !important;
+  border-radius:0 !important;
+  height:auto !important;
+  flex:0 0 auto !important;
+  font-style:normal !important;
 }
-.plate-bloom-strip-legend .bloom-cell:last-child{border-right:none}
 .plate-bloom-strip-legend .bloom-cell.peak{
-  background:rgba(220,110,150,.35);
+  font-size:15px;font-weight:700;
   color:var(--text);
-  text-shadow:0 1px 0 rgba(255,250,235,.5);
+  opacity:1;
 }
 /* Catalog-style plant-symbol row — sepia line-art glyphs indicating
    attributes like Cut flower / Deer resistant / Evergreen / etc. */
@@ -5999,19 +6008,17 @@ function sunShadeScale(sunStr){
   ).join('')}</div>`;
 }
 
-// Bloom-time strip: Sp | S | F letters, pink pill on peak-bloom seasons.
-// Mirrors the catalog legend at the top of Great Garden Plants pages.
+// 12-month bloom strip: J F M A M J J A S O N D letters, peak-bloom months
+// rendered larger and sepia-dark; non-bloom months are muted. Mirrors the
+// sun-shade scale aesthetic (no pink pill — size/weight carry the signal).
+const MONTH_LETTERS = ['J','F','M','A','M','J','J','A','S','O','N','D'];
 function bloomStrip(p){
   const months = new Set(p.bloomMonths || []);
   if (!months.size) return '';
-  const seasons = [
-    { key:'Sp', label:'Sp', months:[3,4,5]  },
-    { key:'S',  label:'S',  months:[6,7,8]  },
-    { key:'F',  label:'F',  months:[9,10,11]},
-  ];
-  return `<div class="plate-bloom-strip-legend">${seasons.map(s => {
-    const on = s.months.some(m => months.has(m));
-    return `<span class="bloom-cell${on?' peak':''}" title="${s.months.map(m=>MONTHS[m-1]).join('–')}">${s.label}</span>`;
+  return `<div class="plate-bloom-strip-legend">${MONTH_LETTERS.map((ltr, i) => {
+    const m = i + 1;
+    const on = months.has(m);
+    return `<span class="bloom-cell${on?' peak':''}" title="${MONTHS[i]}">${ltr}</span>`;
   }).join('')}</div>`;
 }
 
@@ -6122,8 +6129,7 @@ function renderEncyclopedia(p) {
       </div>` : ''}
       ${p.sun ? `<div class="plate-habit-sun">${sunShadeScale(p.sun)}</div>` : ''}
       <div class="plate-habit-stats">
-        ${fmtBloom() && fmtBloom() !== '—' ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(fmtBloom())}</span></div>` : ''}
-        ${bloomStrip(p)}
+        ${bloomStrip(p) ? `<div class="stat"><span class="ico">✿</span>${bloomStrip(p)}</div>` : ''}
       </div>
       ${plantSymbolRow(p)}
       ${habitFlags ? `<div class="plate-habit-flags">${habitFlags}</div>` : ''}
