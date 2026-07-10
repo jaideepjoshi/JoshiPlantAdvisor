@@ -1969,20 +1969,10 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   color:var(--text-mid);font-size:12px;font-weight:400;
   margin-left:2px;
 }
-.plate-gallery-empty{
-  font-family:'EB Garamond',serif;font-style:italic;
-  color:var(--text-mid);font-size:13px;
-  padding:8px 10px;
-  background:rgba(255,250,235,.5);
-  border:1px dashed var(--gold-light);
-  border-radius:4px;
-  text-align:center;
-}
 .plate-gallery-grid{
   display:grid;
   grid-template-columns:repeat(3, 1fr);
   gap:6px;
-  margin-bottom:10px;
 }
 .plate-photo-thumb{
   position:relative;
@@ -2010,23 +2000,31 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   transition:opacity .12s, transform .12s;
 }
 .plate-photo-del:hover,.plate-photo-del:focus{opacity:1;transform:scale(1.08)}
-.plate-gallery-add{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:8px 14px;
-  background:rgba(255,250,235,.6);
-  border:1px solid var(--gold-light);
+/* Add-photo tile — same square as the thumbnails, dashed border, centred
+   camera glyph. Sits as the last cell of the grid so a fresh gallery still
+   shows a place to tap. */
+.plate-photo-add{
+  position:relative;
+  aspect-ratio:1/1;
   border-radius:4px;
+  border:1.5px dashed var(--gold-light);
+  background:rgba(255,250,235,.4);
   cursor:pointer;
-  font-family:'EB Garamond',serif;
-  font-style:italic;
-  color:var(--text);
-  font-size:14px;
-  transition:background .12s;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-mid);
+  transition:background .12s, color .12s, border-color .12s;
 }
-.plate-gallery-add:hover{background:rgba(255,250,235,.85)}
-.plate-gallery-add input{display:none}
-.plate-gallery-add .ga-icon{
-  font-size:16px;line-height:1;color:var(--gold);font-weight:700;
+.plate-photo-add:hover,.plate-photo-add:focus-within{
+  background:rgba(255,250,235,.7);
+  color:var(--text);
+  border-color:var(--gold);
+}
+.plate-photo-add input{
+  position:absolute;inset:0;opacity:0;cursor:pointer;
+}
+.plate-photo-add svg{
+  width:36%;height:36%;
+  pointer-events:none;
 }
 /* Full-screen lightbox for tapping a gallery thumbnail. */
 .plate-photo-lightbox{
@@ -6473,15 +6471,20 @@ function renderEncyclopedia(p) {
         <div class="plate-section-divider"></div>
         <div class="plate-prose-block plate-gallery">
           <div class="heading">Gallery <span class="plate-gallery-count">${(getPhotos(p.id)||[]).length ? '· '+(getPhotos(p.id)||[]).length : ''}</span></div>
-          ${(getPhotos(p.id)||[]).length ? `<div class="plate-gallery-grid">${getPhotos(p.id).map((src,idx) => `
-            <div class="plate-photo-thumb">
-              <img src="${src}" alt="Photo ${idx+1}" onclick="openPlantPhotoLightbox(${p.id},${idx})">
-              <button class="plate-photo-del" onclick="event.stopPropagation();if(confirm('Remove this photo?'))deletePhoto(${p.id},${idx})" title="Remove photo">×</button>
-            </div>`).join('')}</div>` : `<div class="plate-gallery-empty">No photos yet — add one below.</div>`}
-          <label class="plate-gallery-add">
-            <input type="file" accept="image/*" capture="environment" onchange="if(this.files&&this.files[0]){compressAndStorePhoto(${p.id},this.files[0]);}this.value=''">
-            <span class="ga-icon">＋</span><span class="ga-label">Add photo</span>
-          </label>
+          <div class="plate-gallery-grid">
+            ${(getPhotos(p.id)||[]).map((src,idx) => `
+              <div class="plate-photo-thumb">
+                <img src="${src}" alt="Photo ${idx+1}" onclick="openPlantPhotoLightbox(${p.id},${idx})">
+                <button class="plate-photo-del" onclick="event.stopPropagation();if(confirm('Remove this photo?'))deletePhoto(${p.id},${idx})" title="Remove photo">×</button>
+              </div>`).join('')}
+            <label class="plate-photo-add" title="Add photo">
+              <input type="file" accept="image/*" capture="environment" onchange="if(this.files&&this.files[0]){compressAndStorePhoto(${p.id},this.files[0]);}this.value=''">
+              <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 10h4l2-3h8l2 3h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2z"/>
+                <circle cx="16" cy="17" r="4.5"/>
+              </svg>
+            </label>
+          </div>
         </div>
         ${userCultivarsHtml ? `
           <div class="plate-section-divider"></div>
