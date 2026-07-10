@@ -2019,16 +2019,17 @@ button[onclick*="showAddPlant"]{
   font-family:'Pinyon Script', serif;
   font-size:50px;
   line-height:1;
-  color:#8f6d2d;
+  /* Match the warmth + intensity of .jc-sub ("a field journal") — same
+     dusty warm gold, same opacity — so the title and subtitle read as
+     one aged pair, not two different treatments. */
+  color:rgba(215,175,110,.9);
   margin-bottom:16px;
   word-break:break-word;
-  mix-blend-mode:overlay;
-  filter:contrast(0.72) brightness(0.9) blur(0.35px) saturate(0.85);
+  filter:contrast(0.92) brightness(0.98) blur(0.15px);
   text-shadow:
-    0.4px 0.4px 1px rgba(15,8,3,.55),    /* soft recessed shadow */
-    -0.3px -0.3px 0 rgba(120,90,40,.18), /* faint upper highlight */
-    0 0 3px rgba(0,0,0,.35);              /* soft glow into the leather */
-  opacity:0.68;
+    0.4px 0.4px 1px rgba(15,8,3,.55),
+    0 1px 2px rgba(0,0,0,.5);
+  opacity:0.9;
 }
 .journal-closed .jc-sub{
   font-family:'Cormorant Garamond', serif;
@@ -4573,7 +4574,6 @@ function renderJournalClosed() {
     <div class="journal-closed-wrap">
       <div class="journal-closed">
         <div class="jc-inner">
-          <div class="jc-eyebrow">Volume I</div>
           <div class="jc-title">${escHtml(gardenName)}</div>
           <div class="jc-sub">a field journal</div>
         </div>
