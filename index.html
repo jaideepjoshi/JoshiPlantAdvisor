@@ -1961,6 +1961,96 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   line-height:28px !important;
   font-size:14px !important;
 }
+/* Plate IV Gallery — user-added plant photos. Uses the same visual grammar
+   as the rest of the plate-journal (parchment fill, gold-light border). */
+.plate-gallery .heading{margin-bottom:8px}
+.plate-gallery-count{
+  font-family:'EB Garamond',serif;font-style:italic;
+  color:var(--text-mid);font-size:12px;font-weight:400;
+  margin-left:2px;
+}
+.plate-gallery-empty{
+  font-family:'EB Garamond',serif;font-style:italic;
+  color:var(--text-mid);font-size:13px;
+  padding:8px 10px;
+  background:rgba(255,250,235,.5);
+  border:1px dashed var(--gold-light);
+  border-radius:4px;
+  text-align:center;
+}
+.plate-gallery-grid{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:6px;
+  margin-bottom:10px;
+}
+.plate-photo-thumb{
+  position:relative;
+  aspect-ratio:1/1;
+  border-radius:4px;
+  overflow:hidden;
+  border:1px solid var(--gold-light);
+  background:rgba(255,250,235,.4);
+}
+.plate-photo-thumb img{
+  width:100%;height:100%;
+  object-fit:cover;
+  cursor:pointer;
+  display:block;
+}
+.plate-photo-del{
+  position:absolute;top:3px;right:3px;
+  width:22px;height:22px;
+  border-radius:50%;border:none;
+  background:rgba(30,20,10,.65);color:#fff;
+  font-size:14px;line-height:1;
+  cursor:pointer;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  opacity:.7;
+  transition:opacity .12s, transform .12s;
+}
+.plate-photo-del:hover,.plate-photo-del:focus{opacity:1;transform:scale(1.08)}
+.plate-gallery-add{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 14px;
+  background:rgba(255,250,235,.6);
+  border:1px solid var(--gold-light);
+  border-radius:4px;
+  cursor:pointer;
+  font-family:'EB Garamond',serif;
+  font-style:italic;
+  color:var(--text);
+  font-size:14px;
+  transition:background .12s;
+}
+.plate-gallery-add:hover{background:rgba(255,250,235,.85)}
+.plate-gallery-add input{display:none}
+.plate-gallery-add .ga-icon{
+  font-size:16px;line-height:1;color:var(--gold);font-weight:700;
+}
+/* Full-screen lightbox for tapping a gallery thumbnail. */
+.plate-photo-lightbox{
+  position:fixed;inset:0;z-index:10000;
+  background:rgba(20,14,6,.92);
+  display:flex;align-items:center;justify-content:center;
+  padding:16px;
+  cursor:zoom-out;
+}
+.plate-photo-lightbox img{
+  max-width:100%;max-height:100%;
+  border-radius:6px;
+  box-shadow:0 12px 32px rgba(0,0,0,.5);
+}
+.plate-photo-lightbox .close{
+  position:absolute;top:14px;right:14px;
+  width:38px;height:38px;
+  border-radius:50%;
+  background:rgba(255,255,255,.9);
+  color:#3a2a18;border:none;
+  font-size:22px;line-height:1;
+  cursor:pointer;padding:0;
+  display:flex;align-items:center;justify-content:center;
+}
 
 /* Pagination caption + dots */
 .plate-caption-row{
@@ -2831,6 +2921,24 @@ function deletePhoto(plantId, index) {
     render();
   }
 }
+
+// Full-screen viewer for tapping a Plate IV gallery thumbnail. Reuses
+// state.photos as the source of truth so it always shows the current image.
+function openPlantPhotoLightbox(plantId, index) {
+  const photos = getPhotos(plantId);
+  if (!photos.length) return;
+  const src = photos[Math.max(0, Math.min(index, photos.length - 1))];
+  document.getElementById('__plate_lightbox')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = '__plate_lightbox';
+  overlay.className = 'plate-photo-lightbox';
+  overlay.innerHTML = `<img src="${src}" alt=""><button class="close" aria-label="Close">×</button>`;
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', close);
+  overlay.querySelector('img').addEventListener('click', e => e.stopPropagation());
+  document.body.appendChild(overlay);
+}
+window.openPlantPhotoLightbox = openPlantPhotoLightbox;
 
 function triggerPhotoUpload(plantId) {
   let inp = document.getElementById('photoInput');
@@ -6362,6 +6470,19 @@ function renderEncyclopedia(p) {
         ${videoHref ? `<div class="plate-prose-block" style="margin-top:14px">
           <a href="${videoHref}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700;font-size:14px;color:var(--text-mid);text-decoration:none;border-bottom:none;cursor:pointer;display:inline-block">Relevant Videos</a>
         </div>` : ''}
+        <div class="plate-section-divider"></div>
+        <div class="plate-prose-block plate-gallery">
+          <div class="heading">Gallery <span class="plate-gallery-count">${(getPhotos(p.id)||[]).length ? '· '+(getPhotos(p.id)||[]).length : ''}</span></div>
+          ${(getPhotos(p.id)||[]).length ? `<div class="plate-gallery-grid">${getPhotos(p.id).map((src,idx) => `
+            <div class="plate-photo-thumb">
+              <img src="${src}" alt="Photo ${idx+1}" onclick="openPlantPhotoLightbox(${p.id},${idx})">
+              <button class="plate-photo-del" onclick="event.stopPropagation();if(confirm('Remove this photo?'))deletePhoto(${p.id},${idx})" title="Remove photo">×</button>
+            </div>`).join('')}</div>` : `<div class="plate-gallery-empty">No photos yet — add one below.</div>`}
+          <label class="plate-gallery-add">
+            <input type="file" accept="image/*" capture="environment" onchange="if(this.files&&this.files[0]){compressAndStorePhoto(${p.id},this.files[0]);}this.value=''">
+            <span class="ga-icon">＋</span><span class="ga-label">Add photo</span>
+          </label>
+        </div>
         ${userCultivarsHtml ? `
           <div class="plate-section-divider"></div>
           <div class="plate-prose-block">
