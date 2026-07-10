@@ -6514,8 +6514,7 @@ function renderEncyclopedia(p) {
         ${videoHref ? `<div class="plate-prose-block" style="margin-top:14px">
           <a href="${videoHref}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700;font-size:14px;color:var(--text-mid);text-decoration:none;border-bottom:none;cursor:pointer;display:inline-block">Relevant Videos</a>
         </div>` : ''}
-        <div class="plate-section-divider"></div>
-        <div class="plate-prose-block plate-gallery">
+        <div class="plate-prose-block plate-gallery" style="margin-top:14px">
           <div class="heading">Gallery <span class="plate-gallery-count">${(getPhotos(p.id)||[]).length ? '· '+(getPhotos(p.id)||[]).length : ''}</span></div>
           <div class="plate-gallery-grid">
             <button type="button" class="plate-photo-add" title="Add photo" onclick="triggerPlantPhotoInput(${p.id}, false)" aria-label="Add photo">
