@@ -1963,7 +1963,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
 }
 /* Plate IV Gallery — user-added plant photos. Uses the same visual grammar
    as the rest of the plate-journal (parchment fill, gold-light border). */
-.plate-gallery .heading{margin-bottom:8px}
+.plate-gallery .heading{margin-bottom:8px;font-weight:700;color:var(--text)}
 .plate-gallery-count{
   font-family:'EB Garamond',serif;font-style:italic;
   color:var(--text-mid);font-size:12px;font-weight:400;
@@ -2062,6 +2062,64 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   font-size:22px;line-height:1;
   cursor:pointer;padding:0;
   display:flex;align-items:center;justify-content:center;
+}
+/* Expanded "Planted in my garden" panel — cultivar checkboxes + custom
+   name entry + "where planted" input, appears only when planted is on. */
+.plate-journal .garden-planted-detail{
+  margin:2px 0 6px 32px;
+  padding:8px 10px;
+  background:rgba(255,250,235,.35);
+  border-left:2px solid var(--gold-light);
+  border-radius:0 6px 6px 0;
+  display:flex;flex-direction:column;gap:6px;
+}
+.plate-journal .garden-planted-heading{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;color:var(--text-mid);
+  font-size:13px;font-weight:600;
+  margin-bottom:2px;
+}
+.plate-journal .garden-cv-check{
+  display:flex;align-items:center;gap:8px;
+  padding:2px 0;
+  font-size:14px;
+  cursor:pointer;
+  position:relative;
+}
+.plate-journal .garden-cv-check .check{
+  width:18px;height:18px;
+  font-size:12px;
+  flex:none;
+}
+.plate-journal .garden-cv-remove{
+  margin-left:auto;
+  color:var(--text-mid);opacity:.55;
+  font-size:16px;line-height:1;
+  padding:2px 6px;
+  border-radius:4px;
+  transition:opacity .12s, background .12s;
+}
+.plate-journal .garden-cv-check:hover .garden-cv-remove{opacity:1;background:rgba(120,90,40,.1)}
+.plate-journal .garden-add-cv,
+.plate-journal .garden-where-input{
+  width:100% !important;padding:6px 10px !important;
+  background:rgba(255,250,235,.55) !important;
+  border:1px solid var(--gold-light) !important;
+  border-radius:4px !important;
+  font-family:'EB Garamond',serif !important;
+  font-style:italic !important;
+  font-size:13px !important;
+  line-height:1.4 !important;
+  min-height:0 !important;
+  color:var(--text) !important;
+  outline:none !important;
+  box-sizing:border-box !important;
+}
+.plate-journal .garden-where-label{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;color:var(--text-mid);
+  font-size:12.5px;font-weight:600;
+  margin:4px 0 -2px;
 }
 
 /* Pagination caption + dots */
@@ -4272,6 +4330,42 @@ function updateGardenField(id, field, value) {
   state.garden[id][field] = value;
   saveGarden();
 }
+
+// Which specific cultivars of a plant the user has planted. Same
+// state.garden[id] blob as `planted` / `where`, just with a
+// `plantedCultivars` array of names. The name is used as the identity
+// so both catalog cultivars (from p.cultivarDetails) and user-typed
+// custom cultivars live in the same list.
+function toggleGardenCultivar(plantId, cultivarName) {
+  if (isViewing && isViewing()) return;
+  if (!cultivarName) return;
+  const id = String(plantId);
+  if (!state.garden[id]) state.garden[id] = { planted: true };
+  state.garden[id].planted = true;
+  if (!Array.isArray(state.garden[id].plantedCultivars)) state.garden[id].plantedCultivars = [];
+  const arr = state.garden[id].plantedCultivars;
+  const idx = arr.indexOf(cultivarName);
+  if (idx >= 0) arr.splice(idx, 1);
+  else arr.push(cultivarName);
+  saveGarden();
+  render();
+}
+function addGardenCustomCultivar(plantId, name) {
+  if (isViewing && isViewing()) return;
+  name = String(name || '').trim();
+  if (!name) return;
+  const id = String(plantId);
+  if (!state.garden[id]) state.garden[id] = { planted: true };
+  state.garden[id].planted = true;
+  if (!Array.isArray(state.garden[id].plantedCultivars)) state.garden[id].plantedCultivars = [];
+  if (!state.garden[id].plantedCultivars.includes(name)) {
+    state.garden[id].plantedCultivars.push(name);
+    saveGarden();
+    render();
+  }
+}
+window.toggleGardenCultivar = toggleGardenCultivar;
+window.addGardenCustomCultivar = addGardenCustomCultivar;
 
 function addMyPairing(plantId, name) {
   if (isViewing()) return;
@@ -6496,6 +6590,35 @@ function renderEncyclopedia(p) {
           <div class="check ${g.planted?'done':''}">${g.planted?'✓':''}</div>
           <span>Planted in my garden</span>
         </label>
+        ${g.planted ? (() => {
+          const details = p.cultivarDetails || [];
+          const planted = Array.isArray(g.plantedCultivars) ? g.plantedCultivars : [];
+          const catalogNames = new Set(details.map(cd => cd.name));
+          const customs = planted.filter(n => !catalogNames.has(n));
+          return `<div class="garden-planted-detail">
+            ${details.length ? `<div class="garden-planted-heading">Which cultivars?</div>${details.map(cd => {
+              const on = planted.includes(cd.name);
+              return `<label class="garden-cv-check" data-cv="${escHtml(cd.name)}" onclick="toggleGardenCultivar(${p.id}, this.dataset.cv)">
+                <div class="check${on?' done':''}">${on?'✓':''}</div>
+                <span>${escHtml(cd.name)}</span>
+              </label>`;
+            }).join('')}` : ''}
+            ${customs.map(name => `
+              <label class="garden-cv-check garden-cv-custom" data-cv="${escHtml(name)}" onclick="toggleGardenCultivar(${p.id}, this.dataset.cv)">
+                <div class="check done">✓</div>
+                <span>${escHtml(name)}</span>
+                <span class="garden-cv-remove" title="Remove">×</span>
+              </label>
+            `).join('')}
+            <input type="text" class="garden-add-cv" placeholder="Add another cultivar…"
+              onkeydown="if(event.key==='Enter'&&this.value.trim()){addGardenCustomCultivar(${p.id},this.value.trim());this.value=''}"
+              onclick="event.stopPropagation()">
+            <div class="garden-where-label">Where planted</div>
+            <input type="text" class="garden-where-input" value="${escHtml(g.where||'')}" placeholder="Bed, spot, or note…"
+              oninput="updateGardenField(${p.id},'where',this.value)"
+              onclick="event.stopPropagation()">
+          </div>`;
+        })() : ''}
         <label onclick="toggleGardenWishlist(${p.id})">
           <div class="check ${g.wishlist?'done':''}" style="border-color:rgba(251,146,60,.45)">${g.wishlist?'★':''}</div>
           <span>On my wishlist</span>
