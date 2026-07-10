@@ -234,9 +234,15 @@ ${JSON.stringify(brief, null, 2)}` : '';
   // plant portrait" regardless of what the prompt says — for vines and
   // groundcovers we have to spell out CONCRETE staging (what's it climbing
   // on, what angle we view from) or we get an upright shrub anyway.
+  // Only emit the staging block for the FRONT plate. The back plate is
+  // supposed to be blank parchment with just a small top-right inset —
+  // if the staging block leaks into the back rewrite, the model paints
+  // a full plant illustration in the empty area (which is where the app's
+  // Plate II overlay text is meant to go). Bug: previously emitted for
+  // both sides regardless.
   const habit = (brief?.growth_habit || '').toLowerCase();
   let stagingBlock = '';
-  if (habit === 'vine-climbing') {
+  if (side === 'front' && habit === 'vine-climbing') {
     stagingBlock = `
 
 VINE-STAGING (must appear in the rewrite for the front image):
@@ -250,7 +256,7 @@ plant must show:
   • foliage trailing sideways off the support, not standing upright
   • the vine's characteristic reach — noticeably taller/longer than wide
 Do NOT paint this as a compact free-standing bush.`;
-  } else if (habit === 'groundcover-trailing') {
+  } else if (side === 'front' && habit === 'groundcover-trailing') {
     stagingBlock = `
 
 GROUNDCOVER-STAGING (must appear in the rewrite for the front image):
