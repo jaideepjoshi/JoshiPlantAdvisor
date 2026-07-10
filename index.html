@@ -2667,6 +2667,11 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon):not(.plate-action-btn){
 .browse-back-glyph:hover{ color:rgba(60,40,20,.9); }
 .browse-back-glyph:active{ filter:brightness(.94); }
 .browse-back-glyph svg{ width:20px;height:20px; }
+/* When a plant detail is open, its own back arrow + top-right action
+   row take over — hide the browse-view fixed glyphs so they don't
+   duplicate above the plate. */
+body:has(.detail.open) .browse-back-glyph,
+body:has(.detail.open) .browse-topbar-icons{ display:none !important }
 .browse-topbar-icons{
   position:fixed;
   top:16px;
