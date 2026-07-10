@@ -2244,7 +2244,7 @@ button[onclick*="showAddPlant"]{
   display:inline-flex;
   align-items:center;
   gap:6px;
-  margin:6px 16px 4px;
+  margin:14px 16px 4px;
   padding:6px 14px 6px 8px;
   background:rgba(255,250,235,.6);
   border:1px solid var(--gold-light);
@@ -2256,6 +2256,107 @@ button[onclick*="showAddPlant"]{
   cursor:pointer;
   transition:background .2s;
 }
+/* ---------- Browse view: vintage-styled search + toolbar ----------
+   All rendered directly in the grid content now that the modern app
+   header is hidden on browse. Matches the "Write a question…" line
+   on the journal cover so the whole browse view sits in the same
+   handwritten-notebook world as the rest of the app. */
+.browse-search{
+  position:relative;
+  margin:20px 20px 12px;
+  padding:6px 6px 8px 40px;
+  border-bottom:1.5px solid rgba(120,90,40,.35);
+}
+.browse-search-glyph{
+  position:absolute;
+  left:6px;
+  top:50%;
+  transform:translateY(-55%);
+  width:22px;height:22px;
+  display:inline-flex;
+  align-items:center;justify-content:center;
+  color:var(--gold);
+}
+.browse-search-glyph svg{ width:20px;height:20px; }
+.browse-search input{
+  width:100%;
+  background:transparent !important;
+  border:none !important;
+  padding:4px 0 !important;
+  font-family:'Cormorant Garamond', serif !important;
+  font-style:italic !important;
+  font-size:17px !important;
+  color:var(--text) !important;
+  outline:none !important;
+  letter-spacing:.2px;
+  box-shadow:none !important;
+}
+.browse-search input::placeholder{
+  color:rgba(80,55,30,.55) !important;
+  font-style:italic;
+}
+/* Filter chips: keep the vintage rounded look but sit on the page
+   without the loud cream banner that dropped a hard edge across
+   the browse view. */
+.filters{
+  padding:2px 16px 10px;
+  background:transparent !important;
+  border-bottom:none !important;
+  overflow-x:auto;white-space:nowrap;display:flex;gap:8px;
+}
+.browse-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:2px 20px 8px;
+  gap:12px;
+}
+.browse-count{
+  font-family:'Cormorant Garamond', serif;
+  font-style:italic;
+  font-size:13px;
+  color:var(--text-mid);
+  letter-spacing:.3px;
+}
+.browse-add{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:6px 14px 6px 12px;
+  background:rgba(255,250,235,.6);
+  color:var(--text);
+  border:1px solid var(--gold-light);
+  border-radius:20px;
+  font-family:'Cormorant Garamond', serif;
+  font-style:italic;
+  font-size:13px;
+  letter-spacing:.2px;
+  cursor:pointer;
+  transition:background .2s, border-color .2s;
+}
+.browse-add:hover{ background:rgba(255,250,235,.9); border-color:var(--gold); }
+/* Floating settings gear for browse views that don't have an inline
+   embossed stamp (grid + entries). Same brass-grommet look as
+   .cover-stamp; a small on-page bookplate, not app chrome. */
+.browse-corner-gear{
+  position:fixed;
+  top:14px;
+  right:14px;
+  z-index:250;
+  width:34px;height:34px;
+  border-radius:50%;
+  background:rgba(255,250,235,.65);
+  border:1px solid var(--gold-light);
+  color:rgba(80,55,30,.7);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(120,90,40,.15);
+  transition:background .18s, filter .18s;
+  padding:0;
+}
+.browse-corner-gear:hover{ background:rgba(255,250,235,.9); }
+.browse-corner-gear:active{ filter:brightness(.94); }
+.browse-corner-gear svg{ width:18px;height:18px; }
 .cover-back-ribbon:hover{ background:rgba(255,250,235,.9); }
 .cover-back-ribbon svg{ width:14px;height:14px;color:var(--gold); }
 
@@ -4803,12 +4904,16 @@ function renderBrowse() {
   ];
   const statsHtml = '';
   return `
+    <div class="browse-search">
+      <span class="browse-search-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/></svg></span>
+      <input type="search" id="searchInput" placeholder="Search 200+ plants…" value="${state.search}" oninput="state.search=this.value;searchUpdate()">
+    </div>
     <div class="filters">${filters.map(([k,l])=>`<div class="chip ${state.filter===k?'active':''}" onclick="state.filter='${k}';render()">${l}</div>`).join("")}${colorFilters.map(([k,l,c])=>`<div class="chip ${state.filter===k?'active':''}" onclick="state.filter='${k}';render()" style="${state.filter===k?'background:'+c+';color:#fff;border-color:'+c:'border-color:'+c+'40;color:'+c}"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px"></span>${l}</div>`).join("")}</div>
     ${statsHtml}
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 16px 2px">
-      <span style="font-size:12px;color:var(--text-light);font-weight:500">${list.length} plant${list.length!==1?'s':''}${state.filter!=='all'?' · filtered':''}</span>
-      <button onclick="state.showAddPlant=true;state.apStep=1;state.apName='';state.apError='';state.apLoading=false;state.apLocalMatches=[];state.apApiResults=[];state.apChosen=null;state.apForm={};state.apTagImages=[];state.apIsEditing=false;state.apEditId=null;state.apEditFbKey=null;render()" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.3px;box-shadow:0 2px 12px rgba(74,222,128,.2)">
-        ＋ Add Plant
+    <div class="browse-toolbar">
+      <span class="browse-count">${list.length} plant${list.length!==1?'s':''}${state.filter!=='all'?' · filtered':''}</span>
+      <button class="browse-add" onclick="state.showAddPlant=true;state.apStep=1;state.apName='';state.apError='';state.apLoading=false;state.apLocalMatches=[];state.apApiResults=[];state.apChosen=null;state.apForm={};state.apTagImages=[];state.apIsEditing=false;state.apEditId=null;state.apEditFbKey=null;render()">
+        ＋ Add plant
       </button>
     </div>
     <div class="grid" id="plantGrid">${list.map(p => p.plateImage ? renderPlateCard(p) : `
@@ -7947,7 +8052,10 @@ function render() {
   // typeset garden name / subtitle, so the header block was redundant.
   // Settings gear is preserved via the corner ribbon added at the bottom
   // of render() (mirrors the Ask ribbon).
-  const _hideHeader = state.view === 'browse' && state.browseMode === 'cover';
+  // Hide the app header on all browse sub-views — cover, entries, and
+  // grid. The garden name is already on the cover; on the plate list
+  // (grid) the redundant title-bar broke the "book" feeling.
+  const _hideHeader = state.view === 'browse';
   if (!_hideHeader) content += `
     <div class="header">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
@@ -8051,6 +8159,17 @@ function render() {
   // was redundant and clashed with the leather cover's baked-in ribbon.
   // Settings is reached via the embossed cover-stamp on the parchment
   // cover and via the header gear elsewhere.)
+
+  // On the grid / entries sub-views we hide the app header but still
+  // need Settings access. A small brass-grommet gear pinned top-left
+  // reads as a bookplate stamp, not floating app chrome.
+  if (state.view === 'browse'
+      && (state.browseMode === 'grid' || state.browseMode === 'entries')
+      && !state.showSetup && !state.showAuth) {
+    content += `<button class="browse-corner-gear" onclick="state.showSettings=true;render()" title="Settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>`;
+  }
 
   // Modals
   if (state.showSetup) content += renderSetupModal();
