@@ -2071,7 +2071,20 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   background:rgba(255,250,235,.35);
   border-left:2px solid var(--gold-light);
   border-radius:0 6px 6px 0;
+  /* 2-column layout: Which cultivar | Where planted. Columns collapse
+     to a single stack under a narrow phone width so the checkbox labels
+     stay legible. */
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px 14px;
+  align-items:start;
+}
+.plate-journal .garden-col{
   display:flex;flex-direction:column;gap:6px;
+  min-width:0;
+}
+@media (max-width:340px){
+  .plate-journal .garden-planted-detail{grid-template-columns:1fr}
 }
 .plate-journal .garden-planted-heading{
   font-family:'Cormorant Garamond',serif;
@@ -2114,12 +2127,6 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   color:var(--text) !important;
   outline:none !important;
   box-sizing:border-box !important;
-}
-.plate-journal .garden-where-label{
-  font-family:'Cormorant Garamond',serif;
-  font-style:italic;color:var(--text-mid);
-  font-size:12.5px;font-weight:600;
-  margin:4px 0 -2px;
 }
 
 /* Pagination caption + dots */
@@ -6596,27 +6603,32 @@ function renderEncyclopedia(p) {
           const catalogNames = new Set(details.map(cd => cd.name));
           const customs = planted.filter(n => !catalogNames.has(n));
           return `<div class="garden-planted-detail">
-            ${details.length ? `<div class="garden-planted-heading">Which cultivars?</div>${details.map(cd => {
-              const on = planted.includes(cd.name);
-              return `<label class="garden-cv-check" data-cv="${escHtml(cd.name)}" onclick="toggleGardenCultivar(${p.id}, this.dataset.cv)">
-                <div class="check${on?' done':''}">${on?'✓':''}</div>
-                <span>${escHtml(cd.name)}</span>
-              </label>`;
-            }).join('')}` : ''}
-            ${customs.map(name => `
-              <label class="garden-cv-check garden-cv-custom" data-cv="${escHtml(name)}" onclick="toggleGardenCultivar(${p.id}, this.dataset.cv)">
-                <div class="check done">✓</div>
-                <span>${escHtml(name)}</span>
-                <span class="garden-cv-remove" title="Remove">×</span>
-              </label>
-            `).join('')}
-            <input type="text" class="garden-add-cv" placeholder="Add another cultivar…"
-              onkeydown="if(event.key==='Enter'&&this.value.trim()){addGardenCustomCultivar(${p.id},this.value.trim());this.value=''}"
-              onclick="event.stopPropagation()">
-            <div class="garden-where-label">Where planted</div>
-            <input type="text" class="garden-where-input" value="${escHtml(g.where||'')}" placeholder="Bed, spot, or note…"
-              oninput="updateGardenField(${p.id},'where',this.value)"
-              onclick="event.stopPropagation()">
+            <div class="garden-col garden-col-cultivars">
+              <div class="garden-planted-heading">Which cultivar</div>
+              ${details.map(cd => {
+                const on = planted.includes(cd.name);
+                return `<label class="garden-cv-check" data-cv="${escHtml(cd.name)}" onclick="toggleGardenCultivar(${p.id}, this.dataset.cv)">
+                  <div class="check${on?' done':''}">${on?'✓':''}</div>
+                  <span>${escHtml(cd.name)}</span>
+                </label>`;
+              }).join('')}
+              ${customs.map(name => `
+                <label class="garden-cv-check garden-cv-custom" data-cv="${escHtml(name)}" onclick="toggleGardenCultivar(${p.id}, this.dataset.cv)">
+                  <div class="check done">✓</div>
+                  <span>${escHtml(name)}</span>
+                  <span class="garden-cv-remove" title="Remove">×</span>
+                </label>
+              `).join('')}
+              <input type="text" class="garden-add-cv" placeholder="Add another cultivar…"
+                onkeydown="if(event.key==='Enter'&&this.value.trim()){addGardenCustomCultivar(${p.id},this.value.trim());this.value=''}"
+                onclick="event.stopPropagation()">
+            </div>
+            <div class="garden-col garden-col-where">
+              <div class="garden-planted-heading">Where planted</div>
+              <input type="text" class="garden-where-input" value="${escHtml(g.where||'')}" placeholder="Bed, spot, or note…"
+                oninput="updateGardenField(${p.id},'where',this.value)"
+                onclick="event.stopPropagation()">
+            </div>
           </div>`;
         })() : ''}
         <label onclick="toggleGardenWishlist(${p.id})">
