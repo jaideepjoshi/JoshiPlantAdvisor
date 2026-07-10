@@ -6010,10 +6010,6 @@ function renderEncyclopedia(p) {
           <div class="heading">Care Tips</div>
           <div class="plate-h-scroll">${careCards}</div>
         </div>` : ''}
-        ${cultivarsList ? `<div class="plate-prose-block">
-          <div class="heading">Cultivars</div>
-          <div class="plate-cv-list${(p.cultivarDetails&&p.cultivarDetails.length)?' plate-cv-list-rich':''}">${cultivarsList}</div>
-        </div>` : ''}
       </div>
     </div>`;
 
@@ -6080,6 +6076,10 @@ function renderEncyclopedia(p) {
         ${stylePills ? `<div class="plate-prose-block">
           <div class="heading">Garden Styles</div>
           <div class="plate-tag-list">${stylePills}</div>
+        </div>` : ''}
+        ${cultivarsList ? `<div class="plate-prose-block">
+          <div class="heading">Cultivars</div>
+          <div class="plate-cv-list${(p.cultivarDetails&&p.cultivarDetails.length)?' plate-cv-list-rich':''}">${cultivarsList}</div>
         </div>` : ''}
       </div>
     </div>`;
