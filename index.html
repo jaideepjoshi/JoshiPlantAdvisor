@@ -6538,7 +6538,7 @@ function renderEncyclopedia(p) {
   // name here as real HTML — sharp letterforms + reliable spelling.
   const showNameOverlay = !p.plateHasBakedName;
   const plateHabit = `
-    <div class="plate-page" data-idx="0" style="background-image:url('${p.plateImage}')">
+    <div class="plate-page${0 < idx ? ' plate-flipped' : ''}" data-idx="0" style="background-image:url('${p.plateImage}')">
       ${showNameOverlay ? `<div class="plate-habit-name">
         <div class="plate-name-common">${escHtml(commonName(p))}</div>
         ${p.botanical ? `<div class="plate-name-botanical">${escHtml(p.botanical)}</div>` : ''}
@@ -6600,7 +6600,7 @@ function renderEncyclopedia(p) {
       }).join('');
 
   const plateParticulars = `
-    <div class="plate-page plate-particulars" data-idx="1" style="background-image:url('${p.plateBack}')">
+    <div class="plate-page plate-particulars${1 < idx ? ' plate-flipped' : ''}" data-idx="1" style="background-image:url('${p.plateBack}')">
       <div class="plate-ledger">
         ${p.hardiness ? `<div class="row"><span class="lbl">Hardiness</span><span class="val">Zone ${escHtml(p.hardiness)}</span></div>` : ''}
         <div class="row"><span class="lbl">Height</span><span class="val">${p.height||'—'}</span></div>
@@ -6694,7 +6694,7 @@ function renderEncyclopedia(p) {
       }).join('')}
     </svg>` : '';
   const plateCompanions = `
-    <div class="plate-page plate-companions ${p.plateGroup ? '' : 'no-bg'}" data-idx="2"${p.plateGroup ? ` style="background-image:url('${p.plateGroup}')"` : ''}>
+    <div class="plate-page plate-companions ${p.plateGroup ? '' : 'no-bg'}${2 < idx ? ' plate-flipped' : ''}" data-idx="2"${p.plateGroup ? ` style="background-image:url('${p.plateGroup}')"` : ''}>
       ${groupLabelsSvg}
       <div class="plate-overlay">
         ${stylePills ? `<div class="plate-prose-block">
