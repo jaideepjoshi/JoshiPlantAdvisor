@@ -1,5 +1,5 @@
 // Bump date on each deploy to refresh cached assets
-const CACHE = 'plant-buddy-2026-07-11o';
+const CACHE = 'plant-buddy-2026-07-11p';
 const SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
