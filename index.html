@@ -6518,14 +6518,14 @@ function renderEncyclopedia(p) {
         <div class="plate-prose-block plate-gallery">
           <div class="heading">Gallery <span class="plate-gallery-count">${(getPhotos(p.id)||[]).length ? '· '+(getPhotos(p.id)||[]).length : ''}</span></div>
           <div class="plate-gallery-grid">
+            <button type="button" class="plate-photo-add" title="Add photo" onclick="triggerPlantPhotoInput(${p.id}, false)" aria-label="Add photo">
+              ${plateGlyph('gallery')}
+            </button>
             ${(getPhotos(p.id)||[]).map((src,idx) => `
               <div class="plate-photo-thumb">
                 <img src="${src}" alt="Photo ${idx+1}" onclick="openPlantPhotoLightbox(${p.id},${idx})">
                 <button class="plate-photo-del" onclick="event.stopPropagation();if(confirm('Remove this photo?'))deletePhoto(${p.id},${idx})" title="Remove photo">×</button>
               </div>`).join('')}
-            <button type="button" class="plate-photo-add" title="Add photo" onclick="triggerPlantPhotoInput(${p.id}, false)" aria-label="Add photo">
-              ${plateGlyph('gallery')}
-            </button>
           </div>
         </div>
         ${userCultivarsHtml ? `
