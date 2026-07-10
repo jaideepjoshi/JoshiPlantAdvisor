@@ -181,7 +181,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 @keyframes pageFade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .page-anim{animation:pageFade .2s ease both}
-.detail-hero{position:relative;width:100%;height:300px;overflow:hidden;background:linear-gradient(135deg,#061208,#0b3d2c,#145236);touch-action:pan-y}
+.detail-hero{position:relative;width:100%;height:300px;overflow:hidden;background:linear-gradient(135deg,#061208,#0b3d2c,#145236);touch-action:pan-y pinch-zoom}
 .detail-hero img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .25s ease}
 .detail-hero .hero-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#061208,#0b3d2c)}
 .detail-hero .hero-gradient{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 38%,rgba(0,0,0,.78) 100%);pointer-events:none}
@@ -1052,11 +1052,12 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   border-radius:8px;
   overflow:visible;
   /* pan-y lets Plates II–V scroll their long content natively.
-     Plate I (Habit) has no scrollable content — it overrides this to
-     pan-x pinch-zoom so vertical swipes reach our JS handler for the
-     "swipe up = next plant" gesture instead of getting eaten by iOS
-     rubber-band overscroll. */
-  touch-action:pan-y;
+     Plate I (Habit) overrides this to pan-x pinch-zoom so vertical
+     swipes reach our JS handler for the "swipe up = next plant"
+     gesture instead of getting eaten by iOS rubber-band overscroll.
+     pinch-zoom is included on both so two-finger zoom works over
+     any plate. */
+  touch-action:pan-y pinch-zoom;
 }
 .plate-pages .plate-page[data-idx="0"]{
   touch-action:pan-x pinch-zoom;
@@ -1221,7 +1222,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   margin-top:6px;
   scrollbar-width:thin;
   scrollbar-color:var(--gold-light) transparent;
-  touch-action:pan-x;
+  touch-action:pan-x pinch-zoom;
 }
 .plate-h-scroll::-webkit-scrollbar{ height:4px }
 .plate-h-scroll::-webkit-scrollbar-thumb{ background:var(--gold-light);border-radius:2px }
