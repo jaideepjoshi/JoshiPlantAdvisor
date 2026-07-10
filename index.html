@@ -1930,19 +1930,25 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   padding:9% 9%;
 }
 .plate-journal label{
-  display:flex;align-items:center;gap:10px;
-  padding:4px 0;
-  font-family:'EB Garamond',serif;
+  display:flex;align-items:center;gap:8px;
+  padding:3px 0;
+  /* Match the italic "Notes" heading (14px Cormorant Garamond) so the
+     three section labels — Planted / Wishlist / Notes — share a rhythm. */
+  font-family:'Cormorant Garamond',serif;
   font-style:italic;
+  font-size:14px;
   color:var(--text);
   cursor:pointer;
 }
 .plate-journal .check{
-  width:22px;height:22px;border-radius:4px;
+  width:17px;height:17px;border-radius:3px;
   background:rgba(255,250,235,.6);
-  border:1.5px solid var(--gold-light);
+  border:1.2px solid var(--gold-light);
   display:flex;align-items:center;justify-content:center;
   font-family:serif;
+  font-size:12px;
+  line-height:1;
+  flex:none;
 }
 .plate-journal .check.done{
   background:rgba(90,111,74,.18);
@@ -2142,11 +2148,10 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
 }
 .plate-journal .garden-cv-committed{
   display:flex;align-items:center;gap:8px;
-  padding:6px 10px;
+  padding:2px 4px;
   min-width:0;
-  background:rgba(255,250,235,.55);
-  border:1px solid var(--gold-light);
-  border-radius:4px;
+  background:transparent;
+  border:none;
   font-family:'EB Garamond',serif;
   font-style:italic;
   font-size:13.5px;
@@ -6736,10 +6741,6 @@ function renderEncyclopedia(p) {
           const plantedNames = Object.keys(map);
           const unplantedCatalog = details.filter(cd => !(cd.name in map)).map(cd => cd.name);
           return `<div class="garden-planted-detail">
-            <div class="garden-planted-headings">
-              <div class="garden-planted-heading">Which cultivar</div>
-              <div class="garden-planted-heading">Where planted</div>
-            </div>
             <div class="garden-cv-adder-row">
               <select class="garden-cv-picker" onchange="onGardenPickerChange(this)">
                 <option value="">Which cultivar?</option>
