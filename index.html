@@ -2090,42 +2090,15 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   font-style:italic;color:var(--text-mid);
   font-size:13px;font-weight:600;
 }
-/* Per-cultivar row: name pill in col 1, bed dropdown in col 2. */
-.plate-journal .garden-cv-row{
+/* Adder row: cultivar picker + bed picker + [+] button, on one line. */
+.plate-journal .garden-cv-adder-row{
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-  gap:6px 12px;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;
+  gap:6px 8px;
   align-items:center;
 }
-.plate-journal .garden-cv-name{
-  display:flex;align-items:center;gap:8px;
-  padding:6px 10px;
-  min-width:0;
-  background:rgba(255,250,235,.55);
-  border:1px solid var(--gold-light);
-  border-radius:4px;
-  font-family:'EB Garamond',serif;
-  font-style:italic;
-  font-size:13.5px;
-  color:var(--text);
-}
-.plate-journal .garden-cv-name > span:first-child{
-  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.plate-journal .garden-cv-row .garden-cv-remove{
-  flex:none;
-  color:var(--text-mid);opacity:.55;
-  font-size:16px;line-height:1;
-  padding:0 4px;
-  cursor:pointer;
-  border-radius:4px;
-  transition:opacity .12s, background .12s;
-}
-.plate-journal .garden-cv-row .garden-cv-remove:hover{opacity:1;background:rgba(120,90,40,.1)}
-/* Both dropdowns share the same styling: parchment fill, gold border,
-   italic serif label — matches the other planta inputs on Plate IV. */
-.plate-journal select.garden-cv-where,
-.plate-journal select.garden-cv-add-select{
+.plate-journal select.garden-cv-picker,
+.plate-journal select.garden-bed-picker{
   width:100% !important;padding:6px 10px !important;
   background:rgba(255,250,235,.55) !important;
   border:1px solid var(--gold-light) !important;
@@ -2141,8 +2114,57 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   cursor:pointer;
   -webkit-appearance:auto;appearance:auto;
 }
-.plate-journal .garden-cv-adder{margin-top:2px}
-.plate-journal .garden-cv-adder .garden-cv-add-select{grid-column:1 / -1}
+.plate-journal .garden-cv-commit{
+  width:32px;height:32px;
+  border:1px solid var(--gold-light);
+  border-radius:4px;
+  background:rgba(255,250,235,.7);
+  color:var(--text);
+  font-family:'Playfair Display',serif;
+  font-size:20px;line-height:1;font-weight:600;
+  cursor:pointer;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .12s, color .12s;
+}
+.plate-journal .garden-cv-commit:hover,
+.plate-journal .garden-cv-commit:focus-visible{
+  background:var(--gold-light);
+  color:#3a2a18;
+}
+
+/* Committed rows: [cultivar name] | [bed name + ×] — read-only display of
+   the (cultivar, bed) pair the user has locked in. */
+.plate-journal .garden-cv-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:6px 12px;
+  align-items:center;
+}
+.plate-journal .garden-cv-committed{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;
+  min-width:0;
+  background:rgba(255,250,235,.55);
+  border:1px solid var(--gold-light);
+  border-radius:4px;
+  font-family:'EB Garamond',serif;
+  font-style:italic;
+  font-size:13.5px;
+  color:var(--text);
+}
+.plate-journal .garden-cv-committed > span:first-child{
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.plate-journal .garden-cv-row.committed .garden-cv-remove{
+  flex:none;
+  color:var(--text-mid);opacity:.55;
+  font-size:16px;line-height:1;
+  padding:0 4px;
+  cursor:pointer;
+  border-radius:4px;
+  transition:opacity .12s, background .12s;
+}
+.plate-journal .garden-cv-row.committed .garden-cv-remove:hover{opacity:1;background:rgba(120,90,40,.1)}
 
 /* Pagination caption + dots */
 .plate-caption-row{
@@ -4436,40 +4458,53 @@ function ensureGardenBed(name) {
   return name;
 }
 
-// Handlers for the two Plate IV dropdowns. Kept small so the inline
-// onchange stays readable; they use prompt() when the user picks the
-// "+ Add another…" sentinel so nothing else has to change to accept
-// arbitrary new names.
-function onGardenBedChange(plantId, sel) {
-  if (isViewing && isViewing()) return;
-  const cv = sel.dataset.cv;
-  const value = sel.value;
-  if (value === '__ADD_BED__') {
-    const name = (prompt('Name of the new bed:', '') || '').trim();
-    if (!name) { sel.value = state.garden[String(plantId)]?.plantedCultivars?.[cv] || ''; return; }
-    ensureGardenBed(name);
-    updateGardenCultivarWhere(plantId, cv, name);
-    render();
-  } else {
-    updateGardenCultivarWhere(plantId, cv, value);
-  }
-}
-function onGardenCultivarAdd(plantId, sel) {
+// The Plate IV planted panel has ONE staging row with two dropdowns
+// (cultivar + bed) and a "+" button. Selecting the sentinel option
+// "+ Add another…" prompts for a name, injects it as a real option, and
+// leaves it selected — that way we don't re-render (which would clobber
+// the sibling picker's selection).
+function onGardenPickerChange(sel) {
   if (isViewing && isViewing()) return;
   const value = sel.value;
-  if (!value) return;
   if (value === '__ADD_CUSTOM__') {
     const name = (prompt('Name of the new cultivar:', '') || '').trim();
-    sel.value = '';
-    if (!name) return;
-    addGardenCustomCultivar(plantId, name);
-  } else {
-    sel.value = '';
-    toggleGardenCultivar(plantId, value);
+    if (!name) { sel.value = ''; return; }
+    _insertPickerOption(sel, name, 'option[value="__ADD_CUSTOM__"]');
+    sel.value = name;
+  } else if (value === '__ADD_BED__') {
+    const name = (prompt('Name of the new bed:', '') || '').trim();
+    if (!name) { sel.value = ''; return; }
+    ensureGardenBed(name);
+    _insertPickerOption(sel, name, 'option[value="__ADD_BED__"]');
+    sel.value = name;
   }
 }
-window.onGardenBedChange = onGardenBedChange;
-window.onGardenCultivarAdd = onGardenCultivarAdd;
+function _insertPickerOption(sel, name, beforeSelector) {
+  if (Array.from(sel.options).some(o => o.value === name)) return;
+  const opt = document.createElement('option');
+  opt.value = name; opt.textContent = name;
+  sel.insertBefore(opt, sel.querySelector(beforeSelector));
+}
+// Commit the currently-selected (cultivar, bed) pair into the planted map.
+// Requires both to be non-empty; leaves the pickers reset to their
+// placeholder via the follow-up render().
+function commitGardenCultivarBed(plantId) {
+  if (isViewing && isViewing()) return;
+  const root = document.querySelector('.plate-journal .garden-planted-detail');
+  if (!root) return;
+  const cvName = root.querySelector('.garden-cv-picker')?.value || '';
+  const bedName = root.querySelector('.garden-bed-picker')?.value || '';
+  if (!cvName || !bedName || cvName.startsWith('__') || bedName.startsWith('__')) return;
+  const id = String(plantId);
+  if (!state.garden[id]) state.garden[id] = { planted: true };
+  state.garden[id].planted = true;
+  const map = _gardenPlantedMap(id);
+  map[cvName] = bedName;
+  saveGarden();
+  render();
+}
+window.onGardenPickerChange = onGardenPickerChange;
+window.commitGardenCultivarBed = commitGardenCultivarBed;
 
 function addMyPairing(plantId, name) {
   if (isViewing()) return;
@@ -6697,12 +6732,7 @@ function renderEncyclopedia(p) {
         ${g.planted ? (() => {
           const details = p.cultivarDetails || [];
           const map = _gardenPlantedMap(p.id);
-          const catalogNames = new Set(details.map(cd => cd.name));
           const beds = gardenBedNames();
-          const bedOptions = (currentValue) => `
-            <option value=""${currentValue?'':' selected'}>—</option>
-            ${beds.map(b => `<option value="${escHtml(b)}"${b===currentValue?' selected':''}>${escHtml(b)}</option>`).join('')}
-            <option value="__ADD_BED__">+ Add another bed…</option>`;
           const plantedNames = Object.keys(map);
           const unplantedCatalog = details.filter(cd => !(cd.name in map)).map(cd => cd.name);
           return `<div class="garden-planted-detail">
@@ -6710,24 +6740,27 @@ function renderEncyclopedia(p) {
               <div class="garden-planted-heading">Which cultivar</div>
               <div class="garden-planted-heading">Where planted</div>
             </div>
-            ${plantedNames.map(name => `
-              <div class="garden-cv-row is-on">
-                <div class="garden-cv-name">
-                  <span>${escHtml(name)}</span>
-                  <span class="garden-cv-remove" data-cv="${escHtml(name)}" onclick="toggleGardenCultivar(${p.id}, this.dataset.cv)" title="Remove">×</span>
-                </div>
-                <select class="garden-cv-where" data-cv="${escHtml(name)}" onchange="onGardenBedChange(${p.id}, this)">
-                  ${bedOptions(map[name] || '')}
-                </select>
-              </div>`).join('')}
-            <div class="garden-cv-row garden-cv-adder">
-              <select class="garden-cv-add-select" onchange="onGardenCultivarAdd(${p.id}, this)">
-                <option value="">${plantedNames.length ? '+ Add another cultivar…' : '+ Which cultivar?'}</option>
+            <div class="garden-cv-adder-row">
+              <select class="garden-cv-picker" onchange="onGardenPickerChange(this)">
+                <option value="">Which cultivar?</option>
                 ${unplantedCatalog.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('')}
                 <option value="__ADD_CUSTOM__">+ Add another cultivar…</option>
               </select>
-              <div></div>
+              <select class="garden-bed-picker" onchange="onGardenPickerChange(this)">
+                <option value="">Where planted?</option>
+                ${beds.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('')}
+                <option value="__ADD_BED__">+ Add another bed…</option>
+              </select>
+              <button type="button" class="garden-cv-commit" onclick="commitGardenCultivarBed(${p.id})" title="Add this cultivar / bed pair" aria-label="Add">+</button>
             </div>
+            ${plantedNames.map(name => `
+              <div class="garden-cv-row committed">
+                <div class="garden-cv-committed">${escHtml(name)}</div>
+                <div class="garden-cv-committed">
+                  <span>${escHtml(map[name] || '—')}</span>
+                  <span class="garden-cv-remove" data-cv="${escHtml(name)}" onclick="toggleGardenCultivar(${p.id}, this.dataset.cv)" title="Remove">×</span>
+                </div>
+              </div>`).join('')}
           </div>`;
         })() : ''}
         <label onclick="toggleGardenWishlist(${p.id})">
