@@ -2026,66 +2026,6 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
      the tile's hover state and scales with the tile. */
   color:inherit;
 }
-/* Photo-source picker modal — asks whether the user wants the camera or the
-   library. Bottom-sheet on mobile, centred card on desktop. */
-.plate-photo-picker{
-  position:fixed;inset:0;z-index:10001;
-  background:rgba(20,14,6,.55);
-  display:flex;align-items:flex-end;justify-content:center;
-  padding:16px;
-}
-.plate-photo-picker .picker-card{
-  width:100%;max-width:360px;
-  background:#faf2e0;
-  border:1px solid var(--gold-light);
-  border-radius:10px;
-  padding:14px 14px 10px;
-  box-shadow:0 8px 24px rgba(0,0,0,.35);
-  display:flex;flex-direction:column;gap:8px;
-  font-family:'EB Garamond',serif;color:var(--text);
-}
-.plate-photo-picker .picker-title{
-  font-family:'Cormorant Garamond',serif;
-  font-style:italic;font-weight:600;
-  font-size:15px;color:var(--text-mid);
-  text-align:center;
-  padding:4px 0 6px;
-  border-bottom:1px solid var(--gold-light);
-  margin-bottom:2px;
-}
-.plate-photo-picker .picker-btn{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 14px;
-  background:rgba(255,250,235,.55);
-  border:1px solid var(--gold-light);
-  border-radius:6px;
-  font-family:inherit;color:inherit;
-  font-size:15px;font-style:italic;
-  cursor:pointer;
-  transition:background .12s;
-}
-.plate-photo-picker .picker-btn:hover,.plate-photo-picker .picker-btn:focus-visible{
-  background:rgba(255,250,235,.85);
-}
-.plate-photo-picker .picker-icon{
-  flex:none;width:32px;height:32px;
-  display:inline-flex;align-items:center;justify-content:center;
-  color:var(--text-mid);
-}
-.plate-photo-picker .picker-icon svg{width:100%;height:100%;color:inherit}
-.plate-photo-picker .picker-label{flex:1;text-align:left}
-.plate-photo-picker .picker-cancel{
-  padding:10px;margin-top:2px;
-  background:transparent;border:none;
-  font-family:inherit;color:var(--text-mid);
-  font-size:14px;font-style:italic;
-  cursor:pointer;
-  border-radius:6px;
-}
-.plate-photo-picker .picker-cancel:hover{background:rgba(255,250,235,.5);color:var(--text)}
-@media (min-width: 640px){
-  .plate-photo-picker{align-items:center}
-}
 /* Full-screen lightbox for tapping a gallery thumbnail. */
 .plate-photo-lightbox{
   position:fixed;inset:0;z-index:10000;
@@ -2998,32 +2938,6 @@ function triggerPlantPhotoInput(plantId, useCamera) {
   document.body.appendChild(input);
   input.click();
 }
-function openPlantPhotoPicker(plantId) {
-  document.getElementById('__photo_picker')?.remove();
-  const overlay = document.createElement('div');
-  overlay.id = '__photo_picker';
-  overlay.className = 'plate-photo-picker';
-  overlay.innerHTML = `
-    <div class="picker-card" role="dialog" aria-label="Add a photo">
-      <div class="picker-title">Add a photo</div>
-      <button type="button" class="picker-btn" data-source="camera">
-        <span class="picker-icon">${plateGlyph('camera')}</span>
-        <span class="picker-label">Take a photo</span>
-      </button>
-      <button type="button" class="picker-btn" data-source="library">
-        <span class="picker-icon">${plateGlyph('photos')}</span>
-        <span class="picker-label">Choose from library</span>
-      </button>
-      <button type="button" class="picker-cancel">Cancel</button>
-    </div>`;
-  const close = () => overlay.remove();
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  overlay.querySelector('[data-source="camera"]').addEventListener('click', () => { close(); triggerPlantPhotoInput(plantId, true); });
-  overlay.querySelector('[data-source="library"]').addEventListener('click', () => { close(); triggerPlantPhotoInput(plantId, false); });
-  overlay.querySelector('.picker-cancel').addEventListener('click', close);
-  document.body.appendChild(overlay);
-}
-window.openPlantPhotoPicker = openPlantPhotoPicker;
 window.triggerPlantPhotoInput = triggerPlantPhotoInput;
 
 // Full-screen viewer for tapping a Plate IV gallery thumbnail. Reuses
@@ -6595,7 +6509,7 @@ function renderEncyclopedia(p) {
                 <img src="${src}" alt="Photo ${idx+1}" onclick="openPlantPhotoLightbox(${p.id},${idx})">
                 <button class="plate-photo-del" onclick="event.stopPropagation();if(confirm('Remove this photo?'))deletePhoto(${p.id},${idx})" title="Remove photo">×</button>
               </div>`).join('')}
-            <button type="button" class="plate-photo-add" title="Add photo" onclick="openPlantPhotoPicker(${p.id})" aria-label="Add photo">
+            <button type="button" class="plate-photo-add" title="Add photo" onclick="triggerPlantPhotoInput(${p.id}, false)" aria-label="Add photo">
               ${plateGlyph('gallery')}
             </button>
           </div>
