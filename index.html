@@ -1970,9 +1970,23 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   margin-left:2px;
 }
 .plate-gallery-grid{
-  display:grid;
-  grid-template-columns:repeat(4, 1fr);
+  display:flex;
   gap:6px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:4px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--gold-light) transparent;
+  touch-action:pan-x pinch-zoom;
+}
+.plate-gallery-grid::-webkit-scrollbar{height:4px}
+.plate-gallery-grid::-webkit-scrollbar-thumb{background:var(--gold-light);border-radius:2px}
+.plate-gallery-grid::-webkit-scrollbar-track{background:transparent}
+.plate-gallery-grid > *{
+  flex:0 0 72px;
+  scroll-snap-align:start;
 }
 .plate-photo-thumb{
   position:relative;
