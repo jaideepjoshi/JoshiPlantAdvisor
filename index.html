@@ -6494,10 +6494,17 @@ function initPlateFlip() {
     ignoreSwipe = !!e.target.closest(
       '.plate-h-scroll, a, button, input, textarea, .plate-dot, .pgl-link, .plate-link, [onclick]'
     );
+    // A pinch starts as a single touch that turns into two — if a second
+    // finger lands, or the gesture starts multi-touch, treat it as a zoom
+    // and drop the change-plant / change-plate swipe interpretation.
+    if (e.touches.length > 1) ignoreSwipe = true;
     scrollTarget = e.target.closest('.plate-overlay');
     startScrollTop = scrollTarget ? scrollTarget.scrollTop : 0;
   }, { passive: true });
-  stack.addEventListener('touchmove', e => { moved = true; }, { passive: true });
+  stack.addEventListener('touchmove', e => {
+    moved = true;
+    if (e.touches.length > 1) ignoreSwipe = true;
+  }, { passive: true });
   stack.addEventListener('touchend', e => {
     if (!moved || ignoreSwipe) return;
     const dx = e.changedTouches[0].clientX - startX;
