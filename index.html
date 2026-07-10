@@ -1349,7 +1349,7 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
    pollinator row in the clear parchment area at the bottom of the plate. */
 .plate-habit-name{
   position:absolute;
-  bottom:21%;
+  bottom:17%;
   left:8%;
   right:8%;
   text-align:center;
@@ -1490,30 +1490,24 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon){
   text-shadow:0 1px 0 rgba(255,250,235,.65);
 }
 .plate-sun-scale{
-  display:inline-flex;align-items:center;gap:3px;
-  padding:2px 4px;
-  border:1px solid rgba(120,90,40,.35);
-  border-radius:12px;
-  background:rgba(255,250,235,.35);
+  display:inline-flex;align-items:center;gap:8px;
   pointer-events:auto;
 }
 .plate-sun-scale .sun-cell{
   display:inline-flex;align-items:center;justify-content:center;
-  width:16px;height:16px;
-  border-radius:50%;
-  color:var(--text);
+  width:14px;height:14px;
+  color:var(--text-mid);
+  opacity:.55;
+  transition:opacity .12s;
 }
 .plate-sun-scale .sun-cell.peak{
-  background:rgba(220,110,150,.35);
-  box-shadow:0 0 0 1px rgba(180,80,120,.35) inset;
+  width:22px;height:22px;
+  color:var(--text);
+  opacity:1;
 }
 .plate-sun-scale .sun-cell svg{
-  width:12px;height:12px;
+  width:100%;height:100%;
   vertical-align:middle;
-}
-.plate-habit-sun .sun-label{
-  font-style:italic;
-  color:var(--text);
 }
 /* Catalog-style bloom-time strip (Sp | S | F) — pink pill highlights the
    peak-bloom season(s) inferred from bloomMonths. Small and inline; sits
@@ -6025,23 +6019,30 @@ function bloomStrip(p){
 // Boolean presence is inferred from existing PLANTS fields, with an optional
 // `p.symbols` array override (whitelist of keys) for exact catalog matching.
 function plantSymbolKeys(p){
-  if (Array.isArray(p.symbols)) return new Set(p.symbols);
-  const set = new Set();
   const attracts = (p.attracts||[]).map(a=>a.toLowerCase());
   const styles = (p.gardenStyles||[]).map(s=>s.toLowerCase());
   const type = (p.type||'').toLowerCase();
   const water = (p.waterReq||'').toLowerCase();
   const foliage = ((p.yearRound||'')+' '+(p.foliageInterest||'')).toLowerCase();
-  if (p.cutFlower) set.add('cutFlower');
-  if (p.deerResistant) set.add('deer');
-  if (p.evergreen || /evergreen/.test(foliage)) set.add('evergreen');
+  // Explicit `symbols` override starts the set; pollinator glyphs from
+  // `attracts` are then merged in so the bee/butterfly/hummingbird icons
+  // always ride along with the plant-attribute glyphs (no separate row).
+  const set = Array.isArray(p.symbols) ? new Set(p.symbols) : new Set();
+  if (!Array.isArray(p.symbols)) {
+    if (p.cutFlower) set.add('cutFlower');
+    if (p.deerResistant) set.add('deer');
+    if (p.evergreen || /evergreen/.test(foliage)) set.add('evergreen');
+    if (attracts.some(a => /butterfl/.test(a))) set.add('butterfly');
+    if (/groundcover/.test(type) || styles.includes('groundcover')) set.add('groundcover');
+    if (/\bshrub\b/.test(type) || /\btree\b/.test(type)) set.add('shrub');
+    if (p.droughtTolerant) set.add('hotDry');
+    if (styles.includes('rain garden') || /wet|high/.test(water)) set.add('wetSite');
+    if (p.humidityTolerant) set.add('humidity');
+    if (attracts.some(a => /pollinator/.test(a))) set.add('pollinator');
+  }
+  if (attracts.some(a => /bee/.test(a))) set.add('bee');
   if (attracts.some(a => /butterfl/.test(a))) set.add('butterfly');
-  if (/groundcover/.test(type) || styles.includes('groundcover')) set.add('groundcover');
-  if (/\bshrub\b/.test(type) || /\btree\b/.test(type)) set.add('shrub');
-  if (p.droughtTolerant) set.add('hotDry');
-  if (styles.includes('rain garden') || /wet|high/.test(water)) set.add('wetSite');
-  if (p.humidityTolerant) set.add('humidity');
-  if (attracts.some(a => /bee|pollinator|hummingbird/.test(a))) set.add('pollinator');
+  if (attracts.some(a => /hum/.test(a))) set.add('hummingbird');
   return set;
 }
 const PLANT_SYMBOL_META = {
@@ -6055,9 +6056,12 @@ const PLANT_SYMBOL_META = {
   wetSite:     { glyph:'wetSite',     title:'Wet site tolerant' },
   humidity:    { glyph:'humidity',    title:'Tolerant of humidity' },
   pollinator:  { glyph:'pollinator',  title:'Beneficial for pollinators' },
+  bee:         { glyph:'bee',         title:'Attracts bees' },
+  hummingbird: { glyph:'hummingbird', title:'Attracts hummingbirds' },
 };
-// Deterministic display order matches the catalog legend column-by-column.
-const PLANT_SYMBOL_ORDER = ['cutFlower','deer','evergreen','butterfly','groundcover','shrub','hotDry','wetSite','humidity','pollinator'];
+// Deterministic display order matches the catalog legend column-by-column,
+// with pollinator glyphs trailing so they don't split up the attribute set.
+const PLANT_SYMBOL_ORDER = ['cutFlower','deer','evergreen','groundcover','shrub','hotDry','wetSite','humidity','pollinator','bee','butterfly','hummingbird'];
 function plantSymbolRow(p){
   const keys = plantSymbolKeys(p);
   const cells = PLANT_SYMBOL_ORDER.filter(k => keys.has(k)).map(k => {
@@ -6116,12 +6120,7 @@ function renderEncyclopedia(p) {
         <div class="plate-name-common">${escHtml(commonName(p))}</div>
         ${p.botanical ? `<div class="plate-name-botanical">${escHtml(p.botanical)}</div>` : ''}
       </div>` : ''}
-      ${(habitHummingbirdIcon || habitBeeIcon || habitButterflyIcon) ? `<div class="plate-habit-pollinators">
-        ${habitHummingbirdIcon ? `<span class="hum">${habitHummingbirdIcon}</span>` : ''}
-        ${habitBeeIcon ? `<span class="bee">${habitBeeIcon}</span>` : ''}
-        ${habitButterflyIcon ? `<span class="butterfly">${habitButterflyIcon}</span>` : ''}
-      </div>` : ''}
-      ${p.sun ? `<div class="plate-habit-sun">${sunShadeScale(p.sun)}<span class="sun-label">${escHtml(p.sun)}</span></div>` : ''}
+      ${p.sun ? `<div class="plate-habit-sun">${sunShadeScale(p.sun)}</div>` : ''}
       <div class="plate-habit-stats">
         ${fmtBloom() && fmtBloom() !== '—' ? `<div class="stat"><span class="ico">✿</span><span>${escHtml(fmtBloom())}</span></div>` : ''}
         ${bloomStrip(p)}
