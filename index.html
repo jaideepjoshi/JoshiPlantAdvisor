@@ -5302,12 +5302,16 @@ function showToast(msg, color) {
 }
 
 function cultivarScanUse() {
+  // Read + snapshot everything up-front so any single-step failure below
+  // can't leave the modal stuck open.
   const r = state.cultivarScanResult;
-  if (!r) return;
+  if (!r) { console.warn('cultivarScanUse: no scanResult'); return; }
   const id = state.cultivarScanPlantId;
-  if (!state.cultivars[id]) state.cultivars[id] = [];
-
   const cultivarName = r.cultivar_name || '';
+  const wasCommitAsPlanted = !!state.cultivarScanCommitAsPlanted;
+  const detailIdBefore = state.detailId;
+
+  // --- Step 1: mutate state (in-memory, cheap) ---
   const parts = [];
   if (r.height) parts.push(r.height);
   if (r.spread) parts.push('spread ' + r.spread);
@@ -5324,45 +5328,66 @@ function cultivarScanUse() {
   if (r.care_tip) parts.push(r.care_tip);
   if (r.notes) parts.push(r.notes);
 
-  state.cultivars[id].push({
-    name: cultivarName,
-    source: r.grower || '',
-    notes: parts.join(' · '),
-    tagImages: state.cultivarScanImages.slice(),
-    scannedData: r,
-    dateAdded: new Date().toISOString(),
-    planted: false,
-    wishlist: false,
-    where: '',
-    cultivarNotes: ''
-  });
-  saveCultivars();
-  // If the scan was launched from the Planted-in-my-garden flow, commit
-  // the scanned cultivar as planted too (with empty bed the user can
-  // fill in via the row's bed dropdown afterwards).
-  if (state.cultivarScanCommitAsPlanted && cultivarName) {
-    if (!state.garden[id]) state.garden[id] = { planted: true };
-    state.garden[id].planted = true;
-    const map = _gardenPlantedMap(id);
-    if (!(cultivarName in map)) { map[cultivarName] = ''; saveGarden(); }
-  }
+  try {
+    if (!state.cultivars[id]) state.cultivars[id] = [];
+    state.cultivars[id].push({
+      name: cultivarName,
+      source: r.grower || '',
+      notes: parts.join(' · '),
+      tagImages: (state.cultivarScanImages || []).slice(),
+      scannedData: r,
+      dateAdded: new Date().toISOString(),
+      planted: false, wishlist: false, where: '', cultivarNotes: ''
+    });
+  } catch (e) { console.error('cultivarScanUse: state push failed:', e); }
+
   state.cultivarScanCommitAsPlanted = false;
   state.showCultivarScan = false;
-  // Rip the modal out of the DOM immediately — that way even if render()
-  // throws or somehow re-emits the modal, the user gets visual confirmation
-  // that their tap was received.
+
+  // --- Step 2: close the modal DOM RIGHT NOW so the tap has a visible
+  // response, no matter what happens in the persistence / render below.
   document.querySelectorAll('.cv-scan-modal').forEach(el => el.remove());
-  try {
-    render();
-  } catch(e) {
-    const app = document.getElementById('app');
-    if (app) app.querySelectorAll('[style*="position:fixed"],.cv-scan-modal').forEach(el => el.remove());
-    console.error('render() threw after cultivarScanUse:', e);
+
+  // Show the success toast now too — so even if render() fails the user
+  // sees confirmation.
+  try { showToast('✓ Cultivar saved to your plant'); }
+  catch (e) { console.error('showToast failed:', e); }
+
+  // --- Step 3: persist (Firebase writes can throw on network hiccups) ---
+  try { saveCultivars(); }
+  catch (e) { console.error('saveCultivars failed:', e); }
+
+  if (wasCommitAsPlanted && cultivarName) {
+    try {
+      if (!state.garden[id]) state.garden[id] = { planted: true };
+      state.garden[id].planted = true;
+      const map = _gardenPlantedMap(id);
+      if (!(cultivarName in map)) { map[cultivarName] = ''; saveGarden(); }
+    } catch (e) { console.error('commit-as-planted failed:', e); }
   }
-  showToast('✓ Cultivar saved — scroll down to Cultivars');
+
+  // --- Step 4: re-render, defensively. If render throws, force-clean any
+  // stuck overlay and try to at least update the page.
+  try { render(); }
+  catch (e) {
+    console.error('render() threw after cultivarScanUse:', e);
+    document.querySelectorAll('.cv-scan-modal').forEach(el => el.remove());
+  }
+
+  // Safety net #2: after a paint, if the modal somehow crept back in,
+  // rip it out again.
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.cv-scan-modal').forEach(el => el.remove());
+  });
+
+  // Scroll to the Cultivars section on Plate III. New render output uses
+  // .plate-prose-block > .heading now, not h3, so match both.
   setTimeout(() => {
-    const el = Array.from(document.querySelectorAll('h3')).find(h => h.textContent.trim() === 'Cultivars');
-    if (el) el.closest('div')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try {
+      const headings = Array.from(document.querySelectorAll('h3, .plate-prose-block .heading, .ds h3'));
+      const el = headings.find(h => (h.textContent||'').trim().startsWith('Cultivars'));
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) { console.error('scroll-to-cultivars failed:', e); }
   }, 150);
 }
 
