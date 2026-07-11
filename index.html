@@ -1972,6 +1972,10 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon):not(.plate-action-btn){
 }
 .plate-journal .plate-overlay{
   padding:9% 9%;
+  /* 20px of breathing room between the glyph row (top:40, height 28)
+     and the first Journal section label — added on top of the existing
+     9% pad so it survives layout changes on other plates. */
+  padding-top:calc(9% + 20px);
 }
 .plate-journal label{
   display:flex;align-items:center;gap:8px;
