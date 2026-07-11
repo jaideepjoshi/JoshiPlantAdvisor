@@ -1443,6 +1443,168 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon):not(.plate-action-btn){
 }
 .plate-cv-picker .picker-cancel:hover{background:rgba(255,250,235,.5);color:var(--text)}
 @media (min-width: 640px){ .plate-cv-picker{align-items:center} }
+
+/* Cultivar-scan modal — parchment restyle so it matches the plate view
+   instead of the legacy dark-navy theme. Same bottom-sheet layout, but
+   the sheet body reads as aged paper with gold accents. */
+.cv-scan-modal{
+  position:fixed;inset:0;z-index:600;
+  background:rgba(20,14,6,.6);
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.cv-scan-sheet{
+  width:100%;max-width:480px;
+  background:#faf2e0;
+  color:var(--text);
+  border-radius:14px 14px 0 0;
+  padding:20px 22px 24px;
+  max-height:85vh;overflow-y:auto;
+  border-top:1px solid var(--gold-light);
+  box-shadow:0 -12px 40px rgba(58,42,24,.4);
+  font-family:'EB Garamond',serif;
+}
+.cv-scan-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:12px;margin-bottom:16px;
+  padding-bottom:12px;border-bottom:1px solid var(--gold-light);
+}
+.cv-scan-header h2{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:20px;font-weight:700;color:var(--text);margin:0;
+}
+.cv-scan-header p{
+  font-family:'EB Garamond',serif;font-style:italic;
+  font-size:12.5px;color:var(--text-mid);
+  margin:2px 0 0;
+}
+.cv-scan-close{
+  background:transparent;border:none;cursor:pointer;
+  color:var(--text-mid);font-size:22px;line-height:1;padding:2px 6px;
+  border-radius:6px;transition:background .12s, color .12s;
+}
+.cv-scan-close:hover{background:rgba(120,90,40,.1);color:var(--text)}
+
+/* Loading state */
+.cv-scan-loading{
+  text-align:center;padding:32px 0;
+  color:var(--text-mid);
+}
+.cv-scan-spinner{
+  display:inline-block;margin-bottom:14px;
+  width:36px;height:36px;
+  animation:spin 1.2s linear infinite;
+  color:var(--text-mid);
+}
+.cv-scan-spinner svg{width:100%;height:100%;color:inherit}
+.cv-scan-loading p{margin:0;font-size:14px;font-style:italic}
+
+/* Upload step */
+.cv-scan-hint{
+  font-size:13px;font-style:italic;color:var(--text-mid);
+  line-height:1.55;margin:0 0 16px;
+}
+.cv-scan-hint strong{color:var(--text);font-style:normal;font-weight:600}
+.cv-scan-upload-row{
+  display:flex;gap:10px;margin-bottom:16px;align-items:flex-end;
+}
+.cv-scan-thumb{position:relative;flex:1}
+.cv-scan-thumb img{
+  width:100%;height:110px;object-fit:cover;
+  border-radius:6px;border:1px solid var(--gold-light);
+  display:block;
+}
+.cv-scan-thumb-x{
+  position:absolute;top:5px;right:5px;
+  width:22px;height:22px;
+  background:rgba(30,20,10,.7);color:#fff;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:14px;line-height:1;cursor:pointer;
+}
+.cv-scan-thumb-caption{
+  text-align:center;font-size:11px;font-style:italic;
+  color:var(--text-mid);margin-top:5px;font-weight:600;
+}
+.cv-scan-drop{
+  flex:1;height:110px;
+  border-radius:6px;border:1.5px dashed var(--gold-light);
+  background:rgba(255,250,235,.4);
+  color:var(--text-mid);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;
+  font-family:'EB Garamond',serif;font-style:italic;font-size:12px;
+  transition:background .12s, border-color .12s, color .12s;
+}
+.cv-scan-drop:hover{background:rgba(255,250,235,.7);border-color:var(--gold);color:var(--text)}
+.cv-scan-drop-icon{width:26px;height:26px;color:inherit}
+.cv-scan-drop-icon svg{width:100%;height:100%;color:inherit}
+
+/* Result state */
+.cv-scan-imgs{
+  display:flex;gap:8px;margin-bottom:14px;
+}
+.cv-scan-imgs img{
+  flex:1;height:90px;object-fit:cover;
+  border-radius:6px;border:1px solid var(--gold-light);
+  display:block;
+}
+.cv-scan-result{
+  background:rgba(255,250,235,.5);
+  border:1px solid var(--gold-light);
+  border-radius:8px;
+  padding:14px;margin-bottom:16px;
+}
+.cv-scan-result-head{margin-bottom:10px}
+.cv-scan-cv-name{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:18px;font-weight:700;color:var(--text);
+}
+.cv-scan-grower{
+  font-size:12px;font-weight:600;color:var(--text-mid);
+  margin-top:2px;font-style:italic;
+}
+.cv-scan-grower .opacity{font-weight:400;opacity:.7}
+.cv-scan-badges{
+  display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;
+}
+.cv-scan-badges span{
+  font-size:10.5px;padding:2px 8px;border-radius:10px;
+  background:rgba(90,111,74,.15);color:#3a2a18;
+  border:1px solid rgba(120,90,40,.25);
+  font-weight:600;letter-spacing:.3px;
+}
+.cv-scan-rows{
+  display:flex;flex-direction:column;gap:5px;
+  border-top:1px solid var(--gold-light);
+  padding-top:10px;
+}
+.cv-scan-row{display:flex;gap:8px;font-size:13px}
+.cv-scan-row .k{
+  color:var(--text-mid);min-width:100px;flex-shrink:0;
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;
+}
+.cv-scan-row .v{color:var(--text);line-height:1.4;font-family:'EB Garamond',serif}
+.cv-scan-err{color:#a04020;font-size:12.5px;margin:0 0 12px;font-style:italic}
+
+/* Buttons */
+.cv-scan-primary,.cv-scan-secondary{
+  width:100%;border-radius:6px;
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  cursor:pointer;transition:background .12s, border-color .12s, color .12s;
+  box-sizing:border-box;
+}
+.cv-scan-primary{
+  padding:12px;font-size:15px;font-weight:700;
+  background:rgba(90,111,74,.18);color:#3a2a18;
+  border:1px solid var(--green);
+  margin-bottom:10px;
+}
+.cv-scan-primary:hover{background:rgba(90,111,74,.32)}
+.cv-scan-secondary{
+  padding:10px;font-size:13px;font-weight:600;
+  background:transparent;color:var(--text-mid);
+  border:1px solid var(--gold-light);
+}
+.cv-scan-secondary:hover{background:rgba(255,250,235,.5);color:var(--text)}
 /* Rich cultivar cards (data-driven with description, Ht/Sp/Z, patent flag). */
 .plate-cv-list{display:flex;flex-direction:column;gap:10px}
 .plate-cv-list-rich{gap:12px}
@@ -4751,8 +4913,8 @@ function openAddCultivarPicker(plantId, opts) {
   });
   overlay.querySelector('[data-source="scan"]').addEventListener('click', () => {
     close();
-    if (commitAsPlanted) state.cultivarScanCommitAsPlanted = true;
-    openCultivarScan(plantId);
+    state.cultivarScanCommitAsPlanted = !!commitAsPlanted;
+    openCultivarScan(plantId, { preserveCommitAsPlanted: true });
   });
   overlay.querySelector('.picker-cancel').addEventListener('click', close);
   document.body.appendChild(overlay);
@@ -4850,13 +5012,17 @@ function getEntries(id) {
   return [];
 }
 
-function openCultivarScan(plantId) {
+function openCultivarScan(plantId, opts) {
   state.showCultivarScan = true;
   state.cultivarScanPlantId = plantId;
   state.cultivarScanImages = [];
   state.cultivarScanLoading = false;
   state.cultivarScanResult = null;
   state.cultivarScanError = '';
+  // Only carry the commit-as-planted flag if the caller explicitly set
+  // it via openAddCultivarPicker(…, {commitAsPlanted}); avoids a stale
+  // flag from a previous session firing this scan into the planted map.
+  if (!opts || !opts.preserveCommitAsPlanted) state.cultivarScanCommitAsPlanted = false;
   render();
 }
 
@@ -5854,9 +6020,9 @@ function renderCultivarScanModal() {
 
   if (loading) {
     body = `
-      <div style="text-align:center;padding:32px 0">
-        <div style="font-size:36px;animation:spin 1.2s linear infinite;display:inline-block;margin-bottom:14px">🔍</div>
-        <p style="color:var(--text-mid);font-size:14px">Reading cultivar tag…</p>
+      <div class="cv-scan-loading">
+        <div class="cv-scan-spinner">${plateGlyph('search')}</div>
+        <p>Reading cultivar tag…</p>
       </div>`;
 
   } else if (result) {
@@ -5877,77 +6043,65 @@ function renderCultivarScanModal() {
       ['Notes', r2.notes],
     ].filter(([,v]) => v && v !== 'null' && v !== 'false');
     const badges = [
-      r2.deer_resistant === true ? '🦌 Deer resistant' : (r2.deer_resistant === false ? '' : ''),
-      r2.rabbit_resistant === true ? '🐰 Rabbit resistant' : '',
-      r2.fragrant === true ? '🌸 Fragrant' : '',
+      r2.deer_resistant === true ? 'Deer resistant' : '',
+      r2.rabbit_resistant === true ? 'Rabbit resistant' : '',
+      r2.fragrant === true ? 'Fragrant' : '',
     ].filter(Boolean);
 
     body = `
-      <div style="margin-bottom:14px;display:flex;gap:8px">
-        ${imgs.map(src => `<img src="${src}" style="flex:1;height:90px;object-fit:cover;border-radius:10px;border:1px solid rgba(96,165,250,.2)">`).join('')}
-      </div>
-      <div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.15);border-radius:14px;padding:14px;margin-bottom:16px">
-        <div style="margin-bottom:10px">
-          <div style="font-size:17px;font-weight:700;color:#e8ece9;font-family:'Playfair Display',serif">${escHtml(r2.cultivar_name || 'Unknown cultivar')}</div>
-          ${r2.grower ? `<div style="font-size:12px;color:#93c5fd;font-weight:600;margin-top:2px">${escHtml(r2.grower)}${r2.grower_website ? ` · <span style="font-weight:400;opacity:.7">${escHtml(r2.grower_website)}</span>` : ''}</div>` : ''}
-          ${badges.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">${badges.map(b=>`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.2);font-weight:600">${b}</span>`).join('')}</div>` : ''}
+      ${imgs.length ? `<div class="cv-scan-imgs">${imgs.map(src => `<img src="${src}">`).join('')}</div>` : ''}
+      <div class="cv-scan-result">
+        <div class="cv-scan-result-head">
+          <div class="cv-scan-cv-name">${escHtml(r2.cultivar_name || 'Unknown cultivar')}</div>
+          ${r2.grower ? `<div class="cv-scan-grower">${escHtml(r2.grower)}${r2.grower_website ? ` · <span class="opacity">${escHtml(r2.grower_website)}</span>` : ''}</div>` : ''}
+          ${badges.length ? `<div class="cv-scan-badges">${badges.map(b=>`<span>${b}</span>`).join('')}</div>` : ''}
         </div>
-        <div style="display:flex;flex-direction:column;gap:5px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px">
+        <div class="cv-scan-rows">
           ${detailRows.map(([k,v]) => `
-            <div style="display:flex;gap:8px;font-size:13px">
-              <span style="color:var(--text-light);min-width:96px;flex-shrink:0">${k}</span>
-              <span style="color:var(--text);line-height:1.4">${escHtml(String(v))}</span>
+            <div class="cv-scan-row">
+              <span class="k">${k}</span>
+              <span class="v">${escHtml(String(v))}</span>
             </div>`).join('')}
         </div>
       </div>
-      ${err ? `<p style="color:#f87171;font-size:12px;margin-bottom:12px">${escHtml(err)}</p>` : ''}
-      <button onclick="cultivarScanUse()"
-        style="width:100%;padding:13px;background:linear-gradient(135deg,#14532d,#166534);color:#4ade80;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px">
-        ✓ Add to My Cultivars
-      </button>
-      <button onclick="state.cultivarScanResult=null;state.cultivarScanImages=[];render()"
-        style="width:100%;padding:11px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:var(--text-mid);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">
-        ← Scan again
-      </button>`;
+      ${err ? `<p class="cv-scan-err">${escHtml(err)}</p>` : ''}
+      <button class="cv-scan-primary" onclick="cultivarScanUse()">✓ Add to My Cultivars</button>
+      <button class="cv-scan-secondary" onclick="state.cultivarScanResult=null;state.cultivarScanImages=[];render()">← Scan again</button>`;
 
   } else {
     // Upload step
     body = `
-      <p style="font-size:13px;color:var(--text-mid);margin-bottom:16px;line-height:1.5">
-        Photo the front and/or back of the <strong style="color:var(--text)">${escHtml(plantName)}</strong> cultivar tag.
+      <p class="cv-scan-hint">
+        Photo the front and/or back of the <strong>${escHtml(plantName)}</strong> cultivar tag.
         Claude will extract the cultivar name, brand, and details.
       </p>
-      <div style="display:flex;gap:10px;margin-bottom:16px;align-items:flex-end">
+      <div class="cv-scan-upload-row">
         ${imgs.map((src, i) => `
-          <div style="position:relative;flex:1">
-            <img src="${src}" style="width:100%;height:110px;object-fit:cover;border-radius:10px;border:1px solid rgba(96,165,250,.25)">
-            <div onclick="state.cultivarScanImages.splice(${i},1);render()" style="position:absolute;top:5px;right:5px;width:20px;height:20px;background:rgba(0,0,0,.7);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#fff;line-height:1">×</div>
-            <div style="text-align:center;font-size:11px;color:#93c5fd;margin-top:4px;font-weight:600">${i===0?'Front':'Back'}</div>
+          <div class="cv-scan-thumb">
+            <img src="${src}">
+            <div class="cv-scan-thumb-x" onclick="state.cultivarScanImages.splice(${i},1);render()">×</div>
+            <div class="cv-scan-thumb-caption">${i===0?'Front':'Back'}</div>
           </div>`).join('')}
         ${imgs.length < 2 ? `
-          <div onclick="pickImageFor('cultivarScan')" style="flex:1;height:110px;border-radius:10px;border:2px dashed rgba(96,165,250,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(96,165,250,.04)">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            <span style="font-size:11px;color:#93c5fd;font-weight:600">${imgs.length === 0 ? 'Front of tag' : 'Back of tag'}</span>
+          <div class="cv-scan-drop" onclick="pickImageFor('cultivarScan')">
+            <span class="cv-scan-drop-icon">${plateGlyph('camera')}</span>
+            <span>${imgs.length === 0 ? 'Front of tag' : 'Back of tag'}</span>
           </div>` : ''}
       </div>
-      ${err ? `<p style="color:#f87171;font-size:12px;margin-bottom:12px">${escHtml(err)}</p>` : ''}
-      ${imgs.length > 0 ? `
-        <button onclick="cultivarScanAnalyze()"
-          style="width:100%;padding:13px;background:linear-gradient(135deg,#1e3a5f,#1d4ed8);color:#93c5fd;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
-          🔍 Read Tag with Claude →
-        </button>` : ''}
+      ${err ? `<p class="cv-scan-err">${escHtml(err)}</p>` : ''}
+      ${imgs.length > 0 ? `<button class="cv-scan-primary" onclick="cultivarScanAnalyze()">Read Tag with Claude →</button>` : ''}
     `;
   }
 
   return `
-    <div style="position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:600;display:flex;align-items:flex-end;justify-content:center" onclick="if(event.target===this){state.showCultivarScan=false;render()}">
-      <div style="background:linear-gradient(160deg,#0c1a2e,#0f2340);border-radius:20px 20px 0 0;padding:24px 22px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;border-top:1px solid rgba(96,165,250,.2);box-shadow:0 -8px 40px rgba(0,0,0,.6)" onclick="event.stopPropagation()">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+    <div class="cv-scan-modal" onclick="if(event.target===this){state.showCultivarScan=false;render()}">
+      <div class="cv-scan-sheet" onclick="event.stopPropagation()">
+        <div class="cv-scan-header">
           <div>
-            <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#e8ece9;margin:0">Scan Cultivar Tag</h2>
-            <p style="font-size:12px;color:var(--text-light);margin:3px 0 0">${escHtml(plantName)}</p>
+            <h2>Scan Cultivar Tag</h2>
+            <p>${escHtml(plantName)}</p>
           </div>
-          <button onclick="state.showCultivarScan=false;render()" style="background:none;border:none;cursor:pointer;color:#7a8a80;font-size:22px;line-height:1;padding:4px">×</button>
+          <button class="cv-scan-close" onclick="state.showCultivarScan=false;render()" aria-label="Close">×</button>
         </div>
         ${body}
       </div>
