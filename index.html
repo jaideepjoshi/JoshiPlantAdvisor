@@ -1082,8 +1082,9 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon):not(.plate-action-btn){
   color:#3a2a18;
 }
 .plate-action-btn svg{width:100%;height:100%;color:inherit}
-/* Per-glyph horizontal nudges: the + sits 10px right of its natural
-   flex slot, the settings gear 5px right of its slot. Search stays put. */
+/* Per-glyph horizontal nudges: search and + each shift 10px right of
+   their natural flex slots; the settings gear 5px right of its slot. */
+.plate-topright-actions .plate-action-btn:nth-child(1){transform:translateX(10px)}
 .plate-topright-actions .plate-action-btn:nth-child(2){transform:translateX(10px)}
 .plate-topright-actions .plate-action-btn:last-child{transform:translateX(5px)}
 /* The plate stack is a 3D book — pages stack on top of each other and
