@@ -1349,6 +1349,100 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon):not(.plate-action-btn){
   color:#a04020;
   font-style:italic;
 }
+/* Add-cultivar row at the bottom of the Cultivars sub-section — opens the
+   openAddCultivarPicker() bottom-sheet with an "Enter name" / "Scan tag"
+   choice. Matches the plate-cv-rich card styling so it reads as the same
+   list. */
+.plate-cv-add{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;
+  background:transparent;
+  border:1.5px dashed var(--gold-light);
+  border-radius:4px;
+  color:var(--text-mid);
+  font-family:'EB Garamond',serif;font-style:italic;font-size:13.5px;
+  cursor:pointer;
+  transition:background .12s, color .12s, border-color .12s;
+}
+.plate-cv-add:hover,.plate-cv-add:focus-visible{
+  background:rgba(255,250,235,.5);
+  border-color:var(--gold);
+  color:var(--text);
+}
+.plate-cv-add .cv-add-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;
+  color:currentColor;
+}
+.plate-cv-add .cv-add-icon svg{width:100%;height:100%;color:inherit}
+.plate-cv-card.plate-cv-user .cv-user-badge{
+  font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
+  padding:1px 6px;border-radius:8px;
+  background:rgba(120,90,40,.14);color:var(--text-mid);
+  font-weight:600;
+  margin-left:2px;
+}
+.plate-cv-card.plate-cv-user .cv-remove{
+  margin-left:auto;
+  color:var(--text-mid);opacity:.5;
+  cursor:pointer;font-size:15px;line-height:1;
+  padding:0 4px;border-radius:4px;
+  transition:opacity .12s, background .12s;
+}
+.plate-cv-card.plate-cv-user .cv-remove:hover{opacity:1;background:rgba(120,90,40,.1)}
+/* Bottom-sheet picker used by openAddCultivarPicker(). Mirrors the
+   photo-source picker styling. */
+.plate-cv-picker{
+  position:fixed;inset:0;z-index:10001;
+  background:rgba(20,14,6,.55);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:16px;
+}
+.plate-cv-picker .picker-card{
+  width:100%;max-width:360px;
+  background:#faf2e0;
+  border:1px solid var(--gold-light);
+  border-radius:10px;
+  padding:14px 14px 10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+  display:flex;flex-direction:column;gap:8px;
+  font-family:'EB Garamond',serif;color:var(--text);
+}
+.plate-cv-picker .picker-title{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-weight:600;
+  font-size:15px;color:var(--text-mid);
+  text-align:center;padding:4px 0 6px;
+  border-bottom:1px solid var(--gold-light);margin-bottom:2px;
+}
+.plate-cv-picker .picker-btn{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  background:rgba(255,250,235,.55);
+  border:1px solid var(--gold-light);
+  border-radius:6px;
+  font-family:inherit;color:inherit;
+  font-size:15px;font-style:italic;
+  cursor:pointer;transition:background .12s;
+}
+.plate-cv-picker .picker-btn:hover,.plate-cv-picker .picker-btn:focus-visible{
+  background:rgba(255,250,235,.85);
+}
+.plate-cv-picker .picker-icon{
+  flex:none;width:32px;height:32px;
+  display:inline-flex;align-items:center;justify-content:center;
+  color:var(--text-mid);
+}
+.plate-cv-picker .picker-icon svg{width:100%;height:100%;color:inherit}
+.plate-cv-picker .picker-label{flex:1;text-align:left}
+.plate-cv-picker .picker-cancel{
+  padding:10px;margin-top:2px;
+  background:transparent;border:none;
+  font-family:inherit;color:var(--text-mid);
+  font-size:14px;font-style:italic;cursor:pointer;border-radius:6px;
+}
+.plate-cv-picker .picker-cancel:hover{background:rgba(255,250,235,.5);color:var(--text)}
+@media (min-width: 640px){ .plate-cv-picker{align-items:center} }
 /* Rich cultivar cards (data-driven with description, Ht/Sp/Z, patent flag). */
 .plate-cv-list{display:flex;flex-direction:column;gap:10px}
 .plate-cv-list-rich{gap:12px}
@@ -4525,10 +4619,14 @@ function onGardenPickerChange(sel) {
   if (isViewing && isViewing()) return;
   const value = sel.value;
   if (value === '__ADD_CUSTOM__') {
-    const name = (prompt('Name of the new cultivar:', '') || '').trim();
-    if (!name) { sel.value = ''; return; }
-    _insertPickerOption(sel, name, 'option[value="__ADD_CUSTOM__"]');
-    sel.value = name;
+    // Route through the new add-cultivar picker so the user can either
+    // type a name or scan a nursery tag. The picker also adds it to the
+    // plant's cultivar library so it becomes selectable elsewhere.
+    sel.value = '';
+    const detail = sel.closest('.garden-planted-detail');
+    const plantId = detail?.querySelector('[data-plant-id]')?.dataset.plantId;
+    // Fall back to state.detailId — we're inside a plant's Plate IV.
+    openAddCultivarPicker(state.detailId, { commitAsPlanted: true });
   } else if (value === '__ADD_BED__') {
     const name = (prompt('Name of the new bed:', '') || '').trim();
     if (!name) { sel.value = ''; return; }
@@ -4563,6 +4661,123 @@ function commitGardenCultivarBed(plantId) {
 }
 window.onGardenPickerChange = onGardenPickerChange;
 window.commitGardenCultivarBed = commitGardenCultivarBed;
+
+// ─── Cultivar library (catalog + user-added) ────────────────────────────
+// Merges p.cultivarDetails (baked catalog) with entries the user has
+// scanned into state.cultivars[p.id] (via openCultivarScan) or typed in
+// manually. Dedupes by name (catalog wins). Returns the shape the
+// .plate-cv-rich renderer expects: {name, description, height, spread,
+// zones, image, patented?, isUser?}.
+function _mapUserCultivarToDetail(c) {
+  const sd = c.scannedData || {};
+  return {
+    name: c.name || '',
+    description: c.notes || '',
+    height: sd.height || '',
+    spread: sd.spread || '',
+    zones: sd.hardiness_zones || '',
+    image: (c.tagImages && c.tagImages[0]) || '',
+    isUser: true,
+  };
+}
+function combinedCultivarDetails(p) {
+  const catalog = Array.isArray(p.cultivarDetails) ? p.cultivarDetails : [];
+  const users = (state.cultivars[String(p.id)] || [])
+    .filter(c => c && c.name)
+    .map(_mapUserCultivarToDetail);
+  const seen = new Set(catalog.map(c => (c.name||'').toLowerCase()));
+  const merged = [...catalog];
+  for (const u of users) {
+    const key = (u.name||'').toLowerCase();
+    if (!seen.has(key)) { seen.add(key); merged.push(u); }
+  }
+  return merged;
+}
+function removeUserCultivar(plantId, name) {
+  if (isViewing && isViewing()) return;
+  const id = String(plantId);
+  if (!state.cultivars[id]) return;
+  const idx = state.cultivars[id].findIndex(c => (c.name||'').toLowerCase() === (name||'').toLowerCase());
+  if (idx < 0) return;
+  state.cultivars[id].splice(idx, 1);
+  if (!state.cultivars[id].length) delete state.cultivars[id];
+  if (typeof saveCultivars === 'function') saveCultivars();
+  render();
+}
+window.combinedCultivarDetails = combinedCultivarDetails;
+window.removeUserCultivar = removeUserCultivar;
+
+// Add-cultivar picker — bottom-sheet asking "Enter name" vs "Scan tag".
+// If commitAsPlanted is truthy, the newly-added cultivar is also
+// committed to state.garden[plantId].plantedCultivars with an empty
+// bed (Planted-in-my-garden flow). Otherwise it's just added to the
+// plant's cultivar library.
+function openAddCultivarPicker(plantId, opts) {
+  if (isViewing && isViewing()) return;
+  const commitAsPlanted = !!(opts && opts.commitAsPlanted);
+  document.getElementById('__cv_picker')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = '__cv_picker';
+  overlay.className = 'plate-cv-picker';
+  overlay.innerHTML = `
+    <div class="picker-card" role="dialog" aria-label="Add a cultivar">
+      <div class="picker-title">${commitAsPlanted ? 'Add a new cultivar you\'ve planted' : 'Add a cultivar'}</div>
+      <button type="button" class="picker-btn" data-source="name">
+        <span class="picker-icon">${plateGlyph('add')}</span>
+        <span class="picker-label">Enter cultivar name</span>
+      </button>
+      <button type="button" class="picker-btn" data-source="scan">
+        <span class="picker-icon">${plateGlyph('camera')}</span>
+        <span class="picker-label">Scan nursery tag</span>
+      </button>
+      <button type="button" class="picker-cancel">Cancel</button>
+    </div>`;
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('[data-source="name"]').addEventListener('click', () => {
+    close();
+    const name = (prompt('Cultivar name:') || '').trim();
+    if (!name) return;
+    addUserCultivarByName(plantId, name);
+    if (commitAsPlanted) {
+      const id = String(plantId);
+      if (!state.garden[id]) state.garden[id] = { planted: true };
+      state.garden[id].planted = true;
+      const map = _gardenPlantedMap(id);
+      map[name] = '';
+      saveGarden();
+    }
+    render();
+  });
+  overlay.querySelector('[data-source="scan"]').addEventListener('click', () => {
+    close();
+    if (commitAsPlanted) state.cultivarScanCommitAsPlanted = true;
+    openCultivarScan(plantId);
+  });
+  overlay.querySelector('.picker-cancel').addEventListener('click', close);
+  document.body.appendChild(overlay);
+}
+function addUserCultivarByName(plantId, name) {
+  name = String(name || '').trim();
+  if (!name) return;
+  const id = String(plantId);
+  if (!state.cultivars[id]) state.cultivars[id] = [];
+  if (state.cultivars[id].some(c => (c.name||'').toLowerCase() === name.toLowerCase())) return;
+  const p = PLANTS.find(x => x.id === Number(plantId));
+  if (p && (p.cultivarDetails||[]).some(cd => (cd.name||'').toLowerCase() === name.toLowerCase())) return;
+  state.cultivars[id].push({
+    name,
+    source: '',
+    notes: '',
+    tagImages: [],
+    scannedData: null,
+    dateAdded: new Date().toISOString(),
+    planted: false, wishlist: false, where: '', cultivarNotes: ''
+  });
+  if (typeof saveCultivars === 'function') saveCultivars();
+}
+window.openAddCultivarPicker = openAddCultivarPicker;
+window.addUserCultivarByName = addUserCultivarByName;
 
 function addMyPairing(plantId, name) {
   if (isViewing()) return;
@@ -4814,6 +5029,16 @@ function cultivarScanUse() {
     cultivarNotes: ''
   });
   saveCultivars();
+  // If the scan was launched from the Planted-in-my-garden flow, commit
+  // the scanned cultivar as planted too (with empty bed the user can
+  // fill in via the row's bed dropdown afterwards).
+  if (state.cultivarScanCommitAsPlanted && cultivarName) {
+    if (!state.garden[id]) state.garden[id] = { planted: true };
+    state.garden[id].planted = true;
+    const map = _gardenPlantedMap(id);
+    if (!(cultivarName in map)) { map[cultivarName] = ''; saveGarden(); }
+  }
+  state.cultivarScanCommitAsPlanted = false;
   state.showCultivarScan = false;
   try {
     render();
@@ -6635,25 +6860,33 @@ function renderEncyclopedia(p) {
   // Rich cultivar cards when cultivarDetails is present; else fall back to
   // string-list with brand tag extraction (legacy). Built before Plate II
   // because Plate II now includes a Cultivars sub-section.
-  const cultivarsList = (p.cultivarDetails && p.cultivarDetails.length)
-    ? p.cultivarDetails.map(cd => {
+  const _combined = combinedCultivarDetails(p);
+  const _hasRich = _combined.length > 0;
+  const cultivarsList = _hasRich
+    ? _combined.map(cd => {
         const specs = [
           cd.height ? `<span class="cv-spec"><span class="lbl">Ht</span>${escHtml(cd.height)}</span>` : '',
           cd.spread ? `<span class="cv-spec"><span class="lbl">Sp</span>${escHtml(cd.spread)}</span>` : '',
           cd.zones  ? `<span class="cv-spec"><span class="lbl">Z</span>${escHtml(cd.zones)}</span>`  : ''
         ].filter(Boolean).join('');
-        return `<div class="plate-cv-card plate-cv-rich">
+        return `<div class="plate-cv-card plate-cv-rich${cd.isUser?' plate-cv-user':''}">
           ${cd.image ? `<img class="cv-img" src="${escHtml(cd.image)}" alt="${escHtml(cd.name)}">` : ''}
           <div class="cv-body">
             <div class="cv-name-row">
               <div class="name">${escHtml(cd.name)}</div>
               ${cd.patented ? `<span class="cv-patented" title="Patented cultivar">P</span>` : ''}
+              ${cd.isUser ? `<span class="cv-user-badge" title="Added by you">yours</span>
+                <span class="cv-remove" data-cv="${escHtml(cd.name)}" onclick="event.stopPropagation();if(confirm('Remove this cultivar from the list?'))removeUserCultivar(${p.id}, this.dataset.cv)" title="Remove">×</span>` : ''}
             </div>
             ${cd.description ? `<div class="cv-desc">${escHtml(cd.description)}</div>` : ''}
             ${specs ? `<div class="cv-specs">${specs}</div>` : ''}
           </div>
         </div>`;
-      }).join('')
+      }).join('') + `
+        <button type="button" class="plate-cv-add" onclick="openAddCultivarPicker(${p.id})">
+          <span class="cv-add-icon">${plateGlyph('add')}</span>
+          <span>Add cultivar</span>
+        </button>`
     : (p.cultivars||[]).map(c => {
         const m = c.match(/^(.*?)\s*\[(PW|Monrovia|First Ed\.)\]\s*$/);
         const name = m ? m[1].trim() : c.trim();
@@ -6662,7 +6895,11 @@ function renderEncyclopedia(p) {
           <div class="name">${escHtml(name)}</div>
           ${brand ? `<span class="brand">${escHtml(brand)}</span>` : ''}
         </div>`;
-      }).join('');
+      }).join('') + `
+        <button type="button" class="plate-cv-add" onclick="openAddCultivarPicker(${p.id})">
+          <span class="cv-add-icon">${plateGlyph('add')}</span>
+          <span>Add cultivar</span>
+        </button>`;
 
   const plateParticulars = `
     <div class="plate-page plate-particulars${1 < idx ? ' plate-flipped' : ''}" data-idx="1" style="background-image:url('${p.plateBack}')">
@@ -6798,7 +7035,7 @@ function renderEncyclopedia(p) {
           <span>Planted in my garden</span>
         </label>
         ${g.planted ? (() => {
-          const details = p.cultivarDetails || [];
+          const details = combinedCultivarDetails(p);
           const map = _gardenPlantedMap(p.id);
           const beds = gardenBedNames();
           const plantedNames = Object.keys(map);
