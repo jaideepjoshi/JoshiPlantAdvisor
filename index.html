@@ -1375,21 +1375,97 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon):not(.plate-action-btn){
   color:currentColor;
 }
 .plate-cv-add .cv-add-icon svg{width:100%;height:100%;color:inherit}
-.plate-cv-card.plate-cv-user .cv-user-badge{
+/* Plain cultivar row — replaces the bordered card. One line per entry;
+   rows with any richer data get a subtle chevron and are clickable. */
+.plate-cv-row{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 2px;
+  border-bottom:1px solid rgba(120,90,40,.12);
+  font-family:'EB Garamond',serif;
+  font-size:14px;color:var(--text);
+}
+.plate-cv-row:last-of-type{border-bottom:none}
+.plate-cv-row .cv-name{
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-style:italic;
+}
+.plate-cv-row.plate-cv-clickable{cursor:pointer;transition:background .12s}
+.plate-cv-row.plate-cv-clickable:hover{background:rgba(255,250,235,.55)}
+.plate-cv-row .cv-chevron{
+  flex:none;color:var(--text-mid);opacity:.5;
+  font-size:18px;line-height:1;font-family:serif;
+}
+.plate-cv-row .cv-patented{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--gold-light);color:#5c3d1c;
+  font-family:'EB Garamond',serif;font-weight:700;font-size:10px;
+}
+.plate-cv-row.plate-cv-user .cv-user-badge{
   font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;
   padding:1px 6px;border-radius:8px;
   background:rgba(120,90,40,.14);color:var(--text-mid);
   font-weight:600;
-  margin-left:2px;
 }
-.plate-cv-card.plate-cv-user .cv-remove{
-  margin-left:auto;
+.plate-cv-row.plate-cv-user .cv-remove{
   color:var(--text-mid);opacity:.5;
   cursor:pointer;font-size:15px;line-height:1;
   padding:0 4px;border-radius:4px;
   transition:opacity .12s, background .12s;
 }
-.plate-cv-card.plate-cv-user .cv-remove:hover{opacity:1;background:rgba(120,90,40,.1)}
+.plate-cv-row.plate-cv-user .cv-remove:hover{opacity:1;background:rgba(120,90,40,.1)}
+/* Cultivar detail sheet — bottom-sheet parchment card showing description,
+   image, Ht/Sp/Z for a single cultivar. */
+.cv-detail-modal{
+  position:fixed;inset:0;z-index:10002;
+  background:rgba(20,14,6,.55);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:16px;
+}
+.cv-detail-sheet{
+  width:100%;max-width:420px;
+  background:#faf2e0;
+  border:1px solid var(--gold-light);border-radius:10px;
+  padding:16px 18px 18px;
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+  font-family:'EB Garamond',serif;color:var(--text);
+  max-height:80vh;overflow-y:auto;
+}
+.cv-detail-header{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:8px;
+  padding-bottom:8px;margin-bottom:10px;
+  border-bottom:1px solid var(--gold-light);
+}
+.cv-detail-header h2{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:18px;font-weight:700;margin:0;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+.cv-detail-close{
+  background:transparent;border:none;cursor:pointer;
+  color:var(--text-mid);font-size:22px;line-height:1;padding:2px 6px;
+  border-radius:6px;transition:background .12s, color .12s;
+}
+.cv-detail-close:hover{background:rgba(120,90,40,.1);color:var(--text)}
+.cv-detail-img{
+  width:100%;max-height:220px;object-fit:cover;
+  border-radius:6px;border:1px solid var(--gold-light);
+  display:block;margin-bottom:10px;
+}
+.cv-detail-desc{
+  font-size:13.5px;line-height:1.55;color:var(--text);
+  margin:0 0 10px;
+}
+.cv-detail-specs{
+  display:flex;flex-wrap:wrap;gap:14px;
+  font-size:12.5px;color:var(--text-mid);
+  padding-top:6px;
+  border-top:1px solid var(--gold-light);
+}
+.cv-detail-specs > div{display:inline-flex;align-items:baseline;gap:4px}
+.cv-detail-specs .k{font-weight:700;font-style:italic;color:var(--text-mid);opacity:.75}
+.cv-detail-specs .v{color:var(--text)}
+@media (min-width: 640px){ .cv-detail-modal{align-items:center} }
 /* Bottom-sheet picker used by openAddCultivarPicker(). Mirrors the
    photo-source picker styling. */
 .plate-cv-picker{
@@ -4967,6 +5043,46 @@ function addUserCultivarByName(plantId, name) {
 window.openAddCultivarPicker = openAddCultivarPicker;
 window.addUserCultivarByName = addUserCultivarByName;
 
+// Click-through detail sheet for a cultivar row on Plate III. Shows the
+// same info that used to live inside the bordered card (description,
+// image, Ht/Sp/Z) plus any patented / user-added flags.
+function openCultivarDetailByIdx(plantId, idx) {
+  const p = PLANTS.find(x => x.id === Number(plantId));
+  if (!p) return;
+  const details = combinedCultivarDetails(p);
+  const cd = details[idx];
+  if (!cd) return;
+  document.getElementById('__cv_detail')?.remove();
+  const specs = [
+    cd.height ? `<div><span class="k">Ht</span><span class="v">${escHtml(cd.height)}</span></div>` : '',
+    cd.spread ? `<div><span class="k">Sp</span><span class="v">${escHtml(cd.spread)}</span></div>` : '',
+    cd.zones  ? `<div><span class="k">Z</span><span class="v">${escHtml(cd.zones)}</span></div>`  : ''
+  ].filter(Boolean).join('');
+  const overlay = document.createElement('div');
+  overlay.id = '__cv_detail';
+  overlay.className = 'cv-detail-modal';
+  overlay.innerHTML = `
+    <div class="cv-detail-sheet" role="dialog" aria-label="${escHtml(cd.name)}">
+      <div class="cv-detail-header">
+        <div>
+          <h2>${escHtml(cd.name)}
+            ${cd.patented ? `<span class="cv-patented" title="Patented cultivar">P</span>` : ''}
+            ${cd.isUser ? `<span class="cv-user-badge">yours</span>` : ''}
+          </h2>
+        </div>
+        <button class="cv-detail-close" aria-label="Close">×</button>
+      </div>
+      ${cd.image ? `<img class="cv-detail-img" src="${escHtml(cd.image)}" alt="${escHtml(cd.name)}">` : ''}
+      ${cd.description ? `<p class="cv-detail-desc">${escHtml(cd.description)}</p>` : ''}
+      ${specs ? `<div class="cv-detail-specs">${specs}</div>` : ''}
+    </div>`;
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('.cv-detail-close').addEventListener('click', close);
+  document.body.appendChild(overlay);
+}
+window.openCultivarDetailByIdx = openCultivarDetailByIdx;
+
 function addMyPairing(plantId, name) {
   if (isViewing()) return;
   name = name.trim(); if (!name) return;
@@ -5232,15 +5348,15 @@ function cultivarScanUse() {
   }
   state.cultivarScanCommitAsPlanted = false;
   state.showCultivarScan = false;
+  // Rip the modal out of the DOM immediately — that way even if render()
+  // throws or somehow re-emits the modal, the user gets visual confirmation
+  // that their tap was received.
+  document.querySelectorAll('.cv-scan-modal').forEach(el => el.remove());
   try {
     render();
   } catch(e) {
-    // render() threw — force-close modal by rebuilding minimal UI
     const app = document.getElementById('app');
-    if (app) {
-      // Remove all fixed overlays
-      app.querySelectorAll('[style*="position:fixed"]').forEach(el => el.remove());
-    }
+    if (app) app.querySelectorAll('[style*="position:fixed"],.cv-scan-modal').forEach(el => el.remove());
     console.error('render() threw after cultivarScanUse:', e);
   }
   showToast('✓ Cultivar saved — scroll down to Cultivars');
@@ -7041,45 +7157,25 @@ function renderEncyclopedia(p) {
   // string-list with brand tag extraction (legacy). Built before Plate II
   // because Plate II now includes a Cultivars sub-section.
   const _combined = combinedCultivarDetails(p);
-  const _hasRich = _combined.length > 0;
-  const cultivarsList = _hasRich
-    ? _combined.map(cd => {
-        const specs = [
-          cd.height ? `<span class="cv-spec"><span class="lbl">Ht</span>${escHtml(cd.height)}</span>` : '',
-          cd.spread ? `<span class="cv-spec"><span class="lbl">Sp</span>${escHtml(cd.spread)}</span>` : '',
-          cd.zones  ? `<span class="cv-spec"><span class="lbl">Z</span>${escHtml(cd.zones)}</span>`  : ''
-        ].filter(Boolean).join('');
-        return `<div class="plate-cv-card plate-cv-rich${cd.isUser?' plate-cv-user':''}">
-          ${cd.image ? `<img class="cv-img" src="${escHtml(cd.image)}" alt="${escHtml(cd.name)}">` : ''}
-          <div class="cv-body">
-            <div class="cv-name-row">
-              <div class="name">${escHtml(cd.name)}</div>
-              ${cd.patented ? `<span class="cv-patented" title="Patented cultivar">P</span>` : ''}
-              ${cd.isUser ? `<span class="cv-user-badge" title="Added by you">yours</span>
-                <span class="cv-remove" data-cv="${escHtml(cd.name)}" onclick="event.stopPropagation();if(confirm('Remove this cultivar from the list?'))removeUserCultivar(${p.id}, this.dataset.cv)" title="Remove">×</span>` : ''}
-            </div>
-            ${cd.description ? `<div class="cv-desc">${escHtml(cd.description)}</div>` : ''}
-            ${specs ? `<div class="cv-specs">${specs}</div>` : ''}
-          </div>
-        </div>`;
-      }).join('') + `
-        <button type="button" class="plate-cv-add" onclick="openAddCultivarPicker(${p.id})">
-          <span class="cv-add-icon">${plateGlyph('add')}</span>
-          <span>Add cultivar</span>
-        </button>`
-    : (p.cultivars||[]).map(c => {
-        const m = c.match(/^(.*?)\s*\[(PW|Monrovia|First Ed\.)\]\s*$/);
-        const name = m ? m[1].trim() : c.trim();
-        const brand = m ? m[2] : '';
-        return `<div class="plate-cv-card">
-          <div class="name">${escHtml(name)}</div>
-          ${brand ? `<span class="brand">${escHtml(brand)}</span>` : ''}
-        </div>`;
-      }).join('') + `
-        <button type="button" class="plate-cv-add" onclick="openAddCultivarPicker(${p.id})">
-          <span class="cv-add-icon">${plateGlyph('add')}</span>
-          <span>Add cultivar</span>
-        </button>`;
+  // Plain list format: one line per cultivar. Anything richer than the
+  // name (description, specs, image) turns the row into a clickable
+  // "read more" line — tapping opens a detail sheet.
+  const _hasDetails = cd => !!(cd.description || cd.height || cd.spread || cd.zones || cd.image || cd.patented);
+  const cultivarsList = _combined.map((cd, i) => {
+    const clickable = _hasDetails(cd);
+    return `<div class="plate-cv-row${cd.isUser?' plate-cv-user':''}${clickable?' plate-cv-clickable':''}"
+       ${clickable ? `data-cv-idx="${i}" onclick="openCultivarDetailByIdx(${p.id}, ${i})"` : ''}>
+      <span class="cv-name">${escHtml(cd.name)}</span>
+      ${cd.patented ? `<span class="cv-patented" title="Patented cultivar">P</span>` : ''}
+      ${cd.isUser ? `<span class="cv-user-badge" title="Added by you">yours</span>
+        <span class="cv-remove" data-cv="${escHtml(cd.name)}" onclick="event.stopPropagation();if(confirm('Remove this cultivar from the list?'))removeUserCultivar(${p.id}, this.dataset.cv)" title="Remove">×</span>` : ''}
+      ${clickable ? `<span class="cv-chevron" aria-hidden="true">›</span>` : ''}
+    </div>`;
+  }).join('') + `
+    <button type="button" class="plate-cv-add" onclick="openAddCultivarPicker(${p.id})">
+      <span class="cv-add-icon">${plateGlyph('add')}</span>
+      <span>Add cultivar</span>
+    </button>`;
 
   const plateParticulars = `
     <div class="plate-page plate-particulars${1 < idx ? ' plate-flipped' : ''}" data-idx="1" style="background-image:url('${p.plateBack}')">
