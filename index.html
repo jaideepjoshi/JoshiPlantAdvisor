@@ -1062,12 +1062,10 @@ button[onclick*="showAddPlant"]:not(.browse-topbar-icon):not(.plate-action-btn){
    so the *last* (settings) glyph sits 15px from the top and 15px from
    the right of the plate. Each glyph is a 28px square with 10px gaps. */
 /* One centered glyph row along the plate's top — back, search, add,
-   settings. Pushed down so it clears the plate's baked-in walnut band
-   (~14px) and fine inset frame, landing inside the gold-framed content
-   area. .encyclopedia has 20px top-padding, so top:50px = ~30px inside
-   the plate's outer edge. */
+   settings. Sits inside the gold-framed content area but tucked close
+   enough to the frame that tall plant illustrations don't overlap it. */
 .plate-topright-actions{
-  position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:20;
+  position:absolute;top:40px;left:50%;transform:translateX(-50%);z-index:20;
   display:flex;flex-direction:row;align-items:center;gap:5px;
 }
 .plate-action-btn{
