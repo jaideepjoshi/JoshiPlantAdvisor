@@ -4842,16 +4842,42 @@ function _mapUserCultivarToDetail(c) {
     isUser: true,
   };
 }
+// Older PLANTS entries carry only a p.cultivars string list ("Honorine
+// Jobert (white, classic) [Monrovia]") without the rich detail shape.
+// Map each such string into a minimal detail so the combined list stays
+// consistent when the user adds a scanned/typed cultivar to that plant.
+function _mapLegacyCultivarStringToDetail(str) {
+  const s = String(str || '').trim();
+  const m = s.match(/^(.*?)\s*\[(PW|Monrovia|First Ed\.)\]\s*$/);
+  const bodyRaw = (m ? m[1] : s).trim();
+  const paren = bodyRaw.match(/^(.*?)\s*\((.*)\)\s*$/);
+  const name = (paren ? paren[1] : bodyRaw).trim();
+  const desc = paren ? paren[2].trim() : '';
+  return {
+    name,
+    description: desc,
+    height: '', spread: '', zones: '',
+    image: '',
+    brand: m ? m[2] : '',
+  };
+}
 function combinedCultivarDetails(p) {
   const catalog = Array.isArray(p.cultivarDetails) ? p.cultivarDetails : [];
+  const legacy = (!catalog.length && Array.isArray(p.cultivars))
+    ? p.cultivars.map(_mapLegacyCultivarStringToDetail)
+    : [];
   const users = (state.cultivars[String(p.id)] || [])
     .filter(c => c && c.name)
     .map(_mapUserCultivarToDetail);
-  const seen = new Set(catalog.map(c => (c.name||'').toLowerCase()));
-  const merged = [...catalog];
-  for (const u of users) {
-    const key = (u.name||'').toLowerCase();
-    if (!seen.has(key)) { seen.add(key); merged.push(u); }
+  const seen = new Set();
+  const merged = [];
+  for (const arr of [catalog, legacy, users]) {
+    for (const cd of arr) {
+      const key = (cd.name || '').toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(cd);
+    }
   }
   return merged;
 }
